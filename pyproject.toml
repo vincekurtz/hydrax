@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hydra"
+version = "0.0.1"
+description = "Massively parallel sampling-based model predictive control"
+readme = "README.md"
+license = {text="MIT"}
+requires-python = ">=3.11.0"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python",
+]
+dependencies = [
+    "jax[cuda12_local]==0.4.28",
+    "jaxlib==0.4.28",
+    "flax>=0.8.1",
+    "pytest>=7.4.2",
+    "ruff>=0.4.10",
+    "pre-commit>=3.7.1",
+    "matplotlib>=3.8.3",
+    "mujoco>=3.2.3",
+    "mujoco-mjx>=3.2.3",
+]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+pydocstyle.convention = "google"
+select = [
+    "ANN",  # annotations
+    "N",  # naming conventions
+    "D",  # docstrings
+    "B",  # flake8 bugbear
+    "E",  # pycodestyle errors
+    "F",  # Pyflakes rules
+    "I",  # isort formatting
+    "PLC",  # Pylint convention warnings
+    "PLE",  # Pylint errors
+    "PLR",  # Pylint refactor recommendations
+    "PLW",  # Pylint warnings
+]
+ignore = [
+    "ANN003",  # missing type annotation for **kwargs
+    "ANN101",  # missing type annotation for `self` in method
+    "ANN202",  # missing return type annotation for private function
+    "ANN204",  # missing return type annotation for `__init__`
+    "ANN401",  # dynamically typed expressions (typing.Any) are disallowed
+    "D100",  # missing docstring in public module
+    "D104",  # missing docstring in public package
+    "D203",  # blank line before class docstring
+    "D211",  # no blank line before class
+    "D212",  # multi-line docstring summary at first line
+    "D213",  # multi-line docstring summary at second line
+    "E731",  # assigning to a `lambda` expression
+    "N806",  # only lowercase variables in functions
+    "PLR0913",  # too many arguments
+    "PLR2004",  # magic value used in comparison
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["hydra"]
+split-on-trailing-comma = false
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]

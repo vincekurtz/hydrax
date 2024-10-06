@@ -1,0 +1,7 @@
+*.swp
+__pycache__
+*.zip
+.vscode
+*.pt
+*.pkl
+*.egg-info

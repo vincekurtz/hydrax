@@ -1,0 +1,8 @@
+name: hydra
+channels:
+  - nvidia/label/cuda-12.3.0
+  - conda-forge
+dependencies:
+  - cuda
+  - cudnn
+  - python=3.11
