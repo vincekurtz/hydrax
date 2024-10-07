@@ -1,22 +1,36 @@
-import jax
-from mujoco import mjx
-from flax.struct import dataclass
 from abc import ABC, abstractmethod
-from typing import Any, Tuple
+from typing import Any
+
+import jax
+from flax.struct import dataclass
+from mujoco import mjx
+
 
 @dataclass
 class Trajectory:
+    """Data class for storing rollout data.
+
+    Attributes:
+        controls: Control actions for each time step (size N - 1).
+        costs: Costs associated with each time step (size N).
+        observations: Observations at each time step (size N).
+    """
+
     controls: jax.Array
     costs: jax.Array
     observations: jax.Array
 
-@dataclass
-class Solution:
-    samples: Trajectory
-    best_controls: jax.Array
+    def __len__(self):
+        return self.costs.shape[-1]
+
 
 class Task(ABC):
-    def __init__(self, model: mjx.Model, planning_horizon: int, sim_steps_per_control_step: int):
+    def __init__(
+        self,
+        model: mjx.Model,
+        planning_horizon: int,
+        sim_steps_per_control_step: int,
+    ):
         self.model = model
         self.planning_horizon = planning_horizon
         self.sim_steps_per_control_step = sim_steps_per_control_step
@@ -29,27 +43,37 @@ class Task(ABC):
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         pass
 
+
 def rollout(task: Task, state: mjx.Data, controls: jax.Array) -> Trajectory:
     pass
+
 
 class SamplingBasedMPC(ABC):
     def __init__(self, task: Task, num_samples):
         self.task = task
         self.num_samples = num_samples
 
-    @abstractmethod
-    def sample_controls(self, previous: Solution, info: Any) -> Tuple[jax.Array, Any]:
+    def eval_rollouts(self, state: mjx.Data, controls: jax.Array) -> Trajectory:
         pass
 
     @abstractmethod
-    def pick_best(self, state: mjx.Data, controls: jax.Array, info: Any) -> Tuple[Solution, Any]:
+    def sample_controls(self, params: Any) -> jax.Array:
         pass
 
-    def solver_step(self, previous: Solution, state: mjx.Data, info: Any) -> Tuple[Solution, Any]:
-        controls, info = self.sample_controls(previous, info)
-        solution, info = self.pick_best(state, controls, info)
-        return solution, info
+    @abstractmethod
+    def update_params(self, params: Any, rollouts: Trajectory) -> Any:
+        pass
+
+    @abstractmethod
+    def get_action(self, params: Any, t: float) -> jax.Array:
+        pass
 
 
-def run_mpc(system: mjx.Model, task: Task, mpc_rate: float, total_sim_time: float, headless: bool) -> mjx.Data:
+def run_mpc(
+    system: mjx.Model,
+    task: Task,
+    mpc_rate: float,
+    total_sim_time: float,
+    headless: bool,
+) -> mjx.Data:
     pass
