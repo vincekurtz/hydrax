@@ -15,6 +15,7 @@ classifiers = [
 ]
 dependencies = [
     "jax[cuda12_local]==0.4.28",
+    "nvidia-cudnn-cu12==8.9.2.26",
     "jaxlib==0.4.28",
     "flax>=0.8.1",
     "pytest>=7.4.2",
