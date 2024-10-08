@@ -13,7 +13,7 @@ Run an interactive simulation of the pendulum swingup task.
 if __name__ == "__main__":
     # Define the controller
     task = Pendulum()
-    ctrl = PredictiveSampling(task, num_samples=32, noise_level=0.1)
+    ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.1)
 
     # Define the model used for simulation
     mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/pendulum/scene.xml")

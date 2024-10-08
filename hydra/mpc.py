@@ -1,8 +1,11 @@
 import time
 
+import jax
+import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
 import numpy as np
+from mujoco import mjx
 
 from hydra.base import SamplingBasedController
 
@@ -46,6 +49,11 @@ def run_interactive(
         f"simulating at {1.0/mj_model.opt.timestep} Hz"
     )
 
+    # Initialize the controller
+    mjx_data = mjx.make_data(controller.task.model)
+    policy_params = controller.init_params()
+    jit_optimize = jax.jit(controller.optimize)
+
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
         if fixed_camera_id is not None:
@@ -57,11 +65,19 @@ def run_interactive(
             start_time = time.time()
 
             # TODO: optimize and get a control action
-            u = np.zeros((mj_model.nu,))
+            # Set the start state for the controller
+            mjx_data = mjx_data.replace(
+                qpos=jnp.array(mj_data.qpos), qvel=jnp.array(mj_data.qvel)
+            )
 
-            # Apply the action and step the simulation
-            mj_data.ctrl[:] = np.array(u)
-            for _ in range(sim_steps_per_replan):
+            # Do a replanning step
+            policy_params, _ = jit_optimize(mjx_data, policy_params)
+
+            # Step the simulation
+            for i in range(sim_steps_per_replan):
+                t = i * mj_model.opt.timestep
+                u = controller.get_action(policy_params, t)
+                mj_data.ctrl[:] = np.array(u)
                 mujoco.mj_step(mj_model, mj_data)
                 viewer.sync()
 

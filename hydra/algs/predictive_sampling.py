@@ -57,6 +57,8 @@ class PredictiveSampling(SamplingBasedController):
         # The original mean of the distribution is included as a sample
         controls = jnp.append(controls, params.mean[None, ...], axis=0)
 
+        # TODO: set control limits as a task parameter
+        controls = jnp.clip(controls, -1, 1)
         return controls, params.replace(rng=rng)
 
     def update_params(self, params: PSParams, rollouts: Trajectory) -> PSParams:
