@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 from mujoco import mjx
 
 from hydra.algs.predictive_sampling import PredictiveSampling
@@ -8,7 +9,7 @@ from hydra.tasks.pendulum import Pendulum
 def test_predictive_sampling() -> None:
     """Test the PredictiveSampling algorithm."""
     task = Pendulum()
-    opt = PredictiveSampling(task, num_samples=10, noise_level=0.1)
+    opt = PredictiveSampling(task, num_samples=32, noise_level=0.1)
 
     # Initialize the policy parameters
     params = opt.init_params()
@@ -38,6 +39,11 @@ def test_predictive_sampling() -> None:
         task.planning_horizon - 1,
         1,
     )
+
+    # Pick the best rollout
+    updated_params = opt.update_params(new_params, rollouts)
+    assert updated_params.mean.shape == (task.planning_horizon - 1, 1)
+    assert jnp.all(updated_params.mean != new_params.mean)
 
 
 if __name__ == "__main__":

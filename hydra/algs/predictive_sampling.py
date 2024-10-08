@@ -60,8 +60,11 @@ class PredictiveSampling(SamplingBasedMPC):
         return controls, params.replace(rng=rng)
 
     def update_params(self, params: PSParams, rollouts: Trajectory) -> PSParams:
-        """Update the policy parameters by choosing the best rollout."""
-        pass
+        """Update the policy parameters by choosing the lowest-cost rollout."""
+        costs = jnp.sum(rollouts.costs, axis=1)
+        best_idx = jnp.argmin(costs)
+        mean = rollouts.controls[best_idx]
+        return params.replace(mean=mean)
 
     def get_action(self, params: PSParams, t: float) -> jax.Array:
         """Get the control action for the current time step."""

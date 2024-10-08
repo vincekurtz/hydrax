@@ -10,13 +10,13 @@ from hydra.base import Task
 class Pendulum(Task):
     """An inverted pendulum swingup task."""
 
-    def __init__(self, planning_horizon: int = 20):
+    def __init__(self, planning_horizon: int = 100):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/pendulum/scene.xml"
         )
 
-        sim_steps_per_control_step = 5
+        sim_steps_per_control_step = 1
         self.dt = mj_model.opt.timestep * sim_steps_per_control_step
 
         super().__init__(
@@ -25,13 +25,22 @@ class Pendulum(Task):
             sim_steps_per_control_step,
         )
 
+    def _distance_to_upright(self, state: mjx.Data) -> jax.Array:
+        """Get a measure of distance to the upright position."""
+        theta = state.qpos[0] - jnp.pi
+        theta_err = jnp.array([jnp.cos(theta) - 1, jnp.sin(theta)])
+        return jnp.sum(jnp.square(theta_err))
+
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
-        """The running cost ℓ(xₜ, uₜ) penalizes large torques."""
-        return 0.01 * self.dt * jnp.sum(jnp.square(control))
+        """The running cost ℓ(xₜ, uₜ)."""
+        theta_cost = self._distance_to_upright(state)
+        theta_dot_cost = 0.1 * jnp.square(state.qvel[0])
+        control_cost = 0.01 * jnp.sum(jnp.square(control))
+        total_cost = theta_cost + theta_dot_cost + control_cost
+        return self.dt * total_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
-        """The terminal cost ϕ(x_T) penalizes distance from the upright."""
-        theta = state.qpos[0] - jnp.pi
-        theta_dot = state.qvel[0]
-        theta_err = jnp.array([jnp.cos(theta) - 1, jnp.sin(theta)])
-        return jnp.sum(jnp.square(theta_err)) + 0.1 * jnp.square(theta_dot)
+        """The terminal cost ϕ(x_T)."""
+        theta_cost = self._distance_to_upright(state)
+        theta_dot_cost = 0.1 * jnp.square(state.qvel[0])
+        return theta_cost + theta_dot_cost
