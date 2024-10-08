@@ -8,7 +8,7 @@ def test_traj() -> None:
     batch, horizon = 5, 10
     U = jnp.zeros((batch, horizon - 1, 3))
     Y = jnp.zeros((batch, horizon, 4))
-    J = jnp.zeros((horizon,))
+    J = jnp.zeros((batch, horizon))
 
     traj = Trajectory(controls=U, costs=J, observations=Y)
     assert len(traj) == horizon
