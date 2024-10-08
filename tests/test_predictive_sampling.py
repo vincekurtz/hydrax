@@ -80,15 +80,21 @@ def test_open_loop() -> None:
         ax[1].plot(times, best_obs[:, 1])
         ax[1].set_ylabel(r"$\dot{\theta}$")
 
-        ax[2].step(times[0:-1], best_ctrl)
+        ax[2].step(times[0:-1], best_ctrl, where="post")
         ax[2].axhline(-1.0, color="black", linestyle="--")
         ax[2].axhline(1.0, color="black", linestyle="--")
         ax[2].set_ylabel("u")
         ax[2].set_xlabel("Time (s)")
 
+        time_samples = jnp.linspace(0, times[-1], 100)
+        controls = jax.vmap(opt.get_action, in_axes=(None, 0))(
+            params, time_samples
+        )
+        ax[2].plot(time_samples, controls, color="gray", alpha=0.5)
+
         plt.show()
 
 
 if __name__ == "__main__":
-    # test_predictive_sampling()
+    test_predictive_sampling()
     test_open_loop()
