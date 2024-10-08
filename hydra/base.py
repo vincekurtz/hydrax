@@ -99,7 +99,7 @@ class Task(ABC):
         return jnp.concatenate([state.qpos, state.qvel])
 
 
-class SamplingBasedMPC(ABC):
+class SamplingBasedController(ABC):
     """An abstract sampling-based MPC interface."""
 
     def __init__(self, task: Task):

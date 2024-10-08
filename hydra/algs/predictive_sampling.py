@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
 
-from hydra.base import SamplingBasedMPC, Task, Trajectory
+from hydra.base import SamplingBasedController, Task, Trajectory
 
 
 @dataclass
@@ -20,7 +20,7 @@ class PSParams:
     rng: jax.Array
 
 
-class PredictiveSampling(SamplingBasedMPC):
+class PredictiveSampling(SamplingBasedController):
     """A simple implementation of https://arxiv.org/abs/2212.00541."""
 
     def __init__(self, task: Task, num_samples: int, noise_level: float):
