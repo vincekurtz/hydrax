@@ -146,9 +146,12 @@ class SamplingBasedMPC(ABC):
             obs = self.task.get_obs(x)
 
             # Advance the state for several steps, zero-order hold on control
-            x = x.replace(ctrl=u)
-            for _ in range(self.task.sim_steps_per_control_step):
-                x = mjx.step(self.task.model, x)
+            x = jax.lax.fori_loop(
+                0,
+                self.task.sim_steps_per_control_step,
+                lambda _, x: mjx.step(self.task.model, x),
+                x.replace(ctrl=u),
+            )
 
             return x, (cost, obs)
 
