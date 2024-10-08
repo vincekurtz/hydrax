@@ -54,6 +54,7 @@ class Task(ABC):
         Note: many other simulator parameters, e.g., simulator time step,
               Newton iterations, etc., are set in the model itself.
         """
+        assert isinstance(model, mjx.Model)
         self.model = model
         self.planning_horizon = planning_horizon
         self.sim_steps_per_control_step = sim_steps_per_control_step
