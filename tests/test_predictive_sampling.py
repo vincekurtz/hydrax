@@ -72,22 +72,23 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
+        times = jnp.arange(task.planning_horizon) * task.dt
 
-        ax[0].plot(best_obs[:, 0])
+        ax[0].plot(times, best_obs[:, 0])
         ax[0].set_ylabel(r"$\theta$")
 
-        ax[1].plot(best_obs[:, 1])
+        ax[1].plot(times, best_obs[:, 1])
         ax[1].set_ylabel(r"$\dot{\theta}$")
 
-        ax[2].plot(best_ctrl)
+        ax[2].step(times[0:-1], best_ctrl)
         ax[2].axhline(-1.0, color="black", linestyle="--")
         ax[2].axhline(1.0, color="black", linestyle="--")
         ax[2].set_ylabel("u")
-        ax[2].set_xlabel("Time step")
+        ax[2].set_xlabel("Time (s)")
 
         plt.show()
 
 
 if __name__ == "__main__":
-    test_predictive_sampling()
+    # test_predictive_sampling()
     test_open_loop()

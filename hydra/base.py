@@ -144,8 +144,12 @@ class SamplingBasedMPC(ABC):
             """Compute the cost and observation, then advance the state."""
             cost = self.task.running_cost(x, u)
             obs = self.task.get_obs(x)
-            # TODO: implement multiple steps with same control
-            x = mjx.step(self.task.model, x.replace(ctrl=u))
+
+            # Advance the state for several steps, zero-order hold on control
+            x = x.replace(ctrl=u)
+            for _ in range(self.task.sim_steps_per_control_step):
+                x = mjx.step(self.task.model, x)
+
             return x, (cost, obs)
 
         final_state, (costs, observations) = jax.lax.scan(
