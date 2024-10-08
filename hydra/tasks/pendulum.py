@@ -23,6 +23,7 @@ class Pendulum(Task):
             mjx.put_model(mj_model),
             planning_horizon,
             sim_steps_per_control_step,
+            u_max=1.0,
         )
 
     def _distance_to_upright(self, state: mjx.Data) -> jax.Array:

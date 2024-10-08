@@ -44,6 +44,7 @@ class Task(ABC):
         model: mjx.Model,
         planning_horizon: int,
         sim_steps_per_control_step: int,
+        u_max: float = jnp.inf,
     ):
         """Set the model and simulation parameters.
 
@@ -52,6 +53,7 @@ class Task(ABC):
             planning_horizon: The number of control steps to plan over.
             sim_steps_per_control_step: The number of simulation steps to take
                                         for each control step.
+            u_max: The maximum control input.
 
         Note: many other simulator parameters, e.g., simulator time step,
               Newton iterations, etc., are set in the model itself.
@@ -60,6 +62,7 @@ class Task(ABC):
         self.model = model
         self.planning_horizon = planning_horizon
         self.sim_steps_per_control_step = sim_steps_per_control_step
+        self.u_max = u_max
 
     @abstractmethod
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
