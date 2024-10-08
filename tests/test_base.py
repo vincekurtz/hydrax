@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 
-from hydra.utils import Trajectory
+from hydra.base import Trajectory
 
 
 def test_traj() -> None:
