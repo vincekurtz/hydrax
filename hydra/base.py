@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from functools import partial
+from typing import Any, Tuple
 
 import jax
+import jax.numpy as jnp
 from flax.struct import dataclass
 from mujoco import mjx
 
@@ -84,6 +86,18 @@ class Task(ABC):
         """
         pass
 
+    def get_obs(self, state: mjx.Data) -> jax.Array:
+        """Get the observation vector at the current time step.
+
+        Args:
+            state: The current state xₜ.
+
+        Returns:
+            The observation vector yₜ.
+        """
+        # The default is to return the full state as the observation
+        return jnp.concatenate([state.qpos, state.qvel])
+
 
 class SamplingBasedMPC(ABC):
     """An abstract sampling-based MPC interface."""
@@ -96,6 +110,23 @@ class SamplingBasedMPC(ABC):
         """
         self.task = task
 
+    def optimize(self, state: mjx.Data, params: Any) -> Tuple[Any, Trajectory]:
+        """Perform an optimization step to update the policy parameters.
+
+        Args:
+            state: The initial state x₀.
+            params: The current policy parameters, U ~ π(params).
+
+        Returns:
+            Updated policy parameters
+            Rollouts used to update the parameters
+        """
+        controls, params = self.sample_controls(params)
+        rollouts = self.eval_rollouts(state, controls)
+        params = self.update_params(params, rollouts)
+        return params, rollouts
+
+    @partial(jax.vmap, in_axes=(None, None, 0))
     def eval_rollouts(self, state: mjx.Data, controls: jax.Array) -> Trajectory:
         """Rollout control sequences (in parallel) and compute the costs.
 
@@ -106,17 +137,48 @@ class SamplingBasedMPC(ABC):
         Returns:
             A Trajectory object containing the costs, controls, observations.
         """
-        return NotImplementedError
+
+        def _scan_fn(
+            x: mjx.Data, u: jax.Array
+        ) -> Tuple[mjx.Data, Tuple[jax.Array, jax.Array]]:
+            """Compute the cost and observation, then advance the state."""
+            cost = self.task.running_cost(x, u)
+            obs = self.task.get_obs(x)
+            x = mjx.step(self.task.model, x.replace(ctrl=u))
+            return x, (cost, obs)
+
+        final_state, (costs, observations) = jax.lax.scan(
+            _scan_fn, state, controls
+        )
+        final_cost = self.task.terminal_cost(final_state)
+        final_obs = self.task.get_obs(final_state)
+
+        costs = jnp.append(costs, final_cost)
+        observations = jnp.vstack([observations, final_obs])
+
+        return Trajectory(
+            controls=controls, costs=costs, observations=observations
+        )
 
     @abstractmethod
-    def sample_controls(self, params: Any) -> jax.Array:
-        """Sample a control sequence U ~ π(params).
-
-        Args:
-            params: Parameters of the policy distribution (e.g. mean, std).
+    def init_params(self) -> Any:
+        """Initialize the policy parameters, U = [u₀, u₁, ... ] ~ π(params).
 
         Returns:
-            A control sequence U, size (horizon - 1).
+            The initial policy parameters.
+        """
+        pass
+
+    @abstractmethod
+    def sample_controls(self, params: Any) -> Tuple[jax.Array, Any]:
+        """Sample a set of control sequences U ~ π(params).
+
+        Args:
+            params: Parameters of the policy distribution (e.g., mean, std).
+
+        Returns:
+            A control sequences U, size (num rollouts, horizon - 1).
+            Updated parameters (e.g., with a new PRNG key).
         """
         pass
 
