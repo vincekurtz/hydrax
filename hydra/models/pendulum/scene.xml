@@ -18,8 +18,9 @@
   </asset>
 
   <worldbody>
+    <camera name="camera" pos="0.0 3.0 1.5" xyaxes="-1.0 0.0 0.0 0.0 0.0 1.0" mode="fixed"/>
     <light pos="0 0 3" dir="0 0 -1" directional="false"/>
-    <geom name="floor" size="0 0 .125" type="plane" material="groundplane" conaffinity="15" condim="3"/>
+    <geom name="floor" size="0 0 .125" type="plane" material="groundplane"/>
   </worldbody>
 
 </mujoco>
