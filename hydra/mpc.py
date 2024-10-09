@@ -108,7 +108,9 @@ def run_interactive(
             )
 
             # Do a replanning step
+            plan_start = time.time()
             policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+            plan_time = time.time() - plan_start
 
             # Visualize the rollouts
             if show_traces:
@@ -136,3 +138,10 @@ def run_interactive(
             elapsed = time.time() - start_time
             if elapsed < step_dt:
                 time.sleep(step_dt - elapsed)
+
+            # Print some timing information
+            rtr = step_dt / (time.time() - start_time)
+            print(
+                f"Realtime rate: {rtr:.2f}, " f"plan time: {plan_time:.4f}s",
+                end="\r",
+            )
