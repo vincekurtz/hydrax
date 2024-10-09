@@ -25,8 +25,6 @@ class Particle(Task):
         )
 
         self.pointmass_id = mj_model.site("pointmass").id
-        self.target_id = mj_model.site("target").id
-
         self.dt = mj_model.opt.timestep * self.sim_steps_per_control_step
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
@@ -38,10 +36,7 @@ class Particle(Task):
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
         position_cost = jnp.sum(
-            jnp.square(
-                state.site_xpos[self.pointmass_id]
-                - state.site_xpos[self.target_id]
-            )
+            jnp.square(state.site_xpos[self.pointmass_id] - state.mocap_pos[0])
         )
         velocity_cost = jnp.sum(jnp.square(state.qvel))
         return 5.0 * position_cost + 0.1 * velocity_cost

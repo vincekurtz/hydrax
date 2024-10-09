@@ -14,7 +14,6 @@
   <worldbody>
     <body name="goal" mocap="true" pos="0.25 0 0.01" quat="1 0 0 0">
       <geom type="sphere" size=".01" contype="0" conaffinity="0" rgba="0 1 0 .5" />
-      <site name="target" pos="0 0 0"/>
     </body>
 
     <geom name="wall_x" type="plane" pos="-.3 0 .02" zaxis="1 0 0" size=".02 .3 .02" />

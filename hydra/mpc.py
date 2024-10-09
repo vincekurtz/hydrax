@@ -56,7 +56,10 @@ def run_interactive(
     )
 
     # Initialize the controller
-    mjx_data = mjx.make_data(controller.task.model)
+    mjx_data = mjx.put_data(mj_model, mj_data)
+    mjx_data = mjx_data.replace(
+        mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
+    )
     policy_params = controller.init_params()
     jit_optimize = jax.jit(controller.optimize)
 
@@ -91,7 +94,10 @@ def run_interactive(
 
             # Set the start state for the controller
             mjx_data = mjx_data.replace(
-                qpos=jnp.array(mj_data.qpos), qvel=jnp.array(mj_data.qvel)
+                qpos=jnp.array(mj_data.qpos),
+                qvel=jnp.array(mj_data.qvel),
+                mocap_pos=jnp.array(mj_data.mocap_pos),
+                mocap_quat=jnp.array(mj_data.mocap_quat),
             )
 
             # Do a replanning step
