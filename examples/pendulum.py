@@ -21,5 +21,11 @@ if __name__ == "__main__":
 
     # Run the interactive simulation
     run_interactive(
-        mj_model, ctrl, start_state, frequency=50, fixed_camera_id=0
+        mj_model,
+        ctrl,
+        start_state,
+        frequency=50,
+        fixed_camera_id=0,
+        show_traces=True,
+        max_traces=1,
     )

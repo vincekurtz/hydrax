@@ -18,6 +18,7 @@ def run_interactive(
     fixed_camera_id: int = None,
     show_traces: bool = True,
     max_traces: int = 5,
+    trace_width: float = 5.0,
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -31,6 +32,7 @@ def run_interactive(
         fixed_camera_id: The camera ID to use for the fixed camera view.
         show_traces: Whether to show traces for the site positions.
         max_traces: The maximum number of traces to show at once.
+        trace_width: The width of the trace lines (in pixels).
 
     Note: the actual control frequency may be slightly different than what is
     requested, because the control period must be an integer multiple of the
@@ -87,7 +89,6 @@ def run_interactive(
         while viewer.is_running():
             start_time = time.time()
 
-            # TODO: optimize and get a control action
             # Set the start state for the controller
             mjx_data = mjx_data.replace(
                 qpos=jnp.array(mj_data.qpos), qvel=jnp.array(mj_data.qvel)
@@ -105,7 +106,7 @@ def run_interactive(
                                 i * (controller.task.planning_horizon - 1) + j
                             ],
                             mujoco.mjtGeom.mjGEOM_LINE,
-                            5,
+                            trace_width,
                             rollouts.trace_sites[i, j, 0],
                             rollouts.trace_sites[i, j + 1, 0],
                         )
@@ -121,4 +122,4 @@ def run_interactive(
             # Try to run in roughly realtime
             elapsed = time.time() - start_time
             if elapsed < step_dt:
-                time.sleep(step_dt)
+                time.sleep(step_dt - elapsed)
