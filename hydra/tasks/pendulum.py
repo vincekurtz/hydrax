@@ -24,8 +24,6 @@ class Pendulum(Task):
             trace_sites=["tip"],
         )
 
-        self.dt = mj_model.opt.timestep * self.sim_steps_per_control_step
-
     def _distance_to_upright(self, state: mjx.Data) -> jax.Array:
         """Get a measure of distance to the upright position."""
         theta = state.qpos[0] - jnp.pi
@@ -38,7 +36,7 @@ class Pendulum(Task):
         theta_dot_cost = 0.01 * jnp.square(state.qvel[0])
         control_cost = 0.001 * jnp.sum(jnp.square(control))
         total_cost = theta_cost + theta_dot_cost + control_cost
-        return self.dt * total_cost
+        return total_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""

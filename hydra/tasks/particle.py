@@ -25,7 +25,6 @@ class Particle(Task):
         )
 
         self.pointmass_id = mj_model.site("pointmass").id
-        self.dt = mj_model.opt.timestep * self.sim_steps_per_control_step
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ) encourages target tracking."""

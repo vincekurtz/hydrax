@@ -69,6 +69,9 @@ class Task(ABC):
         self.sim_steps_per_control_step = sim_steps_per_control_step
         self.u_max = u_max
 
+        # Timestep for each control step
+        self.dt = mj_model.opt.timestep * sim_steps_per_control_step
+
         # Get site IDs for points we want to trace
         self.trace_site_ids = jnp.array(
             [
@@ -173,7 +176,7 @@ class SamplingBasedController(ABC):
         ) -> Tuple[mjx.Data, Tuple[jax.Array, jax.Array]]:
             """Compute the cost and observation, then advance the state."""
             x = mjx.forward(self.task.model, x)  # compute site positions
-            cost = self.task.running_cost(x, u)
+            cost = self.task.dt * self.task.running_cost(x, u)
             obs = self.task.get_obs(x)
             sites = self.task.get_trace_sites(x)
 
