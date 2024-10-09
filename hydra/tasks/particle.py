@@ -18,7 +18,7 @@ class Particle(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=10,
+            planning_horizon=5,
             sim_steps_per_control_step=5,
             u_max=1.0,
             trace_sites=["pointmass"],

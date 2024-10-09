@@ -15,7 +15,7 @@ Double click on the green target, then drag it around with [ctrl + right-click].
 if __name__ == "__main__":
     # Define the controller
     task = Particle()
-    ctrl = PredictiveSampling(task, num_samples=16, noise_level=0.05)
+    ctrl = PredictiveSampling(task, num_samples=16, noise_level=0.1)
 
     # Define the model used for simulation
     mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/particle/scene.xml")

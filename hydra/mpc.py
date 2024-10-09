@@ -142,6 +142,6 @@ def run_interactive(
             # Print some timing information
             rtr = step_dt / (time.time() - start_time)
             print(
-                f"Realtime rate: {rtr:.2f}, " f"plan time: {plan_time:.4f}s",
+                f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s",
                 end="\r",
             )
