@@ -17,7 +17,7 @@ def run_interactive(
     frequency: float,
     fixed_camera_id: int = None,
     show_traces: bool = True,
-    max_traces: int = 10,
+    max_traces: int = 5,
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -97,17 +97,18 @@ def run_interactive(
             policy_params, rollouts = jit_optimize(mjx_data, policy_params)
 
             # Visualize the rollouts
-            for i in range(num_traces):
-                for j in range(controller.task.planning_horizon - 1):
-                    mujoco.mjv_connector(
-                        viewer.user_scn.geoms[
-                            i * (controller.task.planning_horizon - 1) + j
-                        ],
-                        mujoco.mjtGeom.mjGEOM_LINE,
-                        5,
-                        rollouts.trace_sites[i, j, 0],
-                        rollouts.trace_sites[i, j + 1, 0],
-                    )
+            if show_traces:
+                for i in range(num_traces):
+                    for j in range(controller.task.planning_horizon - 1):
+                        mujoco.mjv_connector(
+                            viewer.user_scn.geoms[
+                                i * (controller.task.planning_horizon - 1) + j
+                            ],
+                            mujoco.mjtGeom.mjGEOM_LINE,
+                            5,
+                            rollouts.trace_sites[i, j, 0],
+                            rollouts.trace_sites[i, j + 1, 0],
+                        )
 
             # Step the simulation
             for i in range(sim_steps_per_replan):

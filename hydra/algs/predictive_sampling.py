@@ -55,7 +55,7 @@ class PredictiveSampling(SamplingBasedController):
         controls = params.mean + self.noise_level * noise
 
         # The original mean of the distribution is included as a sample
-        controls = jnp.append(controls, params.mean[None, ...], axis=0)
+        controls = jnp.append(params.mean[None, ...], controls, axis=0)
 
         # Clip to the action limits
         controls = jnp.clip(controls, -self.task.u_max, self.task.u_max)
