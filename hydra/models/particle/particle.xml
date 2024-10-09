@@ -1,4 +1,4 @@
-<mujoco model="Particle">
+<mujoco model="particle">
   <!-- Adopted from the MJPC particle task:
     https://github.com/google-deepmind/mujoco_mpc/tree/main/mjpc/tasks/particle
   -->
