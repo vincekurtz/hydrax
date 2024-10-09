@@ -1,7 +1,7 @@
 import jax.numpy as jnp
 from mujoco import mjx
 
-from hydra.tasks.walker import Walker
+from hydrax.tasks.walker import Walker
 
 
 def test_walker() -> None:

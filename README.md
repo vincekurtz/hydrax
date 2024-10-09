@@ -1,6 +1,6 @@
-# Hydra
+# hydrax
 
-Massively parallel sampling-based model predictive control with
+Sampling-based model predictive control on GPU with JAX and
 [MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html)
 
 ## Setup (Conda)
@@ -14,10 +14,10 @@ conda env create -f environment.yml
 Enter the conda env:
 
 ```bash
-conda activate hydra
+conda activate hydrax
 ```
 
-Install dependencies:
+Install the package and dependencies:
 
 ```bash
 pip install -e . --find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html

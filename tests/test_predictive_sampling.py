@@ -3,8 +3,8 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from mujoco import mjx
 
-from hydra.algs.predictive_sampling import PredictiveSampling
-from hydra.tasks.pendulum import Pendulum
+from hydrax.algs.predictive_sampling import PredictiveSampling
+from hydrax.tasks.pendulum import Pendulum
 
 
 def test_predictive_sampling() -> None:

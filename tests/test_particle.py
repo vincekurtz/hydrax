@@ -1,7 +1,7 @@
 import jax.numpy as jnp
 from mujoco import mjx
 
-from hydra.tasks.particle import Particle
+from hydrax.tasks.particle import Particle
 
 
 def test_particle() -> None:

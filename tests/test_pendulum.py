@@ -1,7 +1,7 @@
 import jax.numpy as jnp
 from mujoco import mjx
 
-from hydra.tasks.pendulum import Pendulum
+from hydrax.tasks.pendulum import Pendulum
 
 
 def test_pendulum() -> None:

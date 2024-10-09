@@ -1,10 +1,10 @@
 import mujoco
 import numpy as np
 
-from hydra import ROOT
-from hydra.algs.predictive_sampling import PredictiveSampling
-from hydra.mpc import run_interactive
-from hydra.tasks.pendulum import Pendulum
+from hydrax import ROOT
+from hydrax.algs.predictive_sampling import PredictiveSampling
+from hydrax.mpc import run_interactive
+from hydrax.tasks.pendulum import Pendulum
 
 """
 Run an interactive simulation of the pendulum swingup task.

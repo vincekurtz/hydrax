@@ -3,8 +3,8 @@ import jax.numpy as jnp
 import mujoco
 from mujoco import mjx
 
-from hydra import ROOT
-from hydra.base import Task
+from hydrax import ROOT
+from hydrax.base import Task
 
 
 class Particle(Task):

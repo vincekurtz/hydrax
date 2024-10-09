@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hydra"
+name = "hydrax"
 version = "0.0.1"
-description = "Massively parallel sampling-based model predictive control"
+description = "Sampling-based model predictive control on GPU with JAX/MJX"
 readme = "README.md"
 license = {text="MIT"}
 requires-python = ">=3.11.0"

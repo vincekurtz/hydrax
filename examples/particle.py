@@ -1,10 +1,10 @@
 import mujoco
 import numpy as np
 
-from hydra import ROOT
-from hydra.algs.predictive_sampling import PredictiveSampling
-from hydra.mpc import run_interactive
-from hydra.tasks.particle import Particle
+from hydrax import ROOT
+from hydrax.algs.predictive_sampling import PredictiveSampling
+from hydrax.mpc import run_interactive
+from hydrax.tasks.particle import Particle
 
 """
 Run an interactive simulation of the particle tracking task.
