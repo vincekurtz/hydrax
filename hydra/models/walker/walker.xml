@@ -2,7 +2,7 @@
   <!-- Adopted from the MJPC walker task
    https://github.com/google-deepmind/mujoco_mpc/tree/main/mjpc/tasks/walker``
    -->
-  <option timestep="0.005" iterations="1" ls_iterations="8">
+  <option timestep="0.01" iterations="1" ls_iterations="8">
     <flag eulerdamp="disable"/>
   </option>
 

@@ -18,8 +18,8 @@ class Walker(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=20,
-            sim_steps_per_control_step=5,
+            planning_horizon=10,
+            sim_steps_per_control_step=10,
             u_max=1.0,
             trace_sites=["torso_site"],
         )

@@ -44,6 +44,13 @@ def run_interactive(
     mj_data.qpos[:] = start_state[: mj_model.nq]
     mj_data.qvel[:] = start_state[mj_model.nq :]
 
+    # Report the planning horizon in seconds for debugging
+    print(
+        f"Planning with {controller.task.planning_horizon} steps "
+        f"over a {controller.task.planning_horizon * controller.task.dt} "
+        f"second horizon."
+    )
+
     # Figure out how many sim steps to run before replanning
     replan_period = 1.0 / frequency
     sim_steps_per_replan = int(replan_period / mj_model.opt.timestep)
