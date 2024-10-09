@@ -61,6 +61,24 @@ def run_interactive(
             viewer.cam.fixedcamid = fixed_camera_id
             viewer.cam.type = 2
 
+        # Set up rollout traces
+        mujoco.mjv_initGeom(
+            viewer.user_scn.geoms[0],
+            type=mujoco.mjtGeom.mjGEOM_LINE,
+            size=np.zeros(3),
+            pos=np.zeros(3),
+            mat=np.eye(3).flatten(),
+            rgba=np.array([1.0, 1.0, 1.0, 0.5]),
+        )
+        mujoco.mjv_connector(
+            viewer.user_scn.geoms[0],
+            mujoco.mjtGeom.mjGEOM_LINE,
+            5,
+            np.array([0.0, 0.0, 1.3]),
+            np.array([-0.2, 0.0, 1.5]),
+        )
+        viewer.user_scn.ngeom = 1
+
         while viewer.is_running():
             start_time = time.time()
 

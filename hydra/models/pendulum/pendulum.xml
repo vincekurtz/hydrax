@@ -15,6 +15,7 @@
         <geom name="pendulum_link_visual" size="0.02 0.5" pos="0 0 -0.5"
               type="capsule" contype="0" conaffinity="0" group="1" density="0"
               rgba="1 0 0 1"/>
+        <site name="tip" pos="0 0 -1"/>
       </body>
     </body>
   </worldbody>

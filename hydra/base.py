@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, Tuple
+from typing import Any, Sequence, Tuple
 
 import jax
 import jax.numpy as jnp
+import mujoco
 from flax.struct import dataclass
 from mujoco import mjx
 
@@ -16,11 +17,13 @@ class Trajectory:
         controls: Control actions for each time step (size N - 1).
         costs: Costs associated with each time step (size N).
         observations: Observations at each time step (size N).
+        trace_sites: Positions of trace sites at each time step (size N).
     """
 
     controls: jax.Array
     costs: jax.Array
     observations: jax.Array
+    trace_sites: jax.Array
 
     def __len__(self):
         """Return the number of time steps in the trajectory (N)."""
@@ -41,28 +44,38 @@ class Task(ABC):
 
     def __init__(
         self,
-        model: mjx.Model,
+        mj_model: mujoco.MjModel,
         planning_horizon: int,
         sim_steps_per_control_step: int,
         u_max: float = jnp.inf,
+        trace_sites: Sequence[str] = [],
     ):
         """Set the model and simulation parameters.
 
         Args:
-            model: The MuJoCo model to use for simulation.
+            mj_model: The MuJoCo model to use for simulation.
             planning_horizon: The number of control steps to plan over.
             sim_steps_per_control_step: The number of simulation steps to take
                                         for each control step.
             u_max: The maximum control input.
+            trace_sites: A list of site names to visualize with traces.
 
         Note: many other simulator parameters, e.g., simulator time step,
               Newton iterations, etc., are set in the model itself.
         """
-        assert isinstance(model, mjx.Model)
-        self.model = model
+        assert isinstance(mj_model, mujoco.MjModel)
+        self.model = mjx.put_model(mj_model)
         self.planning_horizon = planning_horizon
         self.sim_steps_per_control_step = sim_steps_per_control_step
         self.u_max = u_max
+
+        # Get site IDs for points we want to trace
+        self.trace_site_ids = jnp.array(
+            [
+                mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, name)
+                for name in trace_sites
+            ]
+        )
 
     @abstractmethod
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
@@ -100,6 +113,20 @@ class Task(ABC):
         """
         # The default is to return the full state as the observation
         return jnp.concatenate([state.qpos, state.qvel])
+
+    def get_trace_sites(self, state: mjx.Data) -> jax.Array:
+        """Get the positions of the trace sites at the current time step.
+
+        Args:
+            state: The current state xₜ.
+
+        Returns:
+            The positions of the trace sites at the current time step.
+        """
+        if len(self.trace_site_ids) == 0:
+            return jnp.zeros((0, 3))
+
+        return state.site_xpos[self.trace_site_ids]
 
 
 class SamplingBasedController(ABC):
@@ -147,6 +174,7 @@ class SamplingBasedController(ABC):
             """Compute the cost and observation, then advance the state."""
             cost = self.task.running_cost(x, u)
             obs = self.task.get_obs(x)
+            sites = self.task.get_trace_sites(x)
 
             # Advance the state for several steps, zero-order hold on control
             x = jax.lax.fori_loop(
@@ -156,19 +184,24 @@ class SamplingBasedController(ABC):
                 x.replace(ctrl=u),
             )
 
-            return x, (cost, obs)
+            return x, (cost, obs, sites)
 
-        final_state, (costs, observations) = jax.lax.scan(
+        final_state, (costs, observations, trace_sites) = jax.lax.scan(
             _scan_fn, state, controls
         )
         final_cost = self.task.terminal_cost(final_state)
         final_obs = self.task.get_obs(final_state)
+        final_trace_sites = self.task.get_trace_sites(final_state)
 
         costs = jnp.append(costs, final_cost)
         observations = jnp.vstack([observations, final_obs])
+        trace_sites = jnp.append(trace_sites, final_trace_sites[None], axis=0)
 
         return Trajectory(
-            controls=controls, costs=costs, observations=observations
+            controls=controls,
+            costs=costs,
+            observations=observations,
+            trace_sites=trace_sites,
         )
 
     @abstractmethod

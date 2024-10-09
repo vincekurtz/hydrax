@@ -40,6 +40,12 @@ def test_predictive_sampling() -> None:
         task.planning_horizon - 1,
         1,
     )
+    assert rollouts.trace_sites.shape == (
+        opt.num_samples + 1,
+        task.planning_horizon,
+        len(task.trace_site_ids),
+        3,
+    )
 
     # Pick the best rollout
     updated_params = opt.update_params(new_params, rollouts)
@@ -97,4 +103,4 @@ def test_open_loop() -> None:
 
 if __name__ == "__main__":
     test_predictive_sampling()
-    test_open_loop()
+    # test_open_loop()

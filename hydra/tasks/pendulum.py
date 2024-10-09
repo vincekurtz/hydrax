@@ -10,21 +10,21 @@ from hydra.base import Task
 class Pendulum(Task):
     """An inverted pendulum swingup task."""
 
-    def __init__(self, planning_horizon: int = 20):
+    def __init__(self):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/pendulum/scene.xml"
         )
 
-        sim_steps_per_control_step = 5
-        self.dt = mj_model.opt.timestep * sim_steps_per_control_step
-
         super().__init__(
-            mjx.put_model(mj_model),
-            planning_horizon,
-            sim_steps_per_control_step,
+            mj_model,
+            planning_horizon=20,
+            sim_steps_per_control_step=5,
             u_max=1.0,
+            trace_sites=["tip"],
         )
+
+        self.dt = mj_model.opt.timestep * self.sim_steps_per_control_step
 
     def _distance_to_upright(self, state: mjx.Data) -> jax.Array:
         """Get a measure of distance to the upright position."""
