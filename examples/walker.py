@@ -13,7 +13,7 @@ Run an interactive simulation of the walker task.
 if __name__ == "__main__":
     # Define the controller
     task = Walker()
-    ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.2)
+    ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.5)
 
     # Define the model used for simulation
     mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/walker/scene.xml")
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         mj_model,
         ctrl,
         start_state,
-        frequency=50,
+        frequency=40,
         fixed_camera_id=None,
         show_traces=True,
         max_traces=1,

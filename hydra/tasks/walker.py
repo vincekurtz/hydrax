@@ -37,7 +37,7 @@ class Walker(Task):
 
         # Set the target velocity (m/s) and height
         # TODO: make these parameters
-        self.target_velocity = 0.0
+        self.target_velocity = 0.5
         self.target_height = 1.2
 
     def _get_torso_height(self, state: mjx.Data) -> jax.Array:
