@@ -18,6 +18,7 @@ if __name__ == "__main__":
     # Define the model used for simulation
     mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/walker/scene.xml")
     mj_model.opt.timestep = 0.005
+    mj_model.opt.iterations = 50
     start_state = np.zeros(mj_model.nq + mj_model.nv)
 
     # Run the interactive simulation
@@ -25,8 +26,8 @@ if __name__ == "__main__":
         mj_model,
         ctrl,
         start_state,
-        frequency=40,
-        fixed_camera_id=None,
+        frequency=50,
+        fixed_camera_id=0,
         show_traces=True,
         max_traces=1,
     )

@@ -18,8 +18,8 @@ class Walker(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=10,
-            sim_steps_per_control_step=10,
+            planning_horizon=5,
+            sim_steps_per_control_step=15,
             u_max=1.0,
             trace_sites=["torso_site"],
         )
@@ -37,7 +37,7 @@ class Walker(Task):
 
         # Set the target velocity (m/s) and height
         # TODO: make these parameters
-        self.target_velocity = 0.5
+        self.target_velocity = 1.5
         self.target_height = 1.2
 
     def _get_torso_height(self, state: mjx.Data) -> jax.Array:
