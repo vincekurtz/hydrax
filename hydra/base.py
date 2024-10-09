@@ -172,6 +172,7 @@ class SamplingBasedController(ABC):
             x: mjx.Data, u: jax.Array
         ) -> Tuple[mjx.Data, Tuple[jax.Array, jax.Array]]:
             """Compute the cost and observation, then advance the state."""
+            x = mjx.forward(self.task.model, x)  # compute site positions
             cost = self.task.running_cost(x, u)
             obs = self.task.get_obs(x)
             sites = self.task.get_trace_sites(x)

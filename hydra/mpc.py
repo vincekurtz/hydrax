@@ -16,6 +16,8 @@ def run_interactive(
     start_state: np.ndarray,
     frequency: float,
     fixed_camera_id: int = None,
+    show_traces: bool = True,
+    max_traces: int = 10,
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -27,6 +29,8 @@ def run_interactive(
         start_state: The initial state x₀ = [q₀, v₀] of the system.
         frequency: The requested control frequency (Hz) for replanning.
         fixed_camera_id: The camera ID to use for the fixed camera view.
+        show_traces: Whether to show traces for the site positions.
+        max_traces: The maximum number of traces to show at once.
 
     Note: the actual control frequency may be slightly different than what is
     requested, because the control period must be an integer multiple of the
@@ -54,6 +58,12 @@ def run_interactive(
     policy_params = controller.init_params()
     jit_optimize = jax.jit(controller.optimize)
 
+    # Warm-up the controller
+    st = time.time()
+    _, rollouts = jit_optimize(mjx_data, policy_params)
+    print(f"Time to jit: {time.time() - st:.3f} seconds")
+    num_traces = min(rollouts.controls.shape[0], max_traces)
+
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
         if fixed_camera_id is not None:
@@ -62,22 +72,17 @@ def run_interactive(
             viewer.cam.type = 2
 
         # Set up rollout traces
-        mujoco.mjv_initGeom(
-            viewer.user_scn.geoms[0],
-            type=mujoco.mjtGeom.mjGEOM_LINE,
-            size=np.zeros(3),
-            pos=np.zeros(3),
-            mat=np.eye(3).flatten(),
-            rgba=np.array([1.0, 1.0, 1.0, 0.5]),
-        )
-        mujoco.mjv_connector(
-            viewer.user_scn.geoms[0],
-            mujoco.mjtGeom.mjGEOM_LINE,
-            5,
-            np.array([0.0, 0.0, 1.3]),
-            np.array([-0.2, 0.0, 1.5]),
-        )
-        viewer.user_scn.ngeom = 1
+        if show_traces:
+            for i in range(num_traces * controller.task.planning_horizon - 1):
+                mujoco.mjv_initGeom(
+                    viewer.user_scn.geoms[i],
+                    type=mujoco.mjtGeom.mjGEOM_LINE,
+                    size=np.zeros(3),
+                    pos=np.zeros(3),
+                    mat=np.eye(3).flatten(),
+                    rgba=np.array([1.0, 1.0, 1.0, 0.1]),
+                )
+                viewer.user_scn.ngeom += 1
 
         while viewer.is_running():
             start_time = time.time()
@@ -89,7 +94,20 @@ def run_interactive(
             )
 
             # Do a replanning step
-            policy_params, _ = jit_optimize(mjx_data, policy_params)
+            policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+
+            # Visualize the rollouts
+            for i in range(num_traces):
+                for j in range(controller.task.planning_horizon - 1):
+                    mujoco.mjv_connector(
+                        viewer.user_scn.geoms[
+                            i * (controller.task.planning_horizon - 1) + j
+                        ],
+                        mujoco.mjtGeom.mjGEOM_LINE,
+                        5,
+                        rollouts.trace_sites[i, j, 0],
+                        rollouts.trace_sites[i, j + 1, 0],
+                    )
 
             # Step the simulation
             for i in range(sim_steps_per_replan):
