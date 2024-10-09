@@ -1,4 +1,4 @@
-# hydrax
+# Hydrax
 
 Sampling-based model predictive control on GPU with JAX and
 [MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html)
