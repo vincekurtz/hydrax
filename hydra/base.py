@@ -155,6 +155,7 @@ class SamplingBasedController(ABC):
             Rollouts used to update the parameters
         """
         controls, params = self.sample_controls(params)
+        controls = jnp.clip(controls, -self.task.u_max, self.task.u_max)
         rollouts = self.eval_rollouts(state, controls)
         params = self.update_params(params, rollouts)
         return params, rollouts
