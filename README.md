@@ -1,7 +1,9 @@
 # Hydrax
 
 Sampling-based model predictive control on GPU with JAX and
-[MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html)
+[MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html).
+
+![A planar walker running MPPI](img/walker.gif)
 
 ## Setup (Conda)
 
