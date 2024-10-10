@@ -51,10 +51,7 @@ class Task(ABC):
 
         # Get site IDs for points we want to trace
         self.trace_site_ids = jnp.array(
-            [
-                mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, name)
-                for name in trace_sites
-            ]
+            [mj_model.site(name).id for name in trace_sites]
         )
 
     @abstractmethod
