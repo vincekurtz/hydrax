@@ -18,7 +18,7 @@
 
   <compiler angle="radian" meshdir="./meshes/" />
 
-  <option timestep="0.01" iterations="3" ls_iterations="10">
+  <option timestep="0.03" iterations="2" ls_iterations="10">
     <flag eulerdamp="disable" />
   </option>
 
