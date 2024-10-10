@@ -14,6 +14,7 @@
       - Add sensors to make traces of the fingertips
       - Change the initial orientation of the palm
       - Add option block limiting iterations and disabling euler damping
+      - Replace fingertip collisions with capsules
   -->
 
   <compiler angle="radian" meshdir="./meshes/" />
@@ -196,7 +197,8 @@
                 <geom size="0.01 0.005 0.017" pos="0 -0.012 0.0145" class="collision" />
                 <!-- <geom size="0.007 0.011 0.002" pos="0 -0.006 0.03" class="collision" />
                 <geom size="0.007 0.011 0.002" pos="0 -0.006 -0.001" class="collision" /> -->
-                <geom type="mesh" mesh="white_tip" class="collision" />
+                <!-- <geom type="mesh" mesh="white_tip" class="collision" /> -->
+                <geom type="capsule" size="0.011 0.01" pos="0.0 -0.03 0.015" quat="0.707105 0.707105 0 0 " class="collision" />
                 <geom type="mesh" mesh="white_tip" class="visual" material="white" />
               </body>
             </body>
@@ -246,7 +248,8 @@
               <geom size="0.01 0.005 0.017" pos="0 -0.012 0.0145" class="collision" />
                 <!-- <geom size="0.007 0.011 0.002" pos="0 -0.006 0.03" class="collision" />
               <geom size="0.007 0.011 0.002" pos="0 -0.006 -0.001" class="collision" /> -->
-              <geom type="mesh" mesh="white_tip" class="collision" />
+              <!-- <geom type="mesh" mesh="white_tip" class="collision" /> -->
+              <geom type="capsule" size="0.011 0.01" pos="0.0 -0.03 0.015" quat="0.707105 0.707105 0 0 " class="collision" />
               <geom type="mesh" mesh="white_tip" class="visual" material="white" />
             </body>
           </body>
@@ -296,7 +299,8 @@
               <geom size="0.01 0.005 0.017" pos="0 -0.012 0.0145" class="collision" />
                 <!-- <geom size="0.007 0.011 0.002" pos="0 -0.006 0.03" class="collision" />
               <geom size="0.007 0.011 0.002" pos="0 -0.006 -0.001" class="collision" /> -->
-              <geom type="mesh" mesh="white_tip" class="collision" />
+              <!-- <geom type="mesh" mesh="white_tip" class="collision" /> -->
+              <geom type="capsule" size="0.011 0.01" pos="0.0 -0.03 0.015" quat="0.707105 0.707105 0 0 " class="collision" />
               <geom type="mesh" mesh="white_tip" class="visual" material="white" />
             </body>
           </body>
@@ -345,7 +349,8 @@
                 mesh="thumb_fingertip" />
               <geom size="0.01 0.018 0.012" pos="0 -0.0085 -0.015" class="collision" />
               <geom size="0.01 0.002 0.015" pos="0 -0.029 -0.014" class="collision" />
-              <geom type="mesh" mesh="white_tip_thumb" class="collision" />
+              <!-- <geom type="mesh" mesh="white_tip_thumb" class="collision" /> -->
+              <geom type="capsule" size="0.011 0.01" pos="-0.002 -0.042 -0.015" quat="0.707105 0.707105 0 0 " class="collision" />
               <geom type="mesh" mesh="white_tip_thumb" class="visual" material="white" />
 
                 <!-- UNNEEDED GEOMS -->
