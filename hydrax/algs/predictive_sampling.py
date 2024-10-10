@@ -4,7 +4,8 @@ import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
 
-from hydrax.base import SamplingBasedController, Task, Trajectory
+from hydrax.alg_base import SamplingBasedController, Trajectory
+from hydrax.task_base import Task
 
 
 @dataclass

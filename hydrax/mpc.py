@@ -7,7 +7,7 @@ import mujoco.viewer
 import numpy as np
 from mujoco import mjx
 
-from hydrax.base import SamplingBasedController
+from hydrax.alg_base import SamplingBasedController
 
 
 def run_interactive(

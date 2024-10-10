@@ -4,7 +4,7 @@ import mujoco
 from mujoco import mjx
 
 from hydrax import ROOT
-from hydrax.base import Task
+from hydrax.task_base import Task
 
 
 class Particle(Task):
