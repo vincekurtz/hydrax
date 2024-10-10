@@ -84,7 +84,7 @@ dynamics ($f$). You can do this by creating a new class that inherits from
 ```python
 class MyNewTask(Task):
     def __init__(self, ...):
-        # Create or load a mujoco model defining the dynamics
+        # Create or load a mujoco model defining the dynamics (f)
         mj_model = ...
         super().__init__(mj_model, ...)
 
@@ -127,6 +127,7 @@ class MyControlAlgorithm(SamplingBasedController):
 
     def init_params(self) -> Any:
         # Initialize the policy parameters (theta).
+        ...
         return params
 
     def sample_controls(self, params: Any) -> Tuple[jax.Array, Any]:
@@ -152,9 +153,9 @@ care of the rest, including parallelizing rollouts on GPU and collecting the
 rollout data in a [`Trajectory`](hydrax/alg_base.py) object.
 
 **Note**: because of
-[the way JAX handles randomness](https://jax.readthedocs.io/en/latest/random-numbers.html)
-in a functional programming paradigm, we assume the PRNG key is stored as one of
-parameters $\theta$. This is why `sample_controls` returns updated parameters
-along with the control samples $U^{(1:N)}$.
+[the way JAX handles randomness](https://jax.readthedocs.io/en/latest/random-numbers.html),
+we assume the PRNG key is stored as one of parameters $\theta$. This is why
+`sample_controls` returns updated parameters along with the control samples
+$U^{(1:N)}$.
 
 For some examples, take a look at [`hydrax.algs`](hydrax/algs).
