@@ -103,4 +103,4 @@ def test_open_loop() -> None:
 
 if __name__ == "__main__":
     test_predictive_sampling()
-    # test_open_loop()
+    test_open_loop()
