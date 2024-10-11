@@ -35,7 +35,7 @@ run_interactive(
     mj_model,
     ctrl,
     start_state,
-    frequency=50,
+    frequency=100,
     fixed_camera_id=None,
     show_traces=False,
     max_traces=1,

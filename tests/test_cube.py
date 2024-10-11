@@ -65,6 +65,10 @@ def test_task() -> None:
     cube_position = task._get_cube_position(state)
     assert jnp.all(cube_position == jnp.array([0.0, 0.0, 0.07]))
 
+    # Check cube orientation relative to the target grasp orientation
+    cube_orientation = task._get_cube_orientation_err(state)
+    print(cube_orientation)
+
 
 if __name__ == "__main__":
     # test_mjx_model()
