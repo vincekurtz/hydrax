@@ -5,7 +5,14 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
 
 <mujoco model="leap_rh">
   <compiler angle="radian" meshdir="./meshes"/>
-  <option integrator="implicitfast" cone="elliptic" impratio="100"/>
+  <option timestep="0.01"
+          integrator="implicitfast"
+          impratio="10"
+          iterations="3"
+          ls_iterations="10"
+          >
+    <flag eulerdamp="enable"/>
+  </option>
 
   <!-- mesh assets -->
   <asset>
@@ -40,13 +47,14 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
 
     <!-- actuators -->
     <position kp="0.2" kv="0.01" />
-    <joint damping="0.03" frictionloss="0.001"/>
+    <joint damping="0.03"/>
   </default>
 
   <!-- defaults -->
   <default>
     <!-- constraint stiffness -->
-    <geom solref="0.0001 1.0"/>
+    <geom solref="0.05 5.0" solimp="0.0 0.95 0.005" />
+
 
     <!-- geom class defaults -->
     <default class="visual">
@@ -100,28 +108,44 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
   <contact>
     <!-- filter the palm from all other finger bodies except the tips -->
     <exclude body1="palm" body2="if_bs" />
-    <exclude body1="palm" body2="mf_bs" />
-    <exclude body1="palm" body2="rf_bs" />
-    <exclude body1="palm" body2="th_mp" />
+    <!-- <exclude body1="palm" body2="mf_bs" /> -->
+    <!-- <exclude body1="palm" body2="rf_bs" /> -->
+    <!-- <exclude body1="palm" body2="th_mp" /> -->
 
-    <exclude body1="palm" body2="if_px" />
+    <!-- <exclude body1="palm" body2="if_px" />
     <exclude body1="palm" body2="mf_px" />
     <exclude body1="palm" body2="rf_px" />
-    <exclude body1="palm" body2="th_bs" />
+    <exclude body1="palm" body2="th_bs" /> -->
 
-    <exclude body1="palm" body2="if_md" />
+    <!-- <exclude body1="palm" body2="if_md" />
     <exclude body1="palm" body2="mf_md" />
     <exclude body1="palm" body2="rf_md" />
-    <exclude body1="palm" body2="th_px" />
+    <exclude body1="palm" body2="th_px" /> -->
+
+    <!-- filter the mount from all finger bodies except the tips -->
+    <exclude body1="leap_mount" body2="if_bs" />
+    <!-- <exclude body1="leap_mount" body2="mf_bs" /> -->
+    <!-- <exclude body1="leap_mount" body2="rf_bs" /> -->
+    <!-- <exclude body1="leap_mount" body2="th_mp" /> -->
+
+    <!-- <exclude body1="leap_mount" body2="if_px" />
+    <exclude body1="leap_mount" body2="mf_px" />
+    <exclude body1="leap_mount" body2="rf_px" />
+    <exclude body1="leap_mount" body2="th_bs" /> -->
+
+    <!-- <exclude body1="leap_mount" body2="if_md" />
+    <exclude body1="leap_mount" body2="mf_md" />
+    <exclude body1="leap_mount" body2="rf_md" />
+    <exclude body1="leap_mount" body2="th_px" /> -->
 
     <!-- none of the base fingertip geoms can touch each other -->
-    <exclude body1="if_bs" body2="mf_bs" />
+    <!-- <exclude body1="if_bs" body2="mf_bs" />
     <exclude body1="if_bs" body2="rf_bs" />
-    <exclude body1="mf_bs" body2="rf_bs" />
+    <exclude body1="mf_bs" body2="rf_bs" /> -->
 
-    <exclude body1="th_mp" body2="if_bs" />
+    <!-- <exclude body1="th_mp" body2="if_bs" />
     <exclude body1="th_mp" body2="mf_bs" />
-    <exclude body1="th_mp" body2="rf_bs" />
+    <exclude body1="th_mp" body2="rf_bs" /> -->
   </contact>
 
   <worldbody>
@@ -131,7 +155,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
       <geom name="leap_mount_collision_1" size="0.005 0.005 0.005" pos="0.05 0.053 0.002" quat="0.4987168 0.64994038 -0.34910175 0.45495826" type="box"/>
 
       <!-- the grasp site: delete the group to view it temporarily -->
-      <site name="grasp_site" pos="0.11 0.0 0.03" group="4" />
+      <site name="grasp_site" pos="0.11 0.0 0.03" group="4"/>
 
       <!-- leap hand -->
       <body name="palm" pos="0.124 -0.0305 -0.06045" quat="0 1 0 -0.175">
@@ -194,7 +218,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
         </body>  <!-- index -->
 
         <!-- middle -->
-        <body name="mf_bs" pos="-0.0071 -0.0224 -0.0187" quat="0.500003 0.5 0.5 -0.499997">
+        <!-- <body name="mf_bs" pos="-0.0071 -0.0224 -0.0187" quat="0.500003 0.5 0.5 -0.499997">
           <inertial pos="-0.022516 0.033882 0.016359" quat="0.388092 0.677951 -0.247713 0.573067" mass="0.044" diaginertia="1.74972e-05 1.61504e-05 7.21342e-06"/>
           <joint name="mf_mcp" class="mcp"/>
           <geom name="mf_bs_visual" pos="0.0084 0.0077 0.01465" quat="1 0 0 0" class="visual" mesh="base"/>
@@ -233,10 +257,10 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
               </body>
             </body>
           </body>
-        </body>  <!-- middle -->
+        </body>  middle -->
 
         <!-- ring -->
-        <body name="rf_bs" pos="-0.00709 -0.0678 -0.0187" quat="0.500003 0.5 0.5 -0.499997">
+        <!-- <body name="rf_bs" pos="-0.00709 -0.0678 -0.0187" quat="0.500003 0.5 0.5 -0.499997">
           <inertial pos="-0.022516 0.033882 0.016359" quat="0.388092 0.677951 -0.247713 0.573067" mass="0.044" diaginertia="1.74972e-05 1.61504e-05 7.21342e-06"/>
           <joint name="rf_mcp" class="mcp"/>
           <geom name="rf_bs_visual" pos="0.0084 0.0077 0.01465" quat="1 0 0 0" class="visual" mesh="base"/>
@@ -275,10 +299,10 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
               </body>
             </body>
           </body>
-        </body>  <!-- ring -->
+        </body>  ring -->
 
         <!-- thumb -->
-        <body name="th_mp" pos="-0.0693 -0.0012 -0.0216" quat="0.707109 0 0.707105 0">
+        <!-- <body name="th_mp" pos="-0.0693 -0.0012 -0.0216" quat="0.707109 0 0.707105 0">
           <inertial pos="0.0075 -0.0002 -0.011" quat="0 0.707107 0 0.707107" mass="0.032" diaginertia="4.8853e-06 4.3733e-06 3.0933e-06"/>
           <joint name="th_cmc" class="thumb_cmc"/>
           <geom name="th_mp_visual" pos="-0.0053 0.0003 0.00078" quat="0.500003 -0.5 -0.5 -0.499997" class="visual" mesh="proximal"/>
@@ -314,7 +338,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
               </body>
             </body>
           </body>
-        </body>  <!-- thumb -->
+        </body>  thumb -->
 
       </body>  <!-- palm -->
     </body>
@@ -329,30 +353,30 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
     <position name="if_dip_act" joint="if_dip" class="dip" />
 
     <!-- middle -->
-    <position name="mf_mcp_act" joint="mf_mcp" class="mcp" />
+    <!-- <position name="mf_mcp_act" joint="mf_mcp" class="mcp" />
     <position name="mf_rot_act" joint="mf_rot" class="rot" />
     <position name="mf_pip_act" joint="mf_pip" class="pip" />
-    <position name="mf_dip_act" joint="mf_dip" class="dip" />
+    <position name="mf_dip_act" joint="mf_dip" class="dip" /> -->
 
     <!-- ring -->
-    <position name="rf_mcp_act" joint="rf_mcp" class="mcp" />
+    <!-- <position name="rf_mcp_act" joint="rf_mcp" class="mcp" />
     <position name="rf_rot_act" joint="rf_rot" class="rot" />
     <position name="rf_pip_act" joint="rf_pip" class="pip" />
-    <position name="rf_dip_act" joint="rf_dip" class="dip" />
+    <position name="rf_dip_act" joint="rf_dip" class="dip" /> -->
 
     <!-- thumb -->
-    <position name="th_cmc_act" joint="th_cmc" class="thumb_cmc" />
+    <!-- <position name="th_cmc_act" joint="th_cmc" class="thumb_cmc" />
     <position name="th_axl_act" joint="th_axl" class="thumb_axl" />
     <position name="th_mcp_act" joint="th_mcp" class="thumb_mcp" />
-    <position name="th_ipl_act" joint="th_ipl" class="thumb_ipl" />
+    <position name="th_ipl_act" joint="th_ipl" class="thumb_ipl" /> -->
   </actuator>
 
   <!-- sensors -->
-  <sensor>
+  <!-- <sensor>
     <framepos name="trace1" objtype="body" objname="if_ds" />
     <framepos name="trace2" objtype="body" objname="mf_ds" />
     <framepos name="trace3" objtype="body" objname="rf_ds" />
     <framepos name="trace4" objtype="body" objname="th_ds" />
-  </sensor>
+  </sensor> -->
 
 </mujoco>
