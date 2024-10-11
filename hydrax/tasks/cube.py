@@ -14,13 +14,21 @@ class CubeRotation(Task):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
 
+        u = -5.0 * jnp.ones(mj_model.nu)
+        u = jnp.clip(
+            u,
+            mj_model.actuator_ctrlrange[:, 0],
+            mj_model.actuator_ctrlrange[:, 1],
+        )
+
         super().__init__(
             mj_model,
             planning_horizon=5,
             sim_steps_per_control_step=4,
-            u_max=1,
             trace_sites=[],
         )
+
+        breakpoint()
 
         # Get sensor ids
         self.cube_position_sensor = mujoco.mj_name2id(

@@ -20,7 +20,6 @@ class Particle(Task):
             mj_model,
             planning_horizon=5,
             sim_steps_per_control_step=5,
-            u_max=1.0,
             trace_sites=["pointmass"],
         )
 

@@ -24,7 +24,6 @@ class Task(ABC):
         mj_model: mujoco.MjModel,
         planning_horizon: int,
         sim_steps_per_control_step: int,
-        u_max: float = jnp.inf,
         trace_sites: Sequence[str] = [],
     ):
         """Set the model and simulation parameters.
@@ -34,7 +33,6 @@ class Task(ABC):
             planning_horizon: The number of control steps to plan over.
             sim_steps_per_control_step: The number of simulation steps to take
                                         for each control step.
-            u_max: The maximum control input.
             trace_sites: A list of site names to visualize with traces.
 
         Note: many other simulator parameters, e.g., simulator time step,
@@ -44,7 +42,18 @@ class Task(ABC):
         self.model = mjx.put_model(mj_model)
         self.planning_horizon = planning_horizon
         self.sim_steps_per_control_step = sim_steps_per_control_step
-        self.u_max = u_max
+
+        # Set actuator limits
+        self.u_min = jnp.where(
+            mj_model.actuator_ctrllimited,
+            mj_model.actuator_ctrlrange[:, 0],
+            -jnp.inf,
+        )
+        self.u_max = jnp.where(
+            mj_model.actuator_ctrllimited,
+            mj_model.actuator_ctrlrange[:, 1],
+            jnp.inf,
+        )
 
         # Timestep for each control step
         self.dt = mj_model.opt.timestep * sim_steps_per_control_step
