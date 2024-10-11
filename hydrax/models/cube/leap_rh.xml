@@ -7,8 +7,8 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
   <compiler angle="radian" meshdir="./meshes"/>
   <option timestep="0.03"
           integrator="implicitfast"
-          iterations="5"
           impratio="0.1"
+          iterations="5"
           ls_iterations="10"
           >
     <flag eulerdamp="disable"/>
