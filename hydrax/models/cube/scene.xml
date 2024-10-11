@@ -1,6 +1,7 @@
 <mujoco model="leap_scene">
-  <!-- Model that includes the leap hand along with scene details like lighting and a ground. -->
+  <!-- Model that includes the leap hand the cube, and other scene details. -->
   <include file="leap_rh.xml"/>
+  <include file="reorientation_cube.xml"/>
 
   <statistic extent="0.4" center="0.3 0.1 0" />
   <visual>

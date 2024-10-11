@@ -28,8 +28,6 @@ else:
 
 # Define the model used for simulation
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
-mj_model.opt.timestep = 0.01
-mj_model.opt.iterations = 100
 start_state = np.zeros(mj_model.nq + mj_model.nv)
 
 # Run the interactive simulation

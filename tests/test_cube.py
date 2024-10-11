@@ -20,6 +20,8 @@ def test_mjx_model() -> None:
 
     nu = mj_model.nu
     assert nu == 16
+    assert mj_model.nq == 16 + 7  # hand and floating cube
+    assert mj_model.nv == 16 + 6
 
     assert isinstance(model, mjx.Model)
     assert isinstance(data, mjx.Data)
@@ -56,7 +58,7 @@ def test_task() -> None:
     assert isinstance(state, mjx.Data)
 
     y = task.get_obs(state)
-    assert y.shape == (32,)
+    assert y.shape == (32 + 13,)
 
 
 if __name__ == "__main__":
