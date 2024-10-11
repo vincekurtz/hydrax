@@ -7,14 +7,14 @@ import mujoco
 from mujoco import mjx
 
 from hydrax import ROOT
-from hydrax.tasks.leap_hand import LeapHand
+from hydrax.tasks.cube import CubeRotation
 
 
 def test_mjx_model() -> None:
     """Test that the MJX model runs without crashing."""
     rng = jax.random.key(0)
 
-    mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/leap/leap_rh.xml")
+    mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
     model = mjx.put_model(mj_model)
     data = mjx.make_data(model)
 
@@ -50,7 +50,7 @@ def test_mjx_model() -> None:
 
 def test_task() -> None:
     """Set up the cube rotation task."""
-    task = LeapHand()
+    task = CubeRotation()
 
     state = mjx.make_data(task.model)
     assert isinstance(state, mjx.Data)
@@ -60,5 +60,5 @@ def test_task() -> None:
 
 
 if __name__ == "__main__":
-    # test_mjx_model()
+    test_mjx_model()
     test_task()

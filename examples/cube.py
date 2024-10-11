@@ -6,14 +6,14 @@ import numpy as np
 from hydrax import ROOT
 from hydrax.algs import MPPI, PredictiveSampling
 from hydrax.mpc import run_interactive
-from hydrax.tasks.leap_hand import LeapHand
+from hydrax.tasks.cube import CubeRotation
 
 """
 Run an interactive simulation of the walker task.
 """
 
 # Define the task (cost and dynamics)
-task = LeapHand()
+task = CubeRotation()
 
 # Set the controller based on command-line arguments
 if len(sys.argv) == 1 or sys.argv[1] == "ps":
@@ -27,7 +27,7 @@ else:
     sys.exit(1)
 
 # Define the model used for simulation
-mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/leap/scene.xml")
+mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
 mj_model.opt.timestep = 0.01
 mj_model.opt.iterations = 100
 start_state = np.zeros(mj_model.nq + mj_model.nv)

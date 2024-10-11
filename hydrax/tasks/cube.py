@@ -7,12 +7,12 @@ from hydrax import ROOT
 from hydrax.task_base import Task
 
 
-class LeapHand(Task):
+class CubeRotation(Task):
     """Cube rotation with the LEAP hand."""
 
     def __init__(self):
         """Load the MuJoCo model and set task parameters."""
-        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/leap/scene.xml")
+        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
 
         super().__init__(
             mj_model,
