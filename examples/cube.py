@@ -28,14 +28,14 @@ else:
 
 # Define the model used for simulation
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
-start_state = np.zeros(mj_model.nq + mj_model.nv)
+start_state = np.concatenate([mj_model.qpos0, np.zeros(mj_model.nv)])
 
 # Run the interactive simulation
 run_interactive(
     mj_model,
     ctrl,
     start_state,
-    frequency=10,
+    frequency=50,
     fixed_camera_id=None,
     show_traces=False,
     max_traces=1,

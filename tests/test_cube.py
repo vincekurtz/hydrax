@@ -56,11 +56,16 @@ def test_task() -> None:
 
     state = mjx.make_data(task.model)
     assert isinstance(state, mjx.Data)
+    state = jax.jit(mjx.forward)(task.model, state)
 
     y = task.get_obs(state)
     assert y.shape == (32 + 13,)
 
+    # Check cube position relative to the target grasp position
+    cube_position = task._get_cube_position(state)
+    assert jnp.all(cube_position == jnp.array([0.0, 0.0, 0.07]))
+
 
 if __name__ == "__main__":
-    test_mjx_model()
+    # test_mjx_model()
     test_task()
