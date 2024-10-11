@@ -7,6 +7,7 @@ import mujoco
 from mujoco import mjx
 
 from hydrax import ROOT
+from hydrax.tasks.leap_hand import LeapHand
 
 
 def test_mjx_model() -> None:
@@ -18,7 +19,7 @@ def test_mjx_model() -> None:
     data = mjx.make_data(model)
 
     nu = mj_model.nu
-    # assert nu == 16
+    assert nu == 16
 
     assert isinstance(model, mjx.Model)
     assert isinstance(data, mjx.Data)
@@ -47,5 +48,17 @@ def test_mjx_model() -> None:
     assert not jnp.any(jnp.isnan(data.qvel))
 
 
+def test_task() -> None:
+    """Set up the cube rotation task."""
+    task = LeapHand()
+
+    state = mjx.make_data(task.model)
+    assert isinstance(state, mjx.Data)
+
+    y = task.get_obs(state)
+    assert y.shape == (32,)
+
+
 if __name__ == "__main__":
-    test_mjx_model()
+    # test_mjx_model()
+    test_task()
