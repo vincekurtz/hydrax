@@ -63,8 +63,8 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
     <!-- joint class defaults -->
     <default class="mcp">
       <joint pos="0 0 0" axis="0 0 -1"
-        limited="true" range="-0.314 2.23" />
-      <position ctrlrange="-0.314 2.23" />
+        limited="true" range="-1.114 1.43" ref="-0.8" />
+      <position ctrlrange="-1.114 1.43" />
     </default>
     <default class="rot">
       <joint pos="0 0 0" axis="0 0 -1"
@@ -73,28 +73,28 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
     </default>
     <default class="pip">
       <joint pos="0 0 0" axis="0 0 -1"
-        limited="true" range="-0.506 1.885" />
-      <position ctrlrange="-0.506 1.885" />
+        limited="true" range="-1.306 1.085" ref="-0.8" />
+      <position ctrlrange="-1.306 1.085" />
     </default>
     <default class="dip">
       <joint pos="0 0 0" axis="0 0 -1"
-        limited="true" range="-0.366 2.042" />
-      <position ctrlrange="-0.366 2.042" />
+        limited="true" range="-1.166 1.242" ref="-0.8" />
+      <position ctrlrange="-1.166 1.242" />
     </default>
     <default class="thumb_cmc">
       <joint pos="0 0 0" axis="0 0 -1"
-        limited="true" range="-0.349 2.094" />
-      <position ctrlrange="-0.349 2.094" />
+        limited="true" range="-1.149 1.294" ref="-0.8" />
+      <position ctrlrange="-1.149 1.294" />
     </default>
     <default class="thumb_axl">
       <joint pos="0 0 0" axis="0 0 -1"
-        limited="true" range="-0.349 2.094" />
-      <position ctrlrange="-0.349 2.094" />
+        limited="true" range="-1.149 1.294" ref="-0.8" />
+      <position ctrlrange="-1.149 1.294" />
     </default>
     <default class="thumb_mcp">
       <joint pos="0 0 0" axis="0 0 -1"
-        limited="true" range="-0.47 2.443" />
-      <position ctrlrange="-0.47 2.443" />
+        limited="true" range="-1.27 1.643" ref="-0.8" />
+      <position ctrlrange="-1.27 1.643" />
     </default>
     <default class="thumb_ipl">
       <joint pos="0 0 0" axis="0 0 -1"
@@ -174,7 +174,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
         <geom name="palm_collision_10" size="0.022 0.028 0.002" pos="-0.078 -0.003 0.01" type="box"/>
 
         <!-- index -->
-        <body name="if_bs" pos="-0.007 0.023 -0.0187" quat="0.500003 0.5 0.5 -0.499997">
+        <body name="if_bs" pos="-0.007 0.023 -0.0187" quat="0.5 0.5 0.5 -0.5">
           <inertial pos="-0.022516 0.033882 0.016359" quat="0.388092 0.677951 -0.247713 0.573067" mass="0.044" diaginertia="1.74972e-05 1.61504e-05 7.21342e-06"/>
           <joint name="if_mcp" class="mcp"/>
           <geom name="if_bs_visual" pos="0.0084 0.0077 0.01465" quat="1 0 0 0" class="visual" mesh="base"/>
