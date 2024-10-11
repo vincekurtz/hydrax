@@ -5,14 +5,18 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
 
 <mujoco model="leap_rh">
   <compiler angle="radian" meshdir="./meshes"/>
-  <option timestep="0.01"
+  <option timestep="0.03"
           integrator="implicitfast"
-          impratio="10"
           iterations="3"
           ls_iterations="10"
           >
     <flag eulerdamp="enable"/>
   </option>
+
+  <custom>
+    <numeric data="15" name="max_contact_points" />
+    <numeric data="15" name="max_geom_pairs" />
+  </custom>
 
   <!-- mesh assets -->
   <asset>
@@ -46,15 +50,14 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
     </default>
 
     <!-- actuators -->
-    <position kp="0.2" kv="0.01" />
-    <joint damping="0.03"/>
+    <position kp="0.2" kv="0.01" forcerange="-1 1"/>
+    <joint damping="0.05" armature="0.001"/>
   </default>
 
   <!-- defaults -->
   <default>
     <!-- constraint stiffness -->
-    <geom solref="0.05 5.0" solimp="0.0 0.95 0.005" />
-
+    <!-- <geom solref="0.05 1.0" solimp="0.0 0.95 0.001" /> -->
 
     <!-- geom class defaults -->
     <default class="visual">
