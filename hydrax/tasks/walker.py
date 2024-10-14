@@ -20,7 +20,6 @@ class Walker(Task):
             mj_model,
             planning_horizon=5,
             sim_steps_per_control_step=15,
-            u_max=1.0,
             trace_sites=["torso_site"],
         )
 

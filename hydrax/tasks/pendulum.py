@@ -20,7 +20,6 @@ class Pendulum(Task):
             mj_model,
             planning_horizon=20,
             sim_steps_per_control_step=5,
-            u_max=1.0,
             trace_sites=["tip"],
         )
 
