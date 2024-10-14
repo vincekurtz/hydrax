@@ -15,8 +15,8 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
   </option>
 
   <custom>
-    <numeric data="15" name="max_contact_points" />
-    <numeric data="15" name="max_geom_pairs" />
+    <numeric data="10" name="max_contact_points" />
+    <numeric data="10" name="max_geom_pairs" />
   </custom>
 
   <!-- mesh assets -->
