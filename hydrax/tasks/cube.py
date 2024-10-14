@@ -38,8 +38,11 @@ class CubeRotation(Task):
         """Orientation of the cube relative to the target grasp orientation."""
         sensor_adr = self.model.sensor_adr[self.cube_orientation_sensor]
         cube_quat = state.sensordata[sensor_adr : sensor_adr + 4]
-        # TODO: implement target cube
-        goal_quat = jnp.array([1.0, 0.0, 0.0, 0.0])
+
+        # N.B. we could define a sensor relative to the goal cube, but it looks
+        # like mocap states are not implemented yet in MJX, so we'll do this
+        # manually for now.
+        goal_quat = state.mocap_quat[0]
         return mjx._src.math.quat_sub(cube_quat, goal_quat)
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
