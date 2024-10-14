@@ -40,8 +40,6 @@
   <sensor>
     <framepos name="cube_position" objtype="body" objname="cube" reftype="site" refname="grasp_site" />
     <framequat name="cube_orientation" objtype="body" objname="cube" />
-    <framelinvel name="cube_linear_velocity" objtype="body" objname="cube" />
-    <frameangvel name="cube_angular_velocity" objtype="body" objname="cube" />
   </sensor>
 
 </mujoco>

@@ -29,7 +29,10 @@ class CubeRotation(Task):
             mj_model, mujoco.mjtObj.mjOBJ_SENSOR, "cube_orientation"
         )
 
-    def _get_cube_position(self, state: mjx.Data) -> jax.Array:
+        # Distance (m) beyond which we impose a high cube position cost
+        self.delta = 0.015
+
+    def _get_cube_position_err(self, state: mjx.Data) -> jax.Array:
         """Position of the cube relative to the target grasp position."""
         sensor_adr = self.model.sensor_adr[self.cube_position_sensor]
         return state.sensordata[sensor_adr : sensor_adr + 3]
@@ -40,23 +43,35 @@ class CubeRotation(Task):
         cube_quat = state.sensordata[sensor_adr : sensor_adr + 4]
 
         # N.B. we could define a sensor relative to the goal cube, but it looks
-        # like mocap states are not implemented yet in MJX, so we'll do this
-        # manually for now.
+        # like mocap states are not fully implemented yet in MJX, so we'll do
+        # this manually for now.
         goal_quat = state.mocap_quat[0]
         return mjx._src.math.quat_sub(cube_quat, goal_quat)
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
-        position_err = self._get_cube_position(state)
-        orientation_err = self._get_cube_orientation_err(state)
-        return jnp.sum(jnp.square(position_err)) + jnp.sum(
-            jnp.square(orientation_err)
+        position_err = self._get_cube_position_err(state)
+        squared_distance = jnp.sum(jnp.square(position_err))
+        position_cost = 0.1 * squared_distance + 50 * jnp.maximum(
+            squared_distance - self.delta**2, 0.0
         )
+
+        orientation_err = self._get_cube_orientation_err(state)
+        orientation_cost = jnp.sum(jnp.square(orientation_err))
+
+        grasp_pose_cost = 0.001 * jnp.sum(jnp.square(control))
+
+        return position_cost + orientation_cost + grasp_pose_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        position_err = self._get_cube_position(state)
-        orientation_err = self._get_cube_orientation_err(state)
-        return jnp.sum(jnp.square(position_err)) + jnp.sum(
-            jnp.square(orientation_err)
+        position_err = self._get_cube_position_err(state)
+        squared_distance = jnp.sum(jnp.square(position_err))
+        position_cost = 0.1 * squared_distance + 50 * jnp.maximum(
+            squared_distance - self.delta**2, 0.0
         )
+
+        orientation_err = self._get_cube_orientation_err(state)
+        orientation_cost = jnp.sum(jnp.square(orientation_err))
+
+        return position_cost + orientation_cost
