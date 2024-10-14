@@ -8,15 +8,15 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
   <option timestep="0.01"
     integrator="implicitfast"
     impratio="0.1"
-    iterations="5"
+    iterations="4"
     ls_iterations="10"
   >
     <flag eulerdamp="disable" />
   </option>
 
   <custom>
-    <numeric data="10" name="max_contact_points" />
-    <numeric data="10" name="max_geom_pairs" />
+    <numeric data="8" name="max_contact_points" />
+    <numeric data="8" name="max_geom_pairs" />
   </custom>
 
   <!-- mesh assets -->
