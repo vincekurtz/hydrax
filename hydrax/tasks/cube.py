@@ -16,8 +16,8 @@ class CubeRotation(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=5,
-            sim_steps_per_control_step=4,
+            planning_horizon=4,
+            sim_steps_per_control_step=5,
             trace_sites=[],
         )
 
@@ -51,23 +51,8 @@ class CubeRotation(Task):
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
         position_err = self._get_cube_position_err(state)
-        squared_distance = jnp.sum(jnp.square(position_err))
-        position_cost = 0.1 * squared_distance + 50 * jnp.maximum(
-            squared_distance - self.delta**2, 0.0
-        )
-
-        orientation_err = self._get_cube_orientation_err(state)
-        orientation_cost = jnp.sum(jnp.square(orientation_err))
-
-        grasp_pose_cost = 0.001 * jnp.sum(jnp.square(control))
-
-        return position_cost + orientation_cost + grasp_pose_cost
-
-    def terminal_cost(self, state: mjx.Data) -> jax.Array:
-        """The terminal cost ϕ(x_T)."""
-        position_err = self._get_cube_position_err(state)
-        squared_distance = jnp.sum(jnp.square(position_err))
-        position_cost = 0.1 * squared_distance + 50 * jnp.maximum(
+        squared_distance = jnp.sum(jnp.square(position_err[0:2]))  # ignore z
+        position_cost = 0.1 * squared_distance + 100 * jnp.maximum(
             squared_distance - self.delta**2, 0.0
         )
 
@@ -75,3 +60,8 @@ class CubeRotation(Task):
         orientation_cost = jnp.sum(jnp.square(orientation_err))
 
         return position_cost + orientation_cost
+
+    def terminal_cost(self, state: mjx.Data) -> jax.Array:
+        """The terminal cost ϕ(x_T)."""
+        position_err = self._get_cube_position_err(state)
+        return 100 * jnp.sum(jnp.square(position_err))

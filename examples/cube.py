@@ -18,10 +18,10 @@ task = CubeRotation()
 # Set the controller based on command-line arguments
 if len(sys.argv) == 1 or sys.argv[1] == "ps":
     print("Running predictive sampling")
-    ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.1)
+    ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.1)
 elif sys.argv[1] == "mppi":
     print("Running MPPI")
-    ctrl = MPPI(task, num_samples=128, noise_level=0.1, temperature=0.1)
+    ctrl = MPPI(task, num_samples=1024, noise_level=0.1, temperature=0.001)
 else:
     print("Usage: python leap_hand.py [ps|mppi]")
     sys.exit(1)
@@ -35,7 +35,7 @@ run_interactive(
     mj_model,
     ctrl,
     start_state,
-    frequency=100,
+    frequency=25,
     fixed_camera_id=None,
     show_traces=False,
     max_traces=1,
