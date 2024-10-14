@@ -21,7 +21,7 @@ if len(sys.argv) == 1 or sys.argv[1] == "ps":
     ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.2)
 elif sys.argv[1] == "mppi":
     print("Running MPPI")
-    ctrl = MPPI(task, num_samples=1024, noise_level=0.1, temperature=0.001)
+    ctrl = MPPI(task, num_samples=1024, noise_level=0.2, temperature=0.001)
 else:
     print("Usage: python leap_hand.py [ps|mppi]")
     sys.exit(1)

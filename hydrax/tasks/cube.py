@@ -59,7 +59,9 @@ class CubeRotation(Task):
         orientation_err = self._get_cube_orientation_err(state)
         orientation_cost = jnp.sum(jnp.square(orientation_err))
 
-        return position_cost + orientation_cost
+        grasp_cost = 0.001 * jnp.sum(jnp.square(control))
+
+        return position_cost + orientation_cost + grasp_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
