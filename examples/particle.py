@@ -4,7 +4,7 @@ import mujoco
 import numpy as np
 
 from hydrax import ROOT
-from hydrax.algs import MPPI, PredictiveSampling
+from hydrax.algs import CMAES, MPPI, PredictiveSampling
 from hydrax.mpc import run_interactive
 from hydrax.tasks.particle import Particle
 
@@ -24,8 +24,11 @@ if len(sys.argv) == 1 or sys.argv[1] == "ps":
 elif sys.argv[1] == "mppi":
     print("Running MPPI")
     ctrl = MPPI(task, num_samples=16, noise_level=0.3, temperature=0.01)
+elif sys.argv[1] == "cmaes":
+    print("Running CMA-ES")
+    ctrl = CMAES(task, num_samples=128, elite_ratio=0.5)
 else:
-    print("Usage: python particle.py [ps|mppi]")
+    print("Usage: python particle.py [ps|mppi|cmaes]")
     sys.exit(1)
 
 # Define the model used for simulation
