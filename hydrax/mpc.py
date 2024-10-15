@@ -1,4 +1,5 @@
 import time
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -19,6 +20,7 @@ def run_interactive(
     show_traces: bool = True,
     max_traces: int = 5,
     trace_width: float = 5.0,
+    trace_color: Sequence = [1.0, 1.0, 1.0, 0.1],
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -33,6 +35,7 @@ def run_interactive(
         show_traces: Whether to show traces for the site positions.
         max_traces: The maximum number of traces to show at once.
         trace_width: The width of the trace lines (in pixels).
+        trace_color: The RGBA color of the trace lines.
 
     Note: the actual control frequency may be slightly different than what is
     requested, because the control period must be an integer multiple of the
@@ -95,7 +98,7 @@ def run_interactive(
                     size=np.zeros(3),
                     pos=np.zeros(3),
                     mat=np.eye(3).flatten(),
-                    rgba=np.array([1.0, 1.0, 1.0, 0.1]),
+                    rgba=np.array(trace_color),
                 )
                 viewer.user_scn.ngeom += 1
 

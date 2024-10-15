@@ -39,4 +39,5 @@ run_interactive(
     fixed_camera_id=None,
     show_traces=True,
     max_traces=1,
+    trace_color=[1.0, 1.0, 1.0, 1.0],
 )
