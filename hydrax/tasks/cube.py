@@ -18,7 +18,7 @@ class CubeRotation(Task):
             mj_model,
             planning_horizon=4,
             sim_steps_per_control_step=4,
-            trace_sites=[],
+            trace_sites=["cube_center", "if_tip", "mf_tip", "rf_tip", "th_tip"],
         )
 
         # Get sensor ids

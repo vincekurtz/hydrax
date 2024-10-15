@@ -1,4 +1,5 @@
 import time
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
@@ -19,6 +20,7 @@ def run_interactive(
     show_traces: bool = True,
     max_traces: int = 5,
     trace_width: float = 5.0,
+    trace_color: Sequence = [1.0, 1.0, 1.0, 0.1],
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -33,6 +35,7 @@ def run_interactive(
         show_traces: Whether to show traces for the site positions.
         max_traces: The maximum number of traces to show at once.
         trace_width: The width of the trace lines (in pixels).
+        trace_color: The RGBA color of the trace lines.
 
     Note: the actual control frequency may be slightly different than what is
     requested, because the control period must be an integer multiple of the
@@ -85,14 +88,17 @@ def run_interactive(
 
         # Set up rollout traces
         if show_traces:
-            for i in range(num_traces * controller.task.planning_horizon - 1):
+            num_trace_sites = len(controller.task.trace_site_ids)
+            for i in range(
+                num_trace_sites * num_traces * controller.task.planning_horizon
+            ):
                 mujoco.mjv_initGeom(
                     viewer.user_scn.geoms[i],
                     type=mujoco.mjtGeom.mjGEOM_LINE,
                     size=np.zeros(3),
                     pos=np.zeros(3),
                     mat=np.eye(3).flatten(),
-                    rgba=np.array([1.0, 1.0, 1.0, 0.1]),
+                    rgba=np.array(trace_color),
                 )
                 viewer.user_scn.ngeom += 1
 
@@ -114,17 +120,18 @@ def run_interactive(
 
             # Visualize the rollouts
             if show_traces:
-                for i in range(num_traces):
-                    for j in range(controller.task.planning_horizon - 1):
-                        mujoco.mjv_connector(
-                            viewer.user_scn.geoms[
-                                i * (controller.task.planning_horizon - 1) + j
-                            ],
-                            mujoco.mjtGeom.mjGEOM_LINE,
-                            trace_width,
-                            rollouts.trace_sites[i, j, 0],
-                            rollouts.trace_sites[i, j + 1, 0],
-                        )
+                ii = 0
+                for k in range(num_trace_sites):
+                    for i in range(num_traces):
+                        for j in range(controller.task.planning_horizon - 1):
+                            mujoco.mjv_connector(
+                                viewer.user_scn.geoms[ii],
+                                mujoco.mjtGeom.mjGEOM_LINE,
+                                trace_width,
+                                rollouts.trace_sites[i, j, k],
+                                rollouts.trace_sites[i, j + 1, k],
+                            )
+                            ii += 1
 
             # Step the simulation
             for i in range(sim_steps_per_replan):
