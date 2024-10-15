@@ -28,9 +28,9 @@ elif sys.argv[1] == "mppi":
     ctrl = MPPI(task, num_samples=1024, noise_level=0.2, temperature=0.001)
 elif sys.argv[1] == "cmaes":
     print("Running CMA-ES")
-    ctrl = Evosax(task, evosax.Sep_CMA_ES, num_samples=1024, elite_ratio=0.1)
+    ctrl = Evosax(task, evosax.Sep_CMA_ES, num_samples=1024, elite_ratio=0.5)
 else:
-    print("Usage: python leap_hand.py [ps|mppi]")
+    print("Usage: python leap_hand.py [ps|mppi|cmaes]")
     sys.exit(1)
 
 # Define the model used for simulation
