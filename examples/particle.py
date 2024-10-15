@@ -1,8 +1,8 @@
 import sys
 
+import evosax
 import mujoco
 import numpy as np
-from evosax import CMA_ES
 
 from hydrax import ROOT
 from hydrax.algs import MPPI, Evosax, PredictiveSampling
@@ -22,14 +22,39 @@ task = Particle()
 if len(sys.argv) == 1 or sys.argv[1] == "ps":
     print("Running predictive sampling")
     ctrl = PredictiveSampling(task, num_samples=16, noise_level=0.1)
+
 elif sys.argv[1] == "mppi":
     print("Running MPPI")
     ctrl = MPPI(task, num_samples=16, noise_level=0.3, temperature=0.01)
+
 elif sys.argv[1] == "cmaes":
     print("Running CMA-ES")
-    ctrl = Evosax(task, CMA_ES, num_samples=128, elite_ratio=0.5)
+    ctrl = Evosax(task, evosax.Sep_CMA_ES, num_samples=16, elite_ratio=0.5)
+
+elif sys.argv[1] == "samr":
+    print("Running genetic algorithm with Self-Adaptation Mutation Rate (SAMR)")
+    ctrl = Evosax(task, evosax.SAMR_GA, num_samples=16)
+
+elif sys.argv[1] == "de":
+    print("Running Differential Evolution (DE)")
+    ctrl = Evosax(task, evosax.DE, num_samples=16)
+
+elif sys.argv[1] == "gld":
+    print("Running Gradient-Less Descent (GLD)")
+    ctrl = Evosax(task, evosax.GLD, num_samples=16)
+
+elif sys.argv[1] == "rs":
+    print("Running uniform random search")
+    es_params = evosax.strategies.random.EvoParams(
+        range_min=-1.0,
+        range_max=1.0,
+    )
+    ctrl = Evosax(
+        task, evosax.RandomSearch, num_samples=16, es_params=es_params
+    )
+
 else:
-    print("Usage: python particle.py [ps|mppi|cmaes]")
+    print("Usage: python particle.py [ps|mppi|cmaes|samr|de|gld|rs]")
     sys.exit(1)
 
 # Define the model used for simulation
