@@ -105,9 +105,18 @@ class Evosax(SamplingBasedController):
         opt_state = self.strategy.tell(
             x, costs, params.opt_state, self.es_params
         )
-        best_controls = opt_state.best_member.reshape(
-            (self.task.planning_horizon - 1, self.task.model.nu)
+
+        best_idx = jnp.argmin(costs)
+        best_controls = rollouts.controls[best_idx]
+
+        # By default, opt_state stores the best member ever, rather than the
+        # best member from the current generation. We want to just use the best
+        # member from this generation, since the cost landscape is constantly
+        # changing.
+        opt_state = opt_state.replace(
+            best_member=x[best_idx], best_fitness=costs[best_idx]
         )
+
         return params.replace(controls=best_controls, opt_state=opt_state)
 
     def get_action(self, params: EvosaxParams, t: float) -> jax.Array:
