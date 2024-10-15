@@ -37,6 +37,6 @@ run_interactive(
     start_state,
     frequency=25,
     fixed_camera_id=None,
-    show_traces=False,
+    show_traces=True,
     max_traces=1,
 )

@@ -85,7 +85,10 @@ def run_interactive(
 
         # Set up rollout traces
         if show_traces:
-            for i in range(num_traces * controller.task.planning_horizon - 1):
+            num_trace_sites = len(controller.task.trace_site_ids)
+            for i in range(
+                num_trace_sites * num_traces * controller.task.planning_horizon
+            ):
                 mujoco.mjv_initGeom(
                     viewer.user_scn.geoms[i],
                     type=mujoco.mjtGeom.mjGEOM_LINE,
@@ -114,17 +117,18 @@ def run_interactive(
 
             # Visualize the rollouts
             if show_traces:
-                for i in range(num_traces):
-                    for j in range(controller.task.planning_horizon - 1):
-                        mujoco.mjv_connector(
-                            viewer.user_scn.geoms[
-                                i * (controller.task.planning_horizon - 1) + j
-                            ],
-                            mujoco.mjtGeom.mjGEOM_LINE,
-                            trace_width,
-                            rollouts.trace_sites[i, j, 0],
-                            rollouts.trace_sites[i, j + 1, 0],
-                        )
+                ii = 0
+                for k in range(num_trace_sites):
+                    for i in range(num_traces):
+                        for j in range(controller.task.planning_horizon - 1):
+                            mujoco.mjv_connector(
+                                viewer.user_scn.geoms[ii],
+                                mujoco.mjtGeom.mjGEOM_LINE,
+                                trace_width,
+                                rollouts.trace_sites[i, j, k],
+                                rollouts.trace_sites[i, j + 1, k],
+                            )
+                            ii += 1
 
             # Step the simulation
             for i in range(sim_steps_per_replan):

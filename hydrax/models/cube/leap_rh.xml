@@ -242,6 +242,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
                 type="box"/> -->
 
                 <geom name="if_tip" class="tip" />
+                <site name="if_tip" pos="0 -0.05 0.015" group="4"/>
               </body>
 
             </body>
@@ -308,6 +309,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
                 type="box"/> -->
 
                 <geom name="mf_tip" class="tip" />
+                <site name="mf_tip" pos="0 -0.05 0.015" group="4"/>
               </body>
             </body>
           </body>
@@ -373,6 +375,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
                 type="box"/> -->
 
                 <geom name="rf_tip" class="tip" />
+                <site name="rf_tip" pos="0 -0.05 0.015" group="4"/>
               </body>
             </body>
           </body>
@@ -432,6 +435,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
                 -0.0115" type="box"/> -->
 
                 <geom name="th_tip" class="thumb_tip" />
+                <site name="th_tip" pos="0 -0.06 -0.015" group="4"/>
               </body>
             </body>
           </body>
