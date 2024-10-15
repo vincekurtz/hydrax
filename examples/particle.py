@@ -2,9 +2,10 @@ import sys
 
 import mujoco
 import numpy as np
+from evosax import CMA_ES
 
 from hydrax import ROOT
-from hydrax.algs import CMAES, MPPI, PredictiveSampling
+from hydrax.algs import MPPI, Evosax, PredictiveSampling
 from hydrax.mpc import run_interactive
 from hydrax.tasks.particle import Particle
 
@@ -26,7 +27,7 @@ elif sys.argv[1] == "mppi":
     ctrl = MPPI(task, num_samples=16, noise_level=0.3, temperature=0.01)
 elif sys.argv[1] == "cmaes":
     print("Running CMA-ES")
-    ctrl = CMAES(task, num_samples=128, elite_ratio=0.5)
+    ctrl = Evosax(task, CMA_ES, num_samples=128, elite_ratio=0.5)
 else:
     print("Usage: python particle.py [ps|mppi|cmaes]")
     sys.exit(1)

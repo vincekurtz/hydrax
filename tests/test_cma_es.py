@@ -1,16 +1,17 @@
+import evosax
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from mujoco import mjx
 
-from hydrax.algs.cma_es import CMAES
+from hydrax.algs.evosax import Evosax
 from hydrax.tasks.pendulum import Pendulum
 
 
 def test_cmaes() -> None:
     """Test the CMAES algorithm."""
     task = Pendulum()
-    ctrl = CMAES(task, num_samples=32)
+    ctrl = Evosax(task, evosax.CMA_ES, num_samples=32)
 
     # Initialize the policy parameters
     params = ctrl.init_params()
@@ -37,7 +38,7 @@ def test_open_loop() -> None:
     """Use CMA-ES for open-loop optimization."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = CMAES(task, num_samples=32, elite_ratio=0.1)
+    opt = Evosax(task, evosax.CMA_ES, num_samples=32, elite_ratio=0.1)
     jit_opt = jax.jit(opt.optimize)
 
     # Initialize the system state and policy parameters
@@ -81,5 +82,5 @@ def test_open_loop() -> None:
 
 
 if __name__ == "__main__":
-    test_cmaes()
+    # test_cmaes()
     test_open_loop()
