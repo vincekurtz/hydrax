@@ -82,5 +82,5 @@ def test_open_loop() -> None:
 
 
 if __name__ == "__main__":
-    # test_cmaes()
+    test_cmaes()
     test_open_loop()

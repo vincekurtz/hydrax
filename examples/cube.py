@@ -1,15 +1,19 @@
 import sys
 
+import evosax
 import mujoco
 import numpy as np
 
 from hydrax import ROOT
-from hydrax.algs import MPPI, PredictiveSampling
+from hydrax.algs import MPPI, Evosax, PredictiveSampling
 from hydrax.mpc import run_interactive
 from hydrax.tasks.cube import CubeRotation
 
 """
-Run an interactive simulation of the walker task.
+Run an interactive simulation of the cube rotation task.
+
+Double click on the floating target cube, then change the goal orientation with
+[ctrl + left click].
 """
 
 # Define the task (cost and dynamics)
@@ -22,6 +26,9 @@ if len(sys.argv) == 1 or sys.argv[1] == "ps":
 elif sys.argv[1] == "mppi":
     print("Running MPPI")
     ctrl = MPPI(task, num_samples=1024, noise_level=0.2, temperature=0.001)
+elif sys.argv[1] == "cmaes":
+    print("Running CMA-ES")
+    ctrl = Evosax(task, evosax.Sep_CMA_ES, num_samples=1024, elite_ratio=0.1)
 else:
     print("Usage: python leap_hand.py [ps|mppi]")
     sys.exit(1)
