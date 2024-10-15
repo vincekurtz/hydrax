@@ -24,6 +24,7 @@ dependencies = [
     "matplotlib>=3.8.3",
     "mujoco>=3.2.3",
     "mujoco-mjx>=3.2.3",
+    "evosax>=0.1.6",
 ]
 
 [tool.ruff]
@@ -79,3 +80,6 @@ docstring-code-line-length = "dynamic"
 testpaths = [
     "tests",
 ]
+
+[tool.setuptools]
+packages = ["hydrax"]
