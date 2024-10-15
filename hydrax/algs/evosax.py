@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Any, Tuple
 
 import evosax
 import jax
@@ -8,45 +8,63 @@ from flax.struct import dataclass
 from hydrax.alg_base import SamplingBasedController, Trajectory
 from hydrax.task_base import Task
 
+# Generic types for evosax
+EvoParams = Any
+EvoState = Any
+
 
 @dataclass
-class CMAESParams:
-    """Policy parameters for CMA-ES.
+class EvosaxParams:
+    """Policy parameters for evosax optimizers.
 
     Attributes:
         controls: The latest control sequence, U = [u₀, u₁, ..., ].
-        opt_state: The state of the CMA-ES optimizer (covariance, etc.).
+        opt_state: The state of the evosax optimizer (covariance, etc.).
         rng: The pseudo-random number generator key.
     """
 
     controls: jax.Array
-    opt_state: evosax.strategies.cma_es.EvoState
+    opt_state: EvoState
     rng: jax.Array
 
 
-class CMAES(SamplingBasedController):
-    """Covariance Matrix Adaptation Evolution Strategy (CMA-ES) controller."""
+class Evosax(SamplingBasedController):
+    """A generic controller that allows us to use any evosax optimizer.
 
-    def __init__(self, task: Task, num_samples: int, elite_ratio: float = 0.5):
+    See https://github.com/RobertTLange/evosax/ for details and a list of
+    available optimizers.
+    """
+
+    def __init__(
+        self,
+        task: Task,
+        optimizer: evosax.Strategy,
+        num_samples: int,
+        es_params: EvoParams = None,
+        **kwargs,
+    ):
         """Initialize the controller.
 
         Args:
             task: The dynamics and cost for the system we want to control.
+            optimizer: The evosax optimizer to use.
             num_samples: The number of control tapes to sample.
-            elite_ratio: The ratio of top-performing samples to keep.
+            es_params: The parameters for the evosax optimizer.
+            **kwargs: Additional keyword arguments for the optimizer.
         """
         super().__init__(task)
 
-        self.strategy = evosax.CMA_ES(
+        self.strategy = optimizer(
             popsize=num_samples,
             num_dims=task.model.nu * (task.planning_horizon - 1),
-            elite_ratio=elite_ratio,
+            **kwargs,
         )
 
-        # TODO: consider exposing these evolution strategy parameters
-        self.es_params = self.strategy.default_params
+        if es_params is None:
+            es_params = self.strategy.default_params
+        self.es_params = es_params
 
-    def init_params(self, seed: int = 0) -> CMAESParams:
+    def init_params(self, seed: int = 0) -> EvosaxParams:
         """Initialize the policy parameters."""
         rng = jax.random.key(seed)
         rng, init_rng = jax.random.split(rng)
@@ -54,11 +72,11 @@ class CMAES(SamplingBasedController):
             (self.task.planning_horizon - 1, self.task.model.nu)
         )
         opt_state = self.strategy.initialize(init_rng, self.es_params)
-        return CMAESParams(controls=controls, opt_state=opt_state, rng=rng)
+        return EvosaxParams(controls=controls, opt_state=opt_state, rng=rng)
 
     def sample_controls(
-        self, params: CMAESParams
-    ) -> Tuple[jax.Array, CMAESParams]:
+        self, params: EvosaxParams
+    ) -> Tuple[jax.Array, EvosaxParams]:
         """Sample control sequences from the proposal distribution."""
         rng, sample_rng = jax.random.split(params.rng)
         x, opt_state = self.strategy.ask(
@@ -79,20 +97,29 @@ class CMAES(SamplingBasedController):
         return controls, params.replace(opt_state=opt_state, rng=rng)
 
     def update_params(
-        self, params: CMAESParams, rollouts: Trajectory
-    ) -> CMAESParams:
+        self, params: EvosaxParams, rollouts: Trajectory
+    ) -> EvosaxParams:
         """Update the policy parameters based on the rollouts."""
         costs = jnp.sum(rollouts.costs, axis=1)
         x = jnp.reshape(rollouts.controls, (self.strategy.popsize, -1))
         opt_state = self.strategy.tell(
             x, costs, params.opt_state, self.es_params
         )
-        best_controls = opt_state.best_member.reshape(
-            (self.task.planning_horizon - 1, self.task.model.nu)
+
+        best_idx = jnp.argmin(costs)
+        best_controls = rollouts.controls[best_idx]
+
+        # By default, opt_state stores the best member ever, rather than the
+        # best member from the current generation. We want to just use the best
+        # member from this generation, since the cost landscape is constantly
+        # changing.
+        opt_state = opt_state.replace(
+            best_member=x[best_idx], best_fitness=costs[best_idx]
         )
+
         return params.replace(controls=best_controls, opt_state=opt_state)
 
-    def get_action(self, params: CMAESParams, t: float) -> jax.Array:
+    def get_action(self, params: EvosaxParams, t: float) -> jax.Array:
         """Get the control action for the current time step, zero order hold."""
         idx_float = t / self.task.dt  # zero order hold
         idx = jnp.floor(idx_float).astype(jnp.int32)
