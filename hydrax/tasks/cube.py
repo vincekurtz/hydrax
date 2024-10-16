@@ -67,3 +67,13 @@ class CubeRotation(Task):
         """The terminal cost ϕ(x_T)."""
         position_err = self._get_cube_position_err(state)
         return 100 * jnp.sum(jnp.square(position_err))
+
+    def domain_randomize_data(
+        self, data: mjx.Data, rng: jax.Array, n: int
+    ) -> mjx.Data:
+        """Randomly shift the measured configurations."""
+        batch_data = jax.vmap(lambda _, x: x, in_axes=(0, None))(
+            jnp.arange(n), data
+        )
+        shift = 0.005 * jax.random.normal(rng, (n, self.model.nq))
+        return batch_data.tree_replace({"qpos": data.qpos + shift})
