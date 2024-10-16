@@ -5,7 +5,7 @@ import mujoco
 import numpy as np
 
 from hydrax import ROOT
-from hydrax.algs import MPPI, Evosax, PredictiveSampling
+from hydrax.algs import CEM, MPPI, Evosax, PredictiveSampling
 from hydrax.mpc import run_interactive
 from hydrax.tasks.cube import CubeRotation
 
@@ -26,11 +26,16 @@ if len(sys.argv) == 1 or sys.argv[1] == "ps":
 elif sys.argv[1] == "mppi":
     print("Running MPPI")
     ctrl = MPPI(task, num_samples=1024, noise_level=0.2, temperature=0.001)
+elif sys.argv[1] == "cem":
+    print("Running CEM")
+    ctrl = CEM(
+        task, num_samples=1024, num_elites=5, sigma_start=0.5, sigma_min=0.5
+    )
 elif sys.argv[1] == "cmaes":
     print("Running CMA-ES")
     ctrl = Evosax(task, evosax.Sep_CMA_ES, num_samples=1024, elite_ratio=0.5)
 else:
-    print("Usage: python cube.py [ps|mppi|cmaes]")
+    print("Usage: python cube.py [ps|mppi|cem|cmaes]")
     sys.exit(1)
 
 # Define the model used for simulation
