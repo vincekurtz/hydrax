@@ -23,7 +23,7 @@ task = CubeRotation()
 if len(sys.argv) == 1 or sys.argv[1] == "ps":
     print("Running predictive sampling")
     ctrl = PredictiveSampling(
-        task, num_samples=128, noise_level=0.2, num_randomizations=8
+        task, num_samples=32, noise_level=0.2, num_randomizations=32
     )
 elif sys.argv[1] == "mppi":
     print("Running MPPI")
