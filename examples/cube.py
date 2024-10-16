@@ -30,7 +30,7 @@ elif sys.argv[1] == "cmaes":
     print("Running CMA-ES")
     ctrl = Evosax(task, evosax.Sep_CMA_ES, num_samples=1024, elite_ratio=0.5)
 else:
-    print("Usage: python leap_hand.py [ps|mppi|cmaes]")
+    print("Usage: python cube.py [ps|mppi|cmaes]")
     sys.exit(1)
 
 # Define the model used for simulation
