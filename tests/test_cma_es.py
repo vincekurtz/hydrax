@@ -24,11 +24,17 @@ def test_cmaes() -> None:
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
-    rollouts = ctrl.eval_rollouts(state, controls)
+    rollouts = ctrl.eval_rollouts(task.model, state, controls)
     assert rollouts.costs.shape == (32, 20)
 
+    # Roll out the control sequences with domain randomization
+    batch_state = task.domain_randomize_data(state, params.rng, 1)
+    batch_rollouts = jax.vmap(
+        ctrl.eval_rollouts, in_axes=(ctrl.randomized_axes, 0, None)
+    )(ctrl.model, batch_state, controls)
+
     # Update the policy parameters
-    params = ctrl.update_params(params, rollouts)
+    params = ctrl.update_params(params, batch_rollouts)
     assert params.controls.shape == (19, 1)
     assert jnp.all(params.controls != jnp.zeros((19, 1)))
     assert params.opt_state.best_fitness > 0.0
@@ -52,7 +58,9 @@ def test_open_loop() -> None:
     # Pick the best rollout
     best_cost = params.opt_state.best_fitness
     best_ctrl = params.controls
-    final_rollout = jax.jit(opt.eval_rollouts)(state, best_ctrl[None])
+    final_rollout = jax.jit(opt.eval_rollouts)(
+        task.model, state, best_ctrl[None]
+    )
     assert jnp.allclose(best_cost, jnp.sum(final_rollout.costs[0]))
 
     if __name__ == "__main__":

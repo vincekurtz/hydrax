@@ -24,7 +24,7 @@ def test_predictive_sampling() -> None:
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
-    rollouts = opt.eval_rollouts(state, controls)
+    rollouts = opt.eval_rollouts(task.model, state, controls)
 
     assert rollouts.costs.shape == (
         opt.num_samples + 1,
@@ -48,7 +48,8 @@ def test_predictive_sampling() -> None:
     )
 
     # Pick the best rollout
-    updated_params = opt.update_params(new_params, rollouts)
+    batch_rollouts = jax.tree.map(lambda x: x[None], rollouts)
+    updated_params = opt.update_params(new_params, batch_rollouts)
     assert updated_params.mean.shape == (task.planning_horizon - 1, 1)
     assert jnp.all(updated_params.mean != new_params.mean)
 
@@ -68,11 +69,11 @@ def test_open_loop() -> None:
         # Do an optimization step
         params, rollouts = jit_opt(state, params)
 
-    # Pick the best rollout
-    total_costs = jnp.sum(rollouts.costs, axis=1)
+    # Pick the best rollout (first axis is for domain randomization, unused)
+    total_costs = jnp.sum(rollouts.costs[0], axis=1)
     best_idx = jnp.argmin(total_costs)
-    best_obs = rollouts.observations[best_idx]
-    best_ctrl = rollouts.controls[best_idx]
+    best_obs = rollouts.observations[0, best_idx]
+    best_ctrl = rollouts.controls[0, best_idx]
     assert total_costs[best_idx] <= 9.0
 
     if __name__ == "__main__":
