@@ -43,20 +43,26 @@ class SamplingBasedController(ABC):
             seed: The random seed for domain randomization.
         """
         self.task = task
-        self.num_randomizations = num_randomizations
+        self.num_randomizations = max(num_randomizations, 1)
 
-        # Make the randomized models
-        rng = jax.random.key(seed)
-        rng, subrng = jax.random.split(rng)
-        subrngs = jax.random.split(subrng, num_randomizations)
-        randomizations = jax.vmap(self.task.domain_randomize_model)(subrngs)
-        self.model = self.task.model.tree_replace(randomizations)
+        if num_randomizations > 1:
+            # Make the randomized models
+            rng = jax.random.key(seed)
+            rng, subrng = jax.random.split(rng)
+            subrngs = jax.random.split(subrng, num_randomizations)
+            randomizations = jax.vmap(self.task.domain_randomize_model)(subrngs)
+            self.model = self.task.model.tree_replace(randomizations)
 
-        # Keep track of which elements of the model have randomization
-        self.randomized_axes = jax.tree.map(lambda x: None, self.task.model)
-        self.randomized_axes = self.randomized_axes.tree_replace(
-            {key: 0 for key in randomizations.keys()}
-        )
+            # Keep track of which elements of the model have randomization
+            self.randomized_axes = jax.tree.map(lambda x: None, self.task.model)
+            self.randomized_axes = self.randomized_axes.tree_replace(
+                {key: 0 for key in randomizations.keys()}
+            )
+
+        else:
+            # Disable domain randomization if only one model is used
+            self.model = task.model
+            self.randomized_axes = None
 
     def optimize(self, state: mjx.Data, params: Any) -> Tuple[Any, Trajectory]:
         """Perform an optimization step to update the policy parameters.
@@ -73,11 +79,18 @@ class SamplingBasedController(ABC):
         controls, params = self.sample_controls(params)
         controls = jnp.clip(controls, self.task.u_min, self.task.u_max)
 
-        # Set the initial state for each rollout
+        # Set the initial state for each rollout. Only apply domain
+        # domain randomization if we have multiple models
         rng, state_rng = jax.random.split(params.rng)
-        states = self.task.domain_randomize_data(
-            state, state_rng, self.num_randomizations
-        )
+        if self.num_randomizations > 1:
+            states = self.task.domain_randomize_data(
+                state, state_rng, self.num_randomizations
+            )
+        else:
+            # no randomization here, just makes `states` the correct shape
+            states = Task.domain_randomize_data(
+                self.task, state, state_rng, self.num_randomizations
+            )
         params = params.replace(rng=rng)
 
         # Apply the control sequences, parallelized over both rollouts and

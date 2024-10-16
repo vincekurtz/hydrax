@@ -16,12 +16,16 @@ def test_domain_randomization() -> None:
     )
 
     # The models should have different numbers of randomizations
-    assert ctrl1.model.actuator_gainprm.shape[0] == 1
-    assert ctrl2.model.actuator_gainprm.shape[0] == 2
+    original_shape = task.model.actuator_gainprm.shape
+    assert ctrl1.model.actuator_gainprm.shape == original_shape
+    assert ctrl2.model.actuator_gainprm.shape == (2, *original_shape)
 
     # The randomized parameters should be different from the original model
     assert not jnp.allclose(
         ctrl2.model.actuator_gainprm[0], task.model.actuator_gainprm
+    )
+    assert jnp.allclose(
+        ctrl1.model.actuator_gainprm, task.model.actuator_gainprm
     )
 
 
