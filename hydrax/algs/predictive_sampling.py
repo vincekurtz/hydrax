@@ -72,9 +72,10 @@ class PredictiveSampling(SamplingBasedController):
     def update_params(self, params: PSParams, rollouts: Trajectory) -> PSParams:
         """Update the policy parameters by choosing the lowest-cost rollout."""
         costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
+        controls = rollouts.controls[0]  # identical over randomizations
         costs = jnp.sum(costs, axis=1)  # sum over time steps
         best_idx = jnp.argmin(costs)
-        mean = rollouts.controls[0, best_idx]
+        mean = controls[best_idx]
         return params.replace(mean=mean)
 
     def get_action(self, params: PSParams, t: float) -> jax.Array:

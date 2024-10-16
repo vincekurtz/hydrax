@@ -114,9 +114,9 @@ def test_opt() -> None:
     # Check the updated parameters
     assert params.mean.shape == (4, 2)
 
-    print(params)
-
-    print(params.mean.shape)
+    # Check that the rollout costs are different across different models
+    costs = jnp.sum(rollouts.costs, axis=(1, 2))
+    assert not jnp.allclose(costs[0], costs[1])
 
 
 if __name__ == "__main__":
