@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Dict, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -113,3 +113,41 @@ class Task(ABC):
             return jnp.zeros((0, 3))
 
         return state.site_xpos[self.trace_site_ids]
+
+    def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
+        """Generate randomized model parameters for domain randomization.
+
+        Returns a dictionary of randomized model parameters, that can be used
+        with `mjx.Model.tree_replace` to create a new randomized model.
+
+        For example, we might set the `model.geom_friction` values by returning
+        `{"geom_friction": new_frictions, ...}`.
+
+        The default behavior is to return an empty dictionary, which means no
+        randomization is applied.
+
+        Args:
+            rng: A random number generator key.
+
+        Returns:
+            A dictionary of randomized model parameters.
+        """
+        return {}
+
+    def domain_randomize_data(
+        self, data: mjx.Data, rng: jax.Array, n: int
+    ) -> mjx.Data:
+        """Generate a batch of data to apply to the domain randomized models.
+
+        This is the place where we could randomize the initial state and other
+        `data` elements. By default, we just return the input data unchanged.
+
+        Args:
+            data: The base data.
+            rng: A random number generator key.
+            n: The number of copies of the data to generate.
+
+        Returns:
+            The batched data, which can then be `vmap`-ed over the first axis.
+        """
+        return jax.vmap(lambda _, x: x, in_axes=(0, None))(jnp.arange(n), data)
