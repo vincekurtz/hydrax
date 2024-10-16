@@ -50,12 +50,9 @@ class SamplingBasedController(ABC):
         rng, subrng = jax.random.split(rng)
         subrngs = jax.random.split(subrng, num_randomizations)
         randomizations = jax.vmap(self.task.domain_randomize_model)(subrngs)
-
-        # TODO: don't randomize if num_randomizations == 1
-        # or alternatively, always have the first model be the original
         self.model = self.task.model.tree_replace(randomizations)
 
-        # Keep track of which elements of the model have domain randomization
+        # Keep track of which elements of the model have randomization
         self.randomized_axes = jax.tree.map(lambda x: None, self.task.model)
         self.randomized_axes = self.randomized_axes.tree_replace(
             {key: 0 for key in randomizations.keys()}
