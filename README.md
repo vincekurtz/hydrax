@@ -4,6 +4,8 @@ Sampling-based model predictive control on GPU with JAX and
 [MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html).
 
 ![A planar walker running MPPI](img/walker.gif)
+&nbsp;&nbsp;&nbsp;
+![A robot hand rotating a cube](img/cube.gif)
 
 ## About
 
@@ -99,8 +101,8 @@ class MyNewTask(Task):
 
 
 The dynamics ($f$) are specified by a `mujoco.MjModel` that is passed to the
-constructor. Other constructor arguments specify the planning horizon $T$, any
-control limits, and other details.
+constructor. Other constructor arguments specify the planning horizon $T$ and
+other details.
 
 For the cost, simply implement the `running_cost` ($\ell$) and
 `terminal_cost` ($\phi$) methods.
