@@ -21,7 +21,9 @@ task = Particle()
 # Set the controller based on command-line arguments
 if len(sys.argv) == 1 or sys.argv[1] == "ps":
     print("Running predictive sampling")
-    ctrl = PredictiveSampling(task, num_samples=16, noise_level=0.1)
+    ctrl = PredictiveSampling(
+        task, num_samples=16, noise_level=0.1, num_randomizations=10
+    )
 
 elif sys.argv[1] == "mppi":
     print("Running MPPI")

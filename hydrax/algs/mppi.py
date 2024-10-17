@@ -36,6 +36,8 @@ class MPPI(SamplingBasedController):
         num_samples: int,
         noise_level: float,
         temperature: float,
+        num_randomizations: int = 1,
+        seed: int = 0,
     ):
         """Initialize the controller.
 
@@ -45,8 +47,10 @@ class MPPI(SamplingBasedController):
             noise_level: The scale of Gaussian noise to add to sampled controls.
             temperature: The temperature parameter λ. Higher values take a more
                          even average over the samples.
+            num_randomizations: The number of domain randomizations to use.
+            seed: The random seed for domain randomization
         """
-        super().__init__(task)
+        super().__init__(task, num_randomizations, seed)
         self.noise_level = noise_level
         self.num_samples = num_samples
         self.temperature = temperature
@@ -77,10 +81,12 @@ class MPPI(SamplingBasedController):
         self, params: MPPIParams, rollouts: Trajectory
     ) -> MPPIParams:
         """Update the mean with an exponentially weighted average."""
-        costs = jnp.sum(rollouts.costs, axis=1)
+        costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
+        controls = rollouts.controls[0]  # identical over randomizations
+        costs = jnp.sum(costs, axis=1)
         # N.B. jax.nn.softmax takes care of details like baseline subtraction.
         weights = jax.nn.softmax(-costs / self.temperature, axis=0)
-        mean = jnp.sum(weights[:, None, None] * rollouts.controls, axis=0)
+        mean = jnp.sum(weights[:, None, None] * controls, axis=0)
         return params.replace(mean=mean)
 
     def get_action(self, params: MPPIParams, t: float) -> jax.Array:

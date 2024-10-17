@@ -34,13 +34,34 @@ class Trajectory:
 class SamplingBasedController(ABC):
     """An abstract sampling-based MPC algorithm interface."""
 
-    def __init__(self, task: Task):
+    def __init__(self, task: Task, num_randomizations: int, seed: int):
         """Initialize the MPC controller.
 
         Args:
             task: The task instance defining the dynamics and costs.
+            num_randomizations: The number of domain randomizations to use.
+            seed: The random seed for domain randomization.
         """
         self.task = task
+        self.num_randomizations = max(num_randomizations, 1)
+
+        # Use a single model (no domain randomization) by default
+        self.model = task.model
+        self.randomized_axes = None
+
+        if self.num_randomizations > 1:
+            # Make domain randomized models
+            rng = jax.random.key(seed)
+            rng, subrng = jax.random.split(rng)
+            subrngs = jax.random.split(subrng, num_randomizations)
+            randomizations = jax.vmap(self.task.domain_randomize_model)(subrngs)
+            self.model = self.task.model.tree_replace(randomizations)
+
+            # Keep track of which elements of the model have randomization
+            self.randomized_axes = jax.tree.map(lambda x: None, self.task.model)
+            self.randomized_axes = self.randomized_axes.tree_replace(
+                {key: 0 for key in randomizations.keys()}
+            )
 
     def optimize(self, state: mjx.Data, params: Any) -> Tuple[Any, Trajectory]:
         """Perform an optimization step to update the policy parameters.
@@ -53,17 +74,43 @@ class SamplingBasedController(ABC):
             Updated policy parameters
             Rollouts used to update the parameters
         """
+        # Sample random control sequences
         controls, params = self.sample_controls(params)
         controls = jnp.clip(controls, self.task.u_min, self.task.u_max)
-        rollouts = self.eval_rollouts(state, controls)
+
+        # Set the initial state for each rollout.
+        states = jax.vmap(lambda _, x: x, in_axes=(0, None))(
+            jnp.arange(self.num_randomizations), state
+        )
+
+        if self.num_randomizations > 1:
+            # Randomize the initial states for each domain randomization
+            rng, subrng = jax.random.split(params.rng)
+            subrngs = jax.random.split(subrng, self.num_randomizations)
+            randomizations = jax.vmap(self.task.domain_randomize_data)(
+                states, subrngs
+            )
+            states = states.tree_replace(randomizations)
+            params = params.replace(rng=rng)
+
+        # Apply the control sequences, parallelized over both rollouts and
+        # domain randomizations.
+        rollouts = jax.vmap(
+            self.eval_rollouts, in_axes=(self.randomized_axes, 0, None)
+        )(self.model, states, controls)
+
+        # Update the policy parameters based on the rollout costs
         params = self.update_params(params, rollouts)
         return params, rollouts
 
-    @partial(jax.vmap, in_axes=(None, None, 0))
-    def eval_rollouts(self, state: mjx.Data, controls: jax.Array) -> Trajectory:
+    @partial(jax.vmap, in_axes=(None, None, None, 0))
+    def eval_rollouts(
+        self, model: mjx.Model, state: mjx.Data, controls: jax.Array
+    ) -> Trajectory:
         """Rollout control sequences (in parallel) and compute the costs.
 
         Args:
+            model: The mujoco dynamics model to use.
             state: The initial state x₀.
             controls: The control sequences, size (num rollouts, horizon - 1).
 
@@ -75,7 +122,7 @@ class SamplingBasedController(ABC):
             x: mjx.Data, u: jax.Array
         ) -> Tuple[mjx.Data, Tuple[jax.Array, jax.Array]]:
             """Compute the cost and observation, then advance the state."""
-            x = mjx.forward(self.task.model, x)  # compute site positions
+            x = mjx.forward(model, x)  # compute site positions
             cost = self.task.dt * self.task.running_cost(x, u)
             obs = self.task.get_obs(x)
             sites = self.task.get_trace_sites(x)
@@ -84,7 +131,7 @@ class SamplingBasedController(ABC):
             x = jax.lax.fori_loop(
                 0,
                 self.task.sim_steps_per_control_step,
-                lambda _, x: mjx.step(self.task.model, x),
+                lambda _, x: mjx.step(model, x),
                 x.replace(ctrl=u),
             )
 

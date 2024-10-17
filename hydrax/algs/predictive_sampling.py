@@ -24,15 +24,24 @@ class PSParams:
 class PredictiveSampling(SamplingBasedController):
     """A simple implementation of https://arxiv.org/abs/2212.00541."""
 
-    def __init__(self, task: Task, num_samples: int, noise_level: float):
+    def __init__(
+        self,
+        task: Task,
+        num_samples: int,
+        noise_level: float,
+        num_randomizations: int = 1,
+        seed: int = 0,
+    ):
         """Initialize the controller.
 
         Args:
             task: The dynamics and cost for the system we want to control.
             num_samples: The number of control tapes to sample.
             noise_level: The scale of Gaussian noise to add to sampled controls.
+            num_randomizations: The number of domain randomizations to use.
+            seed: The random seed for domain randomization
         """
-        super().__init__(task)
+        super().__init__(task, num_randomizations, seed)
         self.noise_level = noise_level
         self.num_samples = num_samples
 
@@ -62,9 +71,11 @@ class PredictiveSampling(SamplingBasedController):
 
     def update_params(self, params: PSParams, rollouts: Trajectory) -> PSParams:
         """Update the policy parameters by choosing the lowest-cost rollout."""
-        costs = jnp.sum(rollouts.costs, axis=1)
+        costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
+        controls = rollouts.controls[0]  # identical over randomizations
+        costs = jnp.sum(costs, axis=1)  # sum over time steps
         best_idx = jnp.argmin(costs)
-        mean = rollouts.controls[best_idx]
+        mean = controls[best_idx]
         return params.replace(mean=mean)
 
     def get_action(self, params: PSParams, t: float) -> jax.Array:

@@ -161,3 +161,56 @@ we assume the PRNG key is stored as one of parameters $\theta$. This is why
 $U^{(1:N)}$.
 
 For some examples, take a look at [`hydrax.algs`](hydrax/algs).
+
+## Domain Randomization
+
+One benefit of GPU-based simulation is the ability to roll out trajectories with
+different model parameters in parallel. Such domain randomization can improve
+robustness and help reduce the sim-to-real gap.
+
+Hydrax provides tools to make online domain randomization easy. In particular,
+you can add domain randomization to any task by overriding the
+`domain_randomize_model` and `domain_randomize_data` methods of a given
+[`Task`](hydrax/task_base.py). For example:
+
+```python
+class MyDomainRandomizedTask(Task):
+    ...
+
+    def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
+        """Randomize the friction coefficients."""
+        n_geoms = self.model.geom_friction.shape[0]
+        multiplier = jax.random.uniform(rng, (n_geoms,), minval=0.5, maxval=2.0)
+        new_frictions = self.model.geom_friction.at[:, 0].set(
+            self.model.geom_friction[:, 0] * multiplier
+        )
+        return {"geom_friction": new_frictions}
+
+    def domain_randomize_data(self, data: mjx.Data, rng: jax.Array) -> Dict[str, jax.Array]:
+        """Randomly shift the measured configurations."""
+        shift = 0.005 * jax.random.normal(rng, (self.model.nq,))
+        return {"qpos": data.qpos + shift}
+```
+These methods return a dictionary of randomized parameters, given a particular
+random seed (`rng`). Hydrax takes care of the details of applying these
+parameters to the model and data, and performing rollouts in parallel.
+
+To use a domain randomized task, you'll need to tell the planner how many random
+models to use with the `num_randomizations` flag. For example,
+```python
+task = MyDomainRandomizedTask(...)
+ctrl = PredictiveSampling(
+    task,
+    num_samples=32,
+    noise_level=0.1,
+    num_randomizations=16,
+)
+```
+sets up a predictive sampling controller that rolls out 32 control sequences
+across 16 domain randomized models.
+
+The resulting [`Trajectory`](hydrax/alg_base.py) rollouts will have
+dimensions `(num_randomizations, num_samples, num_time_steps, ...)`. Different
+`SamplingBasedController` implementations can use this rollout data in different
+ways, though the typical approach is to simply take the average cost over the
+randomizations.

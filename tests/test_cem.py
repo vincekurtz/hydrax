@@ -25,7 +25,9 @@ def test_open_loop() -> None:
         params, _ = jit_opt(state, params)
 
     # Roll out the solution, check that it's good enough
-    final_rollout = jax.jit(opt.eval_rollouts)(state, params.mean[None])
+    final_rollout = jax.jit(opt.eval_rollouts)(
+        task.model, state, params.mean[None]
+    )
     total_cost = jnp.sum(final_rollout.costs[0])
     assert total_cost <= 9.0
     assert jnp.all(params.cov >= opt.sigma_min)
