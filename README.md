@@ -1,6 +1,7 @@
 # Hydrax
 
-Sampling-based model predictive control on GPU with JAX and
+Sampling-based model predictive control on GPU with 
+[JAX](https://jax.readthedocs.io/) and
 [MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html).
 
 ![A planar walker running MPPI](img/walker.gif)
@@ -9,13 +10,19 @@ Sampling-based model predictive control on GPU with JAX and
 
 ## About
 
-Implements several sampling-based MPC algorithms, including
-[predictive sampling](https://arxiv.org/abs/2212.00541) and
-[MPPI](https://arxiv.org/abs/1707.02342), on GPU.
-
-This software is heavily inspired by
+Hydrax implements various sampling-based MPC algorithms on GPU. It is heavily inspired by
 [MJPC](https://github.com/google-deepmind/mujoco_mpc), but focuses exclusively
-on sampling-based algorithms, and runs on hardware accelerators via JAX and MJX.
+on sampling-based algorithms, runs on hardware accelerators via JAX and MJX, and
+includes support for [online domain randomization](#domain-randomization).
+
+Available methods:
+
+| Algorithm | Description | Import |
+| --- | ---  | --- |
+| [Predictive sampling](https://arxiv.org/abs/2212.00541) | Take the lowest-cost rollout at each iteration. | [`hydrax.algs.PredictiveSampling`](hydrax/algs/predictive_sampling.py) |
+| [MPPI](https://arxiv.org/abs/1707.02342) | Take an exponentially weighted average of the rollouts. | [`hydrax.algs.MPPI`](hydrax/algs/mppi.py) |
+| [Cross Entropy Method](https://en.wikipedia.org/wiki/Cross-entropy_method) | Fit a Gaussian distribution to the `n` best "elite" rollouts. | [`hydrax.algs.CEM`](hydrax/algs/cem.py) |
+| [Evosax](https://github.com/RobertTLange/evosax/) | Any of the 30+ evolution strategies implemented in `evosax`. Includes CMA-ES, differential evolution, and many more. | [`hydrax.algs.Evosax`](hydrax/algs.evosax.py) |
 
 ## Setup (conda)
 
@@ -50,7 +57,7 @@ pre-commit install
 pytest
 ```
 
-## Usage
+## Examples
 
 Launch an interactive pendulum swingup simulation with predictive sampling:
 
