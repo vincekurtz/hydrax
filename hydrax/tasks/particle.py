@@ -51,11 +51,8 @@ class Particle(Task):
         return {"actuator_gainprm": new_gains}
 
     def domain_randomize_data(
-        self, data: mjx.Data, rng: jax.Array, n: int
-    ) -> mjx.Data:
+        self, data: mjx.Data, rng: jax.Array
+    ) -> Dict[str, jax.Array]:
         """Randomly shift the measured particle position."""
-        batch_data = jax.vmap(lambda _, x: x, in_axes=(0, None))(
-            jnp.arange(n), data
-        )
-        shift = jax.random.uniform(rng, (n, 2), minval=-0.01, maxval=0.01)
-        return batch_data.tree_replace({"qpos": data.qpos + shift})
+        shift = jax.random.uniform(rng, (2,), minval=-0.01, maxval=0.01)
+        return {"qpos": data.qpos + shift}

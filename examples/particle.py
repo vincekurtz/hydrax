@@ -22,7 +22,7 @@ task = Particle()
 if len(sys.argv) == 1 or sys.argv[1] == "ps":
     print("Running predictive sampling")
     ctrl = PredictiveSampling(
-        task, num_samples=16, noise_level=0.1, num_randomizations=1
+        task, num_samples=16, noise_level=0.1, num_randomizations=10
     )
 
 elif sys.argv[1] == "mppi":

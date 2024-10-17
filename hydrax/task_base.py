@@ -135,19 +135,19 @@ class Task(ABC):
         return {}
 
     def domain_randomize_data(
-        self, data: mjx.Data, rng: jax.Array, n: int
-    ) -> mjx.Data:
-        """Generate a batch of data to apply to the domain randomized models.
+        self, data: mjx.Data, rng: jax.Array
+    ) -> Dict[str, jax.Array]:
+        """Generate randomized data elements for domain randomization.
 
         This is the place where we could randomize the initial state and other
-        `data` elements. By default, we just return the input data unchanged.
+        `data` elements. Like `domain_randomize_model`, this method should
+        return a dictionary that can be used with `mjx.Data.tree_replace`.
 
         Args:
-            data: The base data.
+            data: The base data instance holding the current state.
             rng: A random number generator key.
-            n: The number of copies of the data to generate.
 
         Returns:
-            The batched data, which can then be `vmap`-ed over the first axis.
+            A dictionary of randomized data elements.
         """
-        return jax.vmap(lambda _, x: x, in_axes=(0, None))(jnp.arange(n), data)
+        return {}
