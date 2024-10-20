@@ -39,7 +39,7 @@
   <!-- Sensors for the cube -->
   <sensor>
     <framepos name="cube_position" objtype="body" objname="cube" reftype="site" refname="grasp_site" />
-    <framequat name="cube_orientation" objtype="body" objname="cube" />
+    <framequat name="cube_orientation" objtype="body" objname="cube" reftype="body" refname="goal"/>
   </sensor>
 
 </mujoco>

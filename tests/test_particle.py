@@ -10,7 +10,6 @@ def test_particle() -> None:
     assert task.pointmass_id >= 0
 
     state = mjx.make_data(task.model)
-    state = state.replace(mocap_pos=jnp.zeros((1, 3)))
     assert isinstance(state, mjx.Data)
     assert state.site_xpos.shape == (1, 3)
     state = mjx.forward(task.model, state)  # compute site positions
