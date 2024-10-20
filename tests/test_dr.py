@@ -39,7 +39,6 @@ def test_opt() -> None:
 
     # Create a random initial state
     state = mjx.make_data(task.model)
-    state = state.replace(mocap_pos=jnp.array([[0.5, 0.5, 0.0]]))
     assert state.qpos.shape == (2,)
 
     # Run an optimization step

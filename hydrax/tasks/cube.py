@@ -44,10 +44,8 @@ class CubeRotation(Task):
         sensor_adr = self.model.sensor_adr[self.cube_orientation_sensor]
         cube_quat = state.sensordata[sensor_adr : sensor_adr + 4]
 
-        # N.B. we could define a sensor relative to the goal cube, but it looks
-        # like mocap states are not fully implemented yet in MJX, so we'll do
-        # this manually for now.
-        goal_quat = state.mocap_quat[0]
+        # Quaternion subtraction gives us rotation relative to goal
+        goal_quat = jnp.array([1.0, 0.0, 0.0, 0.0])
         return mjx._src.math.quat_sub(cube_quat, goal_quat)
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
