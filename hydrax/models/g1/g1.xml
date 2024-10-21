@@ -23,6 +23,9 @@
         <default class="foot_collision">
           <geom pos="0.035 0.0 -0.02" type="box" size="0.095 0.02 0.01"/>
         </default>
+        <default class="shin_collision">
+          <geom pos="0.007 0.005 -0.18" type="capsule" size="0.03 0.12"/>
+        </default>
       </default>
     </default>
   </default>
@@ -108,13 +111,13 @@
                 diaginertia="0.0127418 0.0124382 0.00192524"/>
               <joint name="left_knee_joint" axis="0 1 0" range="-0.33489 2.5449"/>
               <geom type="mesh" class="visual" mesh="left_knee_link"/>
-              <geom size="0.015 0.075" pos="0.007 0.005 -0.15" type="cylinder" class="collision"/>
+              <geom class="shin_collision" />
               <body name="left_ankle_pitch_link" pos="0 0.0040687 -0.30007" quat="0.99678 0 -0.0801788 0">
                 <inertial pos="-0.007269 0 0.011137" quat="0.603053 0.369225 0.369225 0.603053" mass="0.074"
                   diaginertia="1.89e-05 1.40805e-05 6.9195e-06"/>
                 <joint name="left_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="left_ankle_pitch_link"/>
-                <geom type="mesh" mesh="left_ankle_pitch_link" class="collision"/>
+                <!-- <geom type="mesh" mesh="left_ankle_pitch_link" class="collision"/> -->
                 <body name="left_ankle_roll_link" pos="0 0 -0.017558">
                   <site name="left_foot" pos="0 0 0"/>
                   <inertial pos="0.024762 2e-05 -0.012526" quat="0.000771333 0.734476 0.000921291 0.678634" mass="0.391"
@@ -151,13 +154,12 @@
                 diaginertia="0.0127418 0.0124382 0.00192524"/>
               <joint name="right_knee_joint" axis="0 1 0" range="-0.33489 2.5449"/>
               <geom type="mesh" class="visual" mesh="right_knee_link"/>
-              <geom size="0.015 0.075" pos="0.007 -0.005 -0.15" type="cylinder" class="collision"/>
+              <geom class="shin_collision" />
               <body name="right_ankle_pitch_link" pos="0 -0.0040687 -0.30007" quat="0.99678 0 -0.0801788 0">
                 <inertial pos="-0.007269 0 0.011137" quat="0.603053 0.369225 0.369225 0.603053" mass="0.074"
                   diaginertia="1.89e-05 1.40805e-05 6.9195e-06"/>
                 <joint name="right_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="right_ankle_pitch_link"/>
-                <geom type="mesh" mesh="right_ankle_pitch_link" class="collision"/>
                 <body name="right_ankle_roll_link" pos="0 0 -0.017558">
                   <site name="right_foot" pos="0 0 0"/>
                   <inertial pos="0.024762 -2e-05 -0.012526" quat="-0.000771333 0.734476 -0.000921291 0.678634"
@@ -213,7 +215,7 @@
                   <joint name="left_elbow_roll_joint" axis="1 0 0" range="-2.0943 2.0943"/>
                   <geom type="mesh" class="visual" mesh="left_elbow_roll_link"/>
                   <geom type="mesh" mesh="left_elbow_roll_link" class="collision"/>
-                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual"/>
+                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual" material="black"/>
                   <geom pos="0.15 0 0" type="sphere" size="0.03" class="collision"/>
                 </body>
               </body>
@@ -250,7 +252,7 @@
                   <joint name="right_elbow_roll_joint" axis="1 0 0" range="-2.0943 2.0943"/>
                   <geom type="mesh" class="visual" mesh="right_elbow_roll_link"/>
                   <geom type="mesh" mesh="right_elbow_roll_link" class="collision"/>
-                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual"/>
+                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual" material="black"/>
                   <geom pos="0.15 0 0" type="sphere" size="0.03" class="collision"/>
                 </body>
               </body>
