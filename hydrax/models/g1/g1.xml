@@ -20,8 +20,8 @@
       </default>
       <default class="collision">
         <geom group="3" type="mesh"/>
-        <default class="foot">
-          <geom type="sphere" size="0.001"/>
+        <default class="foot_collision">
+          <geom pos="0.035 0.0 -0.02" type="box" size="0.095 0.02 0.01"/>
         </default>
       </default>
     </default>
@@ -121,10 +121,7 @@
                     diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="left_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="left_ankle_roll_link"/>
-                  <geom pos="-0.06 0.02 -0.03" class="foot"/>
-                  <geom pos="-0.06 -0.02 -0.03" class="foot"/>
-                  <geom pos="0.13 0.02 -0.03" class="foot"/>
-                  <geom pos="0.13 -0.02 -0.03" class="foot"/>
+                  <geom class="foot_collision" />
                 </body>
               </body>
             </body>
@@ -167,10 +164,7 @@
                     mass="0.391" diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="right_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="right_ankle_roll_link"/>
-                  <geom pos="-0.06 0.02 -0.03" class="foot"/>
-                  <geom pos="-0.06 -0.02 -0.03" class="foot"/>
-                  <geom pos="0.13 0.02 -0.03" class="foot"/>
-                  <geom pos="0.13 -0.02 -0.03" class="foot"/>
+                  <geom class="foot_collision" />
                 </body>
               </body>
             </body>
