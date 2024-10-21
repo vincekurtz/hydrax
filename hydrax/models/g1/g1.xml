@@ -1,11 +1,17 @@
 <mujoco model="g1">
   <compiler angle="radian" meshdir="assets" autolimits="true"/>
 
-  <visual>
-    <global ellipsoidinertia="true"/>
-  </visual>
+  <option timestep="0.005" iterations="1" ls_iterations="5">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="8" name="max_contact_points" />
+    <numeric data="8" name="max_geom_pairs" />
+  </custom>
 
   <default>
+    <geom condim="3"/>
     <default class="g1">
       <site rgba="1 0 0 1" size="0.01" group="5"/>
       <joint damping="0.5" armature="0.01" frictionloss="0.1"/>
