@@ -219,58 +219,8 @@
                   <joint name="left_elbow_roll_joint" axis="1 0 0" range="-2.0943 2.0943"/>
                   <geom type="mesh" class="visual" mesh="left_elbow_roll_link"/>
                   <geom type="mesh" mesh="left_elbow_roll_link" class="collision"/>
-                  <geom pos="0.12 0 0" type="mesh" class="visual" mesh="left_palm_link"/>
-                  <geom pos="0.12 0 0" type="mesh" mesh="left_palm_link" class="collision"/>
-                  <body name="left_zero_link" pos="0.17 0 0">
-                    <inertial pos="-0.0260466 -0.00877511 1.08605e-05" quat="0.59241 0.381376 -0.592953 0.389884"
-                      mass="0.0509893" diaginertia="8.68047e-06 7.23365e-06 4.58058e-06"/>
-                    <joint name="left_zero_joint" axis="0 1 0" range="-0.523598 0.523598"/>
-                    <geom type="mesh" class="visual" mesh="left_zero_link"/>
-                    <site name="left_palm" pos="0 0 0"/>
-                    <body name="left_one_link" pos="-0.026525 -0.0188 -5e-05">
-                      <inertial pos="-0.00181538 -0.0327057 -0.000185871" quat="0.701646 0.698199 0.0817825 -0.116289"
-                        mass="0.047762" diaginertia="8.03051e-06 7.8455e-06 3.65282e-06"/>
-                      <joint name="left_one_joint" axis="0 0 1" range="-1 1.2"/>
-                      <geom type="mesh" class="visual" mesh="left_one_link"/>
-                      <geom size="0.01 0.015 0.01" pos="-0.001 -0.032 0" type="box" class="collision"/>
-                      <body name="left_two_link" pos="0 -0.0431 0">
-                        <inertial pos="-0.00135257 -0.0237591 -0.000119669"
-                          quat="0.717995 0.695316 -0.0180122 -0.0263741" mass="0.0138584"
-                          diaginertia="2.55338e-06 2.04399e-06 9.3995e-07"/>
-                        <joint name="left_two_joint" axis="0 0 1" range="0 1.84"/>
-                        <geom type="mesh" class="visual" mesh="left_two_link"/>
-                        <geom type="mesh" mesh="left_two_link" class="collision"/>
-                      </body>
-                    </body>
-                  </body>
-                  <body name="left_three_link" pos="0.205 0.004 0.02395">
-                    <inertial pos="0.0362561 -0.0015725 0.000269899" quat="0.540443 0.459072 0.5397 0.45376"
-                      mass="0.0488469" diaginertia="8.91742e-06 8.64873e-06 3.8319e-06"/>
-                    <joint name="left_three_joint" axis="0 0 1" range="-1.84 0.3"/>
-                    <geom type="mesh" class="visual" mesh="left_three_link"/>
-                    <geom type="mesh" mesh="left_three_link" class="collision"/>
-                    <body name="left_four_link" pos="0.0471 -0.0036 0">
-                      <inertial pos="0.0237591 0.00135257 0.000119669" quat="0.478926 0.48905 0.526348 0.504399"
-                        mass="0.0138584" diaginertia="2.55338e-06 2.04399e-06 9.3995e-07"/>
-                      <joint name="left_four_joint" axis="0 0 1" range="-1.84 0"/>
-                      <geom type="mesh" class="visual" mesh="left_four_link"/>
-                      <geom type="mesh" mesh="left_four_link" class="collision"/>
-                    </body>
-                  </body>
-                  <body name="left_five_link" pos="0.205 0.004 -0.02395">
-                    <inertial pos="0.0362561 -0.0015725 0.000269899" quat="0.540443 0.459072 0.5397 0.45376"
-                      mass="0.0488469" diaginertia="8.91742e-06 8.64873e-06 3.8319e-06"/>
-                    <joint name="left_five_joint" axis="0 0 1" range="-1.84 0.3"/>
-                    <geom type="mesh" class="visual" mesh="left_five_link"/>
-                    <geom type="mesh" mesh="left_five_link" class="collision"/>
-                    <body name="left_six_link" pos="0.0471 -0.0036 0">
-                      <inertial pos="0.0237591 0.00135257 0.000119669" quat="0.478926 0.48905 0.526348 0.504399"
-                        mass="0.0138584" diaginertia="2.55338e-06 2.04399e-06 9.3995e-07"/>
-                      <joint name="left_six_joint" axis="0 0 1" range="-1.84 0"/>
-                      <geom type="mesh" class="visual" mesh="left_six_link"/>
-                      <geom type="mesh" mesh="left_six_link" class="collision"/>
-                    </body>
-                  </body>
+                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual"/>
+                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="collision"/>
                 </body>
               </body>
             </body>
@@ -306,57 +256,8 @@
                   <joint name="right_elbow_roll_joint" axis="1 0 0" range="-2.0943 2.0943"/>
                   <geom type="mesh" class="visual" mesh="right_elbow_roll_link"/>
                   <geom type="mesh" mesh="right_elbow_roll_link" class="collision"/>
-                  <geom pos="0.12 0 0" type="mesh" class="visual" mesh="right_palm_link"/>
-                  <geom pos="0.12 0 0" type="mesh" mesh="right_palm_link" class="collision"/>
-                  <body name="right_zero_link" pos="0.17 0 0">
-                    <inertial pos="-0.0260466 0.00877511 1.08605e-05" quat="0.381376 0.59241 -0.389884 0.592953"
-                      mass="0.0509893" diaginertia="8.68047e-06 7.23365e-06 4.58058e-06"/>
-                    <joint name="right_zero_joint" axis="0 1 0" range="-0.523598 0.523598"/>
-                    <geom type="mesh" class="visual" mesh="right_zero_link"/>
-                    <site name="right_palm" pos="0 0 0"/>
-                    <body name="right_one_link" pos="-0.026525 0.0188 -5e-05">
-                      <inertial pos="-0.00181538 0.0327057 -0.000185871" quat="0.698199 0.701646 0.116289 -0.0817825"
-                        mass="0.047762" diaginertia="8.03051e-06 7.8455e-06 3.65282e-06"/>
-                      <joint name="right_one_joint" axis="0 0 1" range="-1.2 1"/>
-                      <geom type="mesh" class="visual" mesh="right_one_link"/>
-                      <geom size="0.01 0.015 0.01" pos="-0.001 0.032 0" type="box" class="collision"/>
-                      <body name="right_two_link" pos="0 0.0431 0">
-                        <inertial pos="-0.00135257 0.0237591 -0.000119669" quat="0.695316 0.717995 0.0263741 0.0180122"
-                          mass="0.0138584" diaginertia="2.55338e-06 2.04399e-06 9.3995e-07"/>
-                        <joint name="right_two_joint" axis="0 0 1" range="-1.84 0"/>
-                        <geom type="mesh" class="visual" mesh="right_two_link"/>
-                        <geom type="mesh" mesh="right_two_link" class="collision"/>
-                      </body>
-                    </body>
-                  </body>
-                  <body name="right_three_link" pos="0.205 -0.004 0.02395">
-                    <inertial pos="0.0362561 0.0015725 0.000269899" quat="0.45376 0.5397 0.459072 0.540443"
-                      mass="0.0488469" diaginertia="8.91742e-06 8.64873e-06 3.8319e-06"/>
-                    <joint name="right_three_joint" axis="0 0 1" range="-0.3 1.84"/>
-                    <geom type="mesh" class="visual" mesh="right_three_link"/>
-                    <geom type="mesh" mesh="right_three_link" class="collision"/>
-                    <body name="right_four_link" pos="0.0471 0.0036 0">
-                      <inertial pos="0.0237591 -0.00135257 0.000119669" quat="0.504399 0.526348 0.48905 0.478926"
-                        mass="0.0138584" diaginertia="2.55338e-06 2.04399e-06 9.3995e-07"/>
-                      <joint name="right_four_joint" axis="0 0 1" range="0 1.84"/>
-                      <geom type="mesh" class="visual" mesh="right_four_link"/>
-                      <geom type="mesh" mesh="right_four_link" class="collision"/>
-                    </body>
-                  </body>
-                  <body name="right_five_link" pos="0.205 -0.004 -0.02395">
-                    <inertial pos="0.0362561 0.0015725 0.000269899" quat="0.45376 0.5397 0.459072 0.540443"
-                      mass="0.0488469" diaginertia="8.91742e-06 8.64873e-06 3.8319e-06"/>
-                    <joint name="right_five_joint" axis="0 0 1" range="-0.3 1.84"/>
-                    <geom type="mesh" class="visual" mesh="right_five_link"/>
-                    <geom type="mesh" mesh="right_five_link" class="collision"/>
-                    <body name="right_six_link" pos="0.0471 0.0036 0">
-                      <inertial pos="0.0237591 -0.00135257 0.000119669" quat="0.504399 0.526348 0.48905 0.478926"
-                        mass="0.0138584" diaginertia="2.55338e-06 2.04399e-06 9.3995e-07"/>
-                      <joint name="right_six_joint" axis="0 0 1" range="0 1.84"/>
-                      <geom type="mesh" class="visual" mesh="right_six_link"/>
-                      <geom type="mesh" mesh="right_six_link" class="collision"/>
-                    </body>
-                  </body>
+                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual"/>
+                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="collision"/>
                 </body>
               </body>
             </body>
@@ -395,21 +296,6 @@
     <motor class="arm_joint" name="right_elbow_pitch_joint" joint="right_elbow_pitch_joint"/>
     <motor class="arm_joint" name="right_elbow_roll_joint" joint="right_elbow_roll_joint"/>
 
-    <motor class="hand_joint" name="left_zero_joint" joint="left_zero_joint"/>
-    <motor class="hand_joint" name="left_one_joint" joint="left_one_joint"/>
-    <motor class="hand_joint" name="left_two_joint" joint="left_two_joint"/>
-    <motor class="hand_joint" name="left_three_joint" joint="left_three_joint"/>
-    <motor class="hand_joint" name="left_four_joint" joint="left_four_joint"/>
-    <motor class="hand_joint" name="left_five_joint" joint="left_five_joint"/>
-    <motor class="hand_joint" name="left_six_joint" joint="left_six_joint"/>
-
-    <motor class="hand_joint" name="right_zero_joint" joint="right_zero_joint"/>
-    <motor class="hand_joint" name="right_one_joint" joint="right_one_joint"/>
-    <motor class="hand_joint" name="right_two_joint" joint="right_two_joint"/>
-    <motor class="hand_joint" name="right_three_joint" joint="right_three_joint"/>
-    <motor class="hand_joint" name="right_four_joint" joint="right_four_joint"/>
-    <motor class="hand_joint" name="right_five_joint" joint="right_five_joint"/>
-    <motor class="hand_joint" name="right_six_joint" joint="right_six_joint"/>
   </actuator>
 
   <sensor>
@@ -427,8 +313,6 @@
       0 0 0 0 0 0
       0
       0 0 0 0 0
-      0 0 0 0 0
-      0 0 0 0 0 0 0
-      0 0 0 0 0 0 0"/>
+      0 0 0 0 0"/>
   </keyframe>
 </mujoco>
