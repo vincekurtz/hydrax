@@ -38,6 +38,13 @@
         <default class="torso_collision">
           <geom pos="0.0 0.0 0.0" type="capsule" size="0.05 0.1"/>
         </default>
+        <default class="shoulder_collision">
+          <geom pos="-0.004 0.006 -0.09" type="capsule" size="0.03 0.09" />
+        </default>
+        <default class="forearm_collision">
+          <geom pos="0.03 0 0" quat="0.707107 0 0.707107 0 "
+            type="capsule" size="0.03 0.07" />
+        </default>
       </default>
     </default>
   </default>
@@ -201,31 +208,34 @@
             diaginertia="0.000466421 0.000440181 0.000410999"/>
           <joint name="left_shoulder_pitch_joint" axis="0 1 0" range="-2.9671 2.7925"/>
           <geom type="mesh" class="visual" mesh="left_shoulder_pitch_link"/>
-          <geom type="mesh" mesh="left_shoulder_pitch_link" class="collision"/>
+          <!-- <geom type="mesh" mesh="left_shoulder_pitch_link" class="collision"/> -->
           <body name="left_shoulder_roll_link" pos="0 0.052 0" quat="0.990268 -0.139172 0 0">
             <inertial pos="-0.003415 0.006955 -0.064598" quat="0.70683 0.0105364 0.00575207 0.707282" mass="0.642"
               diaginertia="0.000683514 0.000616029 0.000372857"/>
             <joint name="left_shoulder_roll_joint" axis="1 0 0" range="-1.5882 2.2515"/>
             <geom type="mesh" class="visual" mesh="left_shoulder_roll_link"/>
-            <geom size="0.03 0.015" pos="-0.004 0.006 -0.053" type="cylinder" class="collision"/>
+            <geom class="shoulder_collision" />
+            <!-- <geom size="0.03 0.015" pos="-0.004 0.006 -0.053" type="cylinder" class="collision"/> -->
             <body name="left_shoulder_yaw_link" pos="-0.00354 0.0062424 -0.1032">
               <inertial pos="0.000375 -0.00444 -0.072374" quat="0.903834 -0.0374183 0.00985482 0.42613" mass="0.713"
                 diaginertia="0.000977874 0.000964661 0.000379065"/>
               <joint name="left_shoulder_yaw_joint" axis="0 0 1" range="-2.618 2.618"/>
               <geom type="mesh" class="visual" mesh="left_shoulder_yaw_link"/>
-              <geom type="mesh" mesh="left_shoulder_yaw_link" class="collision"/>
+              <!-- <geom type="mesh" mesh="left_shoulder_yaw_link" class="collision"/> -->
               <body name="left_elbow_pitch_link" pos="0 0.00189 -0.0855">
                 <inertial pos="0.064497 0.002873 0" quat="0.582347 0.582495 0.400893 0.401069" mass="0.601"
                   diaginertia="0.00049549 0.0004712 0.00025371"/>
                 <joint name="left_elbow_pitch_joint" axis="0 1 0" range="-0.2268 3.4208"/>
                 <geom type="mesh" class="visual" mesh="left_elbow_pitch_link"/>
-                <geom type="mesh" mesh="left_elbow_pitch_link" class="collision"/>
+                <!-- <geom type="mesh" mesh="left_elbow_pitch_link" class="collision"/> -->
                 <body name="left_elbow_roll_link" pos="0.1 0 0">
                   <inertial pos="0.133814 0.00147121 0.000265832" quat="0.496781 0.497877 0.498782 0.506502"
                     mass="0.50826" diaginertia="0.00239763 0.00226639 0.000285577"/>
                   <joint name="left_elbow_roll_joint" axis="1 0 0" range="-2.0943 2.0943"/>
                   <geom type="mesh" class="visual" mesh="left_elbow_roll_link"/>
-                  <geom type="mesh" mesh="left_elbow_roll_link" class="collision"/>
+
+                  <geom class="forearm_collision" />
+                  <!-- <geom type="mesh" mesh="left_elbow_roll_link" class="collision"/> -->
                   <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual" material="black"/>
                   <geom pos="0.15 0 0" type="sphere" size="0.03" class="collision"/>
                 </body>
