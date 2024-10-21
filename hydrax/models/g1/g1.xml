@@ -18,32 +18,34 @@
       <default class="visual">
         <geom group="2" type="mesh" contype="0" conaffinity="0" density="0" material="metallic"/>
       </default>
-      <default class="collision">
-        <geom group="3" type="mesh"/>
+      <default class="col">
+        <geom group="3" type="capsule"/>
         <default class="foot_collision">
           <geom pos="0.035 0.0 -0.02" type="box" size="0.095 0.02 0.01"/>
         </default>
         <default class="shin_collision">
-          <geom pos="0.007 0.005 -0.18" type="capsule" size="0.03 0.1"/>
+          <geom pos="0.007 0.005 -0.18" size="0.03 0.1"/>
         </default>
         <default class="knee_collision">
           <geom pos="-0.08 0.0 -0.18" type="sphere" size="0.05"/>
         </default>
         <default class="thigh_collision">
-          <geom pos="-0.02 0.0 0.0" type="capsule" size="0.05 0.12"/>
+          <geom pos="-0.02 0.0 0.0" size="0.05 0.12"/>
         </default>
         <default class="pelvis_collision">
-          <geom pos="0.0 0.0 0.18" type="capsule" size="0.06 0.27"/>
+          <geom pos="0.0 0.0 0.18" size="0.06 0.27"/>
         </default>
         <default class="torso_collision">
-          <geom pos="0.0 0.0 0.0" type="capsule" size="0.05 0.1"/>
+          <geom pos="0.0 0.0 0.0" size="0.05 0.1"/>
         </default>
         <default class="shoulder_collision">
-          <geom pos="-0.004 0.006 -0.09" type="capsule" size="0.03 0.09" />
+          <geom pos="-0.004 0.006 -0.09" size="0.03 0.09" />
         </default>
         <default class="forearm_collision">
-          <geom pos="0.03 0 0" quat="0.707107 0 0.707107 0 "
-            type="capsule" size="0.03 0.07" />
+          <geom pos="0.03 0 0" quat="0.707107 0 0.707107 0 " size="0.03 0.07" />
+        </default>
+        <default class="hand_collision">
+          <geom pos="0.15 0 0" type="sphere" size="0.03"/>
         </default>
       </default>
     </default>
@@ -228,7 +230,7 @@
                   <geom type="mesh" class="visual" mesh="left_elbow_roll_link"/>
                   <geom class="forearm_collision" />
                   <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual" material="black"/>
-                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="collision"/>
+                  <geom class="hand_collision"/>
                 </body>
               </body>
             </body>
@@ -262,7 +264,7 @@
                   <geom type="mesh" class="visual" mesh="right_elbow_roll_link"/>
                   <geom class="forearm_collision" />
                   <geom pos="0.15 0 0" type="sphere" size="0.03" class="visual" material="black"/>
-                  <geom pos="0.15 0 0" type="sphere" size="0.03" class="collision"/>
+                  <geom class="hand_collision"/>
                 </body>
               </body>
             </body>
