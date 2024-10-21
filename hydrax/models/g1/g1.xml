@@ -24,7 +24,7 @@
           <geom pos="0.035 0.0 -0.02" type="box" size="0.095 0.02 0.01"/>
         </default>
         <default class="shin_collision">
-          <geom pos="0.007 0.005 -0.18" type="capsule" size="0.03 0.12"/>
+          <geom pos="0.007 0.005 -0.18" type="capsule" size="0.03 0.1"/>
         </default>
         <default class="knee_collision">
           <geom pos="-0.08 0.0 -0.18" type="sphere" size="0.05"/>
@@ -34,6 +34,9 @@
         </default>
         <default class="pelvis_collision">
           <geom pos="0.0 0.0 0.18" type="capsule" size="0.06 0.27"/>
+        </default>
+        <default class="torso_collision">
+          <geom pos="0.0 0.0 0.0" type="capsule" size="0.05 0.1"/>
         </default>
       </default>
     </default>
@@ -189,11 +192,10 @@
         <site name="head" pos="0 0 0.5"/>
         <joint name="torso_joint" axis="0 0 1" range="-2.618 2.618"/>
         <geom type="mesh" class="visual" mesh="torso_link"/>
-        <geom type="mesh" mesh="torso_link" class="collision"/>
         <geom type="mesh" class="visual" material="black" mesh="head_link"/>
-        <geom type="mesh" mesh="head_link" class="collision"/>
         <geom type="mesh" class="visual" material="black" mesh="logo_link"/>
-        <geom type="mesh" mesh="logo_link" class="collision"/>
+        <geom class="torso_collision" pos="0.0 0.06 0.18" />
+        <geom class="torso_collision" pos="0.0 -0.06 0.18" />
         <body name="left_shoulder_pitch_link" pos="-0.0025 0.10396 0.25928" quat="0.990268 0.139172 0 0">
           <inertial pos="-0.001431 0.048811 0.001304" quat="0.786417 0.588396 -0.180543 0.0523639" mass="0.713"
             diaginertia="0.000466421 0.000440181 0.000410999"/>
