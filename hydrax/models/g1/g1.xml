@@ -328,6 +328,7 @@
     <gyro name="imu-angular-velocity" site="imu" cutoff="34.9"/>
     <accelerometer name="imu-linear-acceleration" site="imu" cutoff="157"/>
     <framequat name="imu-body-quat" objtype="site" objname="imu"/>
+    <framelinvel name="imu-body-linvel" objtype="site" objname="imu"/>
   </sensor>
 
   <keyframe>

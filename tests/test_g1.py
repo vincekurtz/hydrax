@@ -7,6 +7,7 @@ import mujoco
 from mujoco import mjx
 
 from hydrax import ROOT
+from hydrax.tasks.humanoid import Humanoid
 
 
 def test_mjx_model() -> None:
@@ -47,5 +48,33 @@ def test_mjx_model() -> None:
     assert not jnp.any(jnp.isnan(data.qvel))
 
 
+def test_task() -> None:
+    """Test the humanoid task."""
+    task = Humanoid()
+    assert task.orientation_sensor_id >= 0
+    assert task.torso_id >= 0
+
+    state = mjx.make_data(task.model)
+    assert isinstance(state, mjx.Data)
+
+    # Check sensor measurements
+    state = mjx.forward(task.model, state)
+    pz = task._get_torso_height(state)
+    vx = task._get_torso_velocity(state)
+    w = task._get_torso_orientation(state)
+    assert pz > 0.0
+    assert vx == 0.0
+    assert w.shape == (3,)
+
+    ell = task.running_cost(state, jnp.zeros(task.model.nu))
+    assert ell.shape == ()
+    assert ell > 0.0
+
+    phi = task.terminal_cost(state)
+    assert phi.shape == ()
+    assert phi > 0.0
+
+
 if __name__ == "__main__":
     test_mjx_model()
+    test_task()
