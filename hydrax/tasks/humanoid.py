@@ -16,8 +16,8 @@ class Humanoid(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=5,
-            sim_steps_per_control_step=5,
+            planning_horizon=8,
+            sim_steps_per_control_step=15,
             trace_sites=["imu", "left_foot", "right_foot"],
         )
 
@@ -59,10 +59,10 @@ class Humanoid(Task):
         )
         control_cost = jnp.sum(jnp.square(control))
         return (
-            0.1 * orientation_cost
-            + 0.1 * velocity_cost
-            + 0.1 * height_cost
-            + 0.1 * control_cost
+            1.0 * orientation_cost
+            + 0.0 * velocity_cost
+            + 1.0 * height_cost
+            + 1.0 * control_cost
         )
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
@@ -73,4 +73,4 @@ class Humanoid(Task):
         height_cost = jnp.square(
             self._get_torso_height(state) - self.target_height
         )
-        return orientation_cost + height_cost
+        return orientation_cost + 10 * height_cost
