@@ -16,8 +16,8 @@ class Humanoid(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=5,
-            sim_steps_per_control_step=30,
+            planning_horizon=3,
+            sim_steps_per_control_step=50,
             trace_sites=["imu", "left_foot", "right_foot"],
         )
 

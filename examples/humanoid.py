@@ -14,7 +14,7 @@ Run an interactive simulation of the humanoid task.
 task = Humanoid()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.2)
+ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.2)
 
 # Define the model used for simulation
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
@@ -27,7 +27,7 @@ run_interactive(
     mj_model,
     ctrl,
     start_state,
-    frequency=50,
+    frequency=30,
     show_traces=True,
     max_traces=1,
 )
