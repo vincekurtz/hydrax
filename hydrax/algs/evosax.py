@@ -104,17 +104,14 @@ class Evosax(SamplingBasedController):
         self, params: EvosaxParams, rollouts: Trajectory
     ) -> EvosaxParams:
         """Update the policy parameters based on the rollouts."""
-        controls = rollouts.controls[0]  # identical over randomizations
-        costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
-
-        costs = jnp.sum(costs, axis=1)  # sum over time steps
-        x = jnp.reshape(controls, (self.strategy.popsize, -1))
+        costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
+        x = jnp.reshape(rollouts.controls, (self.strategy.popsize, -1))
         opt_state = self.strategy.tell(
             x, costs, params.opt_state, self.es_params
         )
 
         best_idx = jnp.argmin(costs)
-        best_controls = controls[best_idx]
+        best_controls = rollouts.controls[best_idx]
 
         # By default, opt_state stores the best member ever, rather than the
         # best member from the current generation. We want to just use the best

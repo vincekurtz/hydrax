@@ -81,12 +81,10 @@ class MPPI(SamplingBasedController):
         self, params: MPPIParams, rollouts: Trajectory
     ) -> MPPIParams:
         """Update the mean with an exponentially weighted average."""
-        costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
-        controls = rollouts.controls[0]  # identical over randomizations
-        costs = jnp.sum(costs, axis=1)
+        costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
         # N.B. jax.nn.softmax takes care of details like baseline subtraction.
         weights = jax.nn.softmax(-costs / self.temperature, axis=0)
-        mean = jnp.sum(weights[:, None, None] * controls, axis=0)
+        mean = jnp.sum(weights[:, None, None] * rollouts.controls, axis=0)
         return params.replace(mean=mean)
 
     def get_action(self, params: MPPIParams, t: float) -> jax.Array:
