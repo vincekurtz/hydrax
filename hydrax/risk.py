@@ -18,10 +18,10 @@ class RiskStrategy(ABC):
         """Combine costs from different randomizations.
 
         Args:
-            costs: rollout costs, first axis is the randomization index.
+            costs: rollout costs, size (randomizations, samples, horizon)
 
         Returns:
-            The combined cost (scalar).
+            The combined cost, size (samples, horizon).
         """
         pass
 
