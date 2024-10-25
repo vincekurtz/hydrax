@@ -36,3 +36,19 @@ class AverageCost(RiskStrategy):
     def combine_costs(self, costs: jax.Array) -> jax.Array:
         """Take the average cost over all randomizations."""
         return jnp.mean(costs, axis=0)
+
+
+class WorstCase(RiskStrategy):
+    """A pessimistic worst-case-cost risk strategy."""
+
+    def combine_costs(self, costs: jax.Array) -> jax.Array:
+        """Take the highest cost over all randomizations."""
+        return jnp.max(costs, axis=0)
+
+
+class BestCase(RiskStrategy):
+    """An optimistic best-case-cost risk strategy."""
+
+    def combine_costs(self, costs: jax.Array) -> jax.Array:
+        """Take the lowest cost over all randomizations."""
+        return jnp.min(costs, axis=0)

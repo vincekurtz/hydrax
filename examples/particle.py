@@ -7,6 +7,7 @@ import numpy as np
 from hydrax import ROOT
 from hydrax.algs import MPPI, Evosax, PredictiveSampling
 from hydrax.mpc import run_interactive
+from hydrax.risk import WorstCase
 from hydrax.tasks.particle import Particle
 
 """
@@ -22,7 +23,11 @@ task = Particle()
 if len(sys.argv) == 1 or sys.argv[1] == "ps":
     print("Running predictive sampling")
     ctrl = PredictiveSampling(
-        task, num_samples=16, noise_level=0.1, num_randomizations=10
+        task,
+        num_samples=16,
+        noise_level=0.1,
+        num_randomizations=10,
+        risk_strategy=WorstCase(),
     )
 
 elif sys.argv[1] == "mppi":
