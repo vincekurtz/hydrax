@@ -85,3 +85,16 @@ class ValueAtRisk(RiskStrategy):
     def combine_costs(self, costs: jax.Array) -> jax.Array:
         """Take the cost value at the (1 - α) quantile."""
         return jnp.quantile(costs, 1.0 - self.alpha, axis=0)
+
+
+class ConditionalValueAtRisk(RiskStrategy):
+    """Take the expected cost in the tail beyond the (1 - α) quantile."""
+
+    def __init__(self, alpha: float):
+        """Set the quantile level α."""
+        self.alpha = alpha
+
+    def combine_costs(self, costs: jax.Array) -> jax.Array:
+        """Take the expected cost in the tail beyond the (1 - α) quantile."""
+        quant = jnp.quantile(costs, 1.0 - self.alpha, axis=0)
+        return jnp.mean(costs, where=costs >= quant, axis=0)
