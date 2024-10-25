@@ -48,8 +48,7 @@ def test_predictive_sampling() -> None:
     )
 
     # Pick the best rollout
-    batch_rollouts = jax.tree.map(lambda x: x[None], rollouts)
-    updated_params = opt.update_params(new_params, batch_rollouts)
+    updated_params = opt.update_params(new_params, rollouts)
     assert updated_params.mean.shape == (task.planning_horizon - 1, 1)
     assert jnp.all(updated_params.mean != new_params.mean)
 

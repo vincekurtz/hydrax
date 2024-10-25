@@ -5,6 +5,7 @@ import jax.numpy as jnp
 from flax.struct import dataclass
 
 from hydrax.alg_base import SamplingBasedController, Trajectory
+from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
 
 
@@ -30,6 +31,7 @@ class PredictiveSampling(SamplingBasedController):
         num_samples: int,
         noise_level: float,
         num_randomizations: int = 1,
+        risk_strategy: RiskStrategy = None,
         seed: int = 0,
     ):
         """Initialize the controller.
@@ -39,9 +41,11 @@ class PredictiveSampling(SamplingBasedController):
             num_samples: The number of control tapes to sample.
             noise_level: The scale of Gaussian noise to add to sampled controls.
             num_randomizations: The number of domain randomizations to use.
-            seed: The random seed for domain randomization
+            risk_strategy: How to combining costs from different randomizations.
+                           Defaults to average cost.
+            seed: The random seed for domain randomization.
         """
-        super().__init__(task, num_randomizations, seed)
+        super().__init__(task, num_randomizations, risk_strategy, seed)
         self.noise_level = noise_level
         self.num_samples = num_samples
 
@@ -71,11 +75,9 @@ class PredictiveSampling(SamplingBasedController):
 
     def update_params(self, params: PSParams, rollouts: Trajectory) -> PSParams:
         """Update the policy parameters by choosing the lowest-cost rollout."""
-        costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
-        controls = rollouts.controls[0]  # identical over randomizations
-        costs = jnp.sum(costs, axis=1)  # sum over time steps
+        costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
         best_idx = jnp.argmin(costs)
-        mean = controls[best_idx]
+        mean = rollouts.controls[best_idx]
         return params.replace(mean=mean)
 
     def get_action(self, params: PSParams, t: float) -> jax.Array:

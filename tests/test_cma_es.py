@@ -27,16 +27,8 @@ def test_cmaes() -> None:
     rollouts = ctrl.eval_rollouts(task.model, state, controls)
     assert rollouts.costs.shape == (32, 20)
 
-    # Roll out the control sequences with domain randomization
-    batch_state = jax.vmap(lambda _, x: x, in_axes=(0, None))(
-        jnp.arange(ctrl.num_randomizations), state
-    )
-    batch_rollouts = jax.vmap(
-        ctrl.eval_rollouts, in_axes=(ctrl.randomized_axes, 0, None)
-    )(ctrl.model, batch_state, controls)
-
     # Update the policy parameters
-    params = ctrl.update_params(params, batch_rollouts)
+    params = ctrl.update_params(params, rollouts)
     assert params.controls.shape == (19, 1)
     assert jnp.all(params.controls != jnp.zeros((19, 1)))
     assert params.opt_state.best_fitness > 0.0

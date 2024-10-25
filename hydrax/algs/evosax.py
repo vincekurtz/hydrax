@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from flax.struct import dataclass
 
 from hydrax.alg_base import SamplingBasedController, Trajectory
+from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
 
 # Generic types for evosax
@@ -42,6 +43,7 @@ class Evosax(SamplingBasedController):
         num_samples: int,
         es_params: EvoParams = None,
         num_randomizations: int = 1,
+        risk_strategy: RiskStrategy = None,
         seed: int = 0,
         **kwargs,
     ):
@@ -53,10 +55,12 @@ class Evosax(SamplingBasedController):
             num_samples: The number of control tapes to sample.
             es_params: The parameters for the evosax optimizer.
             num_randomizations: The number of domain randomizations to use.
+            risk_strategy: How to combining costs from different randomizations.
+                           Defaults to average cost.
             seed: The random seed for domain randomization.
             **kwargs: Additional keyword arguments for the optimizer.
         """
-        super().__init__(task, num_randomizations, seed)
+        super().__init__(task, num_randomizations, risk_strategy, seed)
 
         self.strategy = optimizer(
             popsize=num_samples,
@@ -104,17 +108,14 @@ class Evosax(SamplingBasedController):
         self, params: EvosaxParams, rollouts: Trajectory
     ) -> EvosaxParams:
         """Update the policy parameters based on the rollouts."""
-        controls = rollouts.controls[0]  # identical over randomizations
-        costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
-
-        costs = jnp.sum(costs, axis=1)  # sum over time steps
-        x = jnp.reshape(controls, (self.strategy.popsize, -1))
+        costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
+        x = jnp.reshape(rollouts.controls, (self.strategy.popsize, -1))
         opt_state = self.strategy.tell(
             x, costs, params.opt_state, self.es_params
         )
 
         best_idx = jnp.argmin(costs)
-        best_controls = controls[best_idx]
+        best_controls = rollouts.controls[best_idx]
 
         # By default, opt_state stores the best member ever, rather than the
         # best member from the current generation. We want to just use the best

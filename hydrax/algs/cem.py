@@ -5,6 +5,7 @@ import jax.numpy as jnp
 from flax.struct import dataclass
 
 from hydrax.alg_base import SamplingBasedController, Trajectory
+from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
 
 
@@ -34,6 +35,7 @@ class CEM(SamplingBasedController):
         sigma_start: float,
         sigma_min: float,
         num_randomizations: int = 1,
+        risk_strategy: RiskStrategy = None,
         seed: int = 0,
     ):
         """Initialize the controller.
@@ -45,9 +47,11 @@ class CEM(SamplingBasedController):
             sigma_start: The initial standard deviation for the controls.
             sigma_min: The minimum standard deviation for the controls.
             num_randomizations: The number of domain randomizations to use.
+            risk_strategy: How to combining costs from different randomizations.
+                           Defaults to average cost.
             seed: The random seed for domain randomization.
         """
-        super().__init__(task, num_randomizations, seed)
+        super().__init__(task, num_randomizations, risk_strategy, seed)
         self.num_samples = num_samples
         self.sigma_min = sigma_min
         self.sigma_start = sigma_start
@@ -78,17 +82,17 @@ class CEM(SamplingBasedController):
         self, params: CEMParams, rollouts: Trajectory
     ) -> CEMParams:
         """Update the mean with an exponentially weighted average."""
-        controls = rollouts.controls[0]  # identical over randomizations
-        costs = jnp.mean(rollouts.costs, axis=0)  # avg. over randomizations
-        costs = jnp.sum(costs, axis=1)  # sum over time steps
+        costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
 
         # Sort the costs and get the indices of the elites.
         indices = jnp.argsort(costs)
         elites = indices[: self.num_elites]
 
         # The new proposal distribution is a Gaussian fit to the elites.
-        mean = jnp.mean(controls[elites], axis=0)
-        cov = jnp.maximum(jnp.std(controls[elites], axis=0), self.sigma_min)
+        mean = jnp.mean(rollouts.controls[elites], axis=0)
+        cov = jnp.maximum(
+            jnp.std(rollouts.controls[elites], axis=0), self.sigma_min
+        )
 
         return params.replace(mean=mean, cov=cov)
 

@@ -7,6 +7,7 @@ import jax.numpy as jnp
 from flax.struct import dataclass
 from mujoco import mjx
 
+from hydrax.risk import AverageCost, RiskStrategy
 from hydrax.task_base import Task
 
 
@@ -34,16 +35,28 @@ class Trajectory:
 class SamplingBasedController(ABC):
     """An abstract sampling-based MPC algorithm interface."""
 
-    def __init__(self, task: Task, num_randomizations: int, seed: int):
+    def __init__(
+        self,
+        task: Task,
+        num_randomizations: int,
+        risk_strategy: RiskStrategy,
+        seed: int,
+    ):
         """Initialize the MPC controller.
 
         Args:
             task: The task instance defining the dynamics and costs.
             num_randomizations: The number of domain randomizations to use.
+            risk_strategy: How to combining costs from different randomizations.
             seed: The random seed for domain randomization.
         """
         self.task = task
         self.num_randomizations = max(num_randomizations, 1)
+
+        # Risk strategy defaults to average cost
+        if risk_strategy is None:
+            risk_strategy = AverageCost()
+        self.risk_strategy = risk_strategy
 
         # Use a single model (no domain randomization) by default
         self.model = task.model
@@ -99,8 +112,16 @@ class SamplingBasedController(ABC):
             self.eval_rollouts, in_axes=(self.randomized_axes, 0, None)
         )(self.model, states, controls)
 
-        # Update the policy parameters based on the rollout costs
-        params = self.update_params(params, rollouts)
+        # Combine the costs from different domain randomizations using the
+        # specified risk strategy.
+        flat_costs = self.risk_strategy.combine_costs(rollouts.costs)
+        flat_controls = rollouts.controls[0]  # identical over randomizations
+        flat_rollouts = rollouts.replace(
+            costs=flat_costs, controls=flat_controls
+        )
+
+        # Update the policy parameters based on the combined costs
+        params = self.update_params(params, flat_rollouts)
         return params, rollouts
 
     @partial(jax.vmap, in_axes=(None, None, None, 0))

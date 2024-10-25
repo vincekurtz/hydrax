@@ -1,6 +1,6 @@
 # Hydrax
 
-Sampling-based model predictive control on GPU with 
+Sampling-based model predictive control on GPU with
 [JAX](https://jax.readthedocs.io/) and
 [MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html).
 
@@ -217,7 +217,39 @@ sets up a predictive sampling controller that rolls out 32 control sequences
 across 16 domain randomized models.
 
 The resulting [`Trajectory`](hydrax/alg_base.py) rollouts will have
-dimensions `(num_randomizations, num_samples, num_time_steps, ...)`. Different
-`SamplingBasedController` implementations can use this rollout data in different
-ways, though the typical approach is to simply take the average cost over the
-randomizations.
+dimensions `(num_randomizations, num_samples, num_time_steps, ...)`.
+
+## Risk Strategies
+
+With domain randomization, we need to somehow aggregate costs across the
+different domains. By default, we take the average cost over the randomizations,
+similar to domain randomization in reinforcement learning. Other strategies are
+available via the [`RiskStrategy`](hydrax/risk.py) interface.
+
+For example, to plan using the worst-case maximum cost across randomizations:
+
+```python
+from hydrax.risk import WorstCase
+
+...
+
+task = MyDomainRandomizedTask(...)
+ctrl = PredictiveSampling(
+    task,
+    num_samples=32,
+    noise_level=0.1,
+    num_randomizations=16,
+    risk_strategy=WorstCase(),
+)
+```
+
+Available risk strategies:
+
+| Strategy | Description | Import |
+| --- | --- | --- |
+| Average (default) | Take the expected cost across randomizations. | [`hydrax.risk.AverageCost`](hydrax/risk.py) |
+| Worst-case | Take the maximum cost across randomizations. | [`hydrax.risk.WorstCase`](hydrax/risk.py) |
+| Best-case | Take the minimum cost across randomizations. | [`hydrax.risk.BestCase`](hydrax/risk.py) |
+| Exponential | Take an exponentially weighted average with parameter $\gamma$. This strategy could be risk-averse ($\gamma > 0$) or risk-seeking ($\gamma < 0$).  | [`hydrax.risk.ExponentialWeightedAverage`](hydrax/risk.py) |
+| VaR | Use the [Value at Risk (VaR)](https://en.wikipedia.org/wiki/Value_at_risk). | [`hydrax.risk.ValueAtRisk`](hydrax/risk.py) |
+| CVaR | Use the [Conditional Value at Risk (CVaR)](https://en.wikipedia.org/wiki/Expected_shortfall). | [`hydrax.risk.ConditionalValueAtRisk`](hydrax/risk.py) |
