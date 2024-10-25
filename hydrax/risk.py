@@ -73,3 +73,15 @@ class ExponentialWeightedAverage(RiskStrategy):
         """Combine costs using an exponential weighted average."""
         weights = jax.nn.softmax(self.gamma * costs, axis=0)
         return jnp.sum(weights * costs, axis=0)
+
+
+class ValueAtRisk(RiskStrategy):
+    """Take the cost value at the (1 - α) quantile."""
+
+    def __init__(self, alpha: float):
+        """Set the quantile level α."""
+        self.alpha = alpha
+
+    def combine_costs(self, costs: jax.Array) -> jax.Array:
+        """Take the cost value at the (1 - α) quantile."""
+        return jnp.quantile(costs, 1.0 - self.alpha, axis=0)

@@ -5,6 +5,7 @@ from hydrax.risk import (
     AverageCost,
     BestCase,
     ExponentialWeightedAverage,
+    ValueAtRisk,
     WorstCase,
 )
 
@@ -28,11 +29,16 @@ def test_risk() -> None:
     weighted = ExponentialWeightedAverage(2.0).combine_costs(costs)
     assert weighted.shape == (m,)
 
+    var = ValueAtRisk(0.1).combine_costs(costs)
+    assert var.shape == (m,)
+
     assert jnp.all(avg <= worst)
     assert jnp.all(avg >= best)
     assert jnp.all(weighted <= worst)
     assert jnp.all(weighted >= best)
     assert jnp.all(weighted >= avg)
+    assert jnp.all(var <= worst)
+    assert jnp.all(var >= avg)
 
 
 if __name__ == "__main__":
