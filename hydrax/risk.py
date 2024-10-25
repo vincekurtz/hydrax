@@ -52,3 +52,24 @@ class BestCase(RiskStrategy):
     def combine_costs(self, costs: jax.Array) -> jax.Array:
         """Take the lowest cost over all randomizations."""
         return jnp.min(costs, axis=0)
+
+
+class ExponentialWeightedAverage(RiskStrategy):
+    """An exponential weighted average risk strategy.
+
+    Costs are combined using a weighted average with weights
+
+        wᵢ = exp(γ cᵢ)/∑ⱼexp(γ cⱼ).
+
+    The parameter γ controls the risk-aversion of the strategy: positive values
+    encode a risk-averse strategy, while negative values lead to risk-seeking.
+    """
+
+    def __init__(self, gamma: float):
+        """Set the risk-aversion parameter γ."""
+        self.gamma = gamma
+
+    def combine_costs(self, costs: jax.Array) -> jax.Array:
+        """Combine costs using an exponential weighted average."""
+        weights = jax.nn.softmax(self.gamma * costs, axis=0)
+        return jnp.sum(weights * costs, axis=0)
