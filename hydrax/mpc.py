@@ -48,9 +48,10 @@ def run_interactive(
     mj_data.qvel[:] = start_state[mj_model.nq :]
 
     # Report the planning horizon in seconds for debugging
+    num_steps = controller.task.planning_horizon - 1
     print(
-        f"Planning with {controller.task.planning_horizon} steps "
-        f"over a {controller.task.planning_horizon * controller.task.dt} "
+        f"Planning with {num_steps} steps "
+        f"over a {num_steps * controller.task.dt} "
         f"second horizon."
     )
 
@@ -77,7 +78,7 @@ def run_interactive(
     st = time.time()
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
     print(f"Time to jit: {time.time() - st:.3f} seconds")
-    num_traces = min(rollouts.controls.shape[0], max_traces)
+    num_traces = min(rollouts.controls.shape[1], max_traces)
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
