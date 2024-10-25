@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from flax.struct import dataclass
 
 from hydrax.alg_base import SamplingBasedController, Trajectory
+from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
 
 # Generic types for evosax
@@ -42,6 +43,7 @@ class Evosax(SamplingBasedController):
         num_samples: int,
         es_params: EvoParams = None,
         num_randomizations: int = 1,
+        risk_strategy: RiskStrategy = None,
         seed: int = 0,
         **kwargs,
     ):
@@ -53,10 +55,12 @@ class Evosax(SamplingBasedController):
             num_samples: The number of control tapes to sample.
             es_params: The parameters for the evosax optimizer.
             num_randomizations: The number of domain randomizations to use.
+            risk_strategy: How to combining costs from different randomizations.
+                           Defaults to average cost.
             seed: The random seed for domain randomization.
             **kwargs: Additional keyword arguments for the optimizer.
         """
-        super().__init__(task, num_randomizations, seed)
+        super().__init__(task, num_randomizations, risk_strategy, seed)
 
         self.strategy = optimizer(
             popsize=num_samples,

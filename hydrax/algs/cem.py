@@ -5,6 +5,7 @@ import jax.numpy as jnp
 from flax.struct import dataclass
 
 from hydrax.alg_base import SamplingBasedController, Trajectory
+from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
 
 
@@ -34,6 +35,7 @@ class CEM(SamplingBasedController):
         sigma_start: float,
         sigma_min: float,
         num_randomizations: int = 1,
+        risk_strategy: RiskStrategy = None,
         seed: int = 0,
     ):
         """Initialize the controller.
@@ -45,9 +47,11 @@ class CEM(SamplingBasedController):
             sigma_start: The initial standard deviation for the controls.
             sigma_min: The minimum standard deviation for the controls.
             num_randomizations: The number of domain randomizations to use.
+            risk_strategy: How to combining costs from different randomizations.
+                           Defaults to average cost.
             seed: The random seed for domain randomization.
         """
-        super().__init__(task, num_randomizations, seed)
+        super().__init__(task, num_randomizations, risk_strategy, seed)
         self.num_samples = num_samples
         self.sigma_min = sigma_min
         self.sigma_start = sigma_start

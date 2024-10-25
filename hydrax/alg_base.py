@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from flax.struct import dataclass
 from mujoco import mjx
 
-from hydrax.risk import AverageCost
+from hydrax.risk import AverageCost, RiskStrategy
 from hydrax.task_base import Task
 
 
@@ -35,20 +35,28 @@ class Trajectory:
 class SamplingBasedController(ABC):
     """An abstract sampling-based MPC algorithm interface."""
 
-    def __init__(self, task: Task, num_randomizations: int, seed: int):
+    def __init__(
+        self,
+        task: Task,
+        num_randomizations: int,
+        risk_strategy: RiskStrategy,
+        seed: int,
+    ):
         """Initialize the MPC controller.
 
         Args:
             task: The task instance defining the dynamics and costs.
             num_randomizations: The number of domain randomizations to use.
+            risk_strategy: How to combining costs from different randomizations.
             seed: The random seed for domain randomization.
         """
         self.task = task
         self.num_randomizations = max(num_randomizations, 1)
 
-        # Risk strategy
-        # TODO: set as parameter
-        self.risk_strategy = AverageCost()
+        # Risk strategy defaults to average cost
+        if risk_strategy is None:
+            risk_strategy = AverageCost()
+        self.risk_strategy = risk_strategy
 
         # Use a single model (no domain randomization) by default
         self.model = task.model
