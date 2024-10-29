@@ -28,7 +28,7 @@ class Trajectory:
     trace_sites: jax.Array
 
     def __len__(self):
-        """Return the number of time steps in the trajectory (N)."""
+        """Return the number of time steps in the trajectory (T)."""
         return self.costs.shape[-1] - 1
 
 
