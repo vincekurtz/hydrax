@@ -18,7 +18,7 @@ class CubeRotation(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=4,
+            planning_horizon=3,
             sim_steps_per_control_step=4,
             trace_sites=["cube_center", "if_tip", "mf_tip", "rf_tip", "th_tip"],
         )
