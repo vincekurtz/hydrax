@@ -9,7 +9,8 @@ from hydrax.algs.predictive_sampling import PredictiveSampling
 from hydrax.simulation.asynchronous import (
     SharedMemoryMujocoData,
     SharedMemoryNumpyArray,
-    controller,
+    run_controller,
+    run_interactive,
 )
 from hydrax.tasks.pendulum import Pendulum
 
@@ -45,7 +46,7 @@ def test_controller() -> None:
     ready = Event()
     finished = Event()
     proc = Process(
-        target=controller, args=(_setup_fn, shared_mjdata, ready, finished)
+        target=run_controller, args=(_setup_fn, shared_mjdata, ready, finished)
     )
 
     proc.start()
@@ -58,6 +59,24 @@ def test_controller() -> None:
     assert finished.is_set()
 
 
+def manual_test_interactive() -> None:
+    """Test running an interactive simulation.
+
+    Note that this does not as a normal test, only when called directly, because
+    this will open a window and block the test suite.
+    """
+    mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/pendulum/scene.xml")
+    mj_data = mujoco.MjData(mj_model)
+
+    def _setup_fn() -> PredictiveSampling:
+        """Set up the controller."""
+        task = Pendulum()
+        return PredictiveSampling(task, num_samples=8, noise_level=0.1)
+
+    run_interactive(_setup_fn, mj_model, mj_data)
+
+
 if __name__ == "__main__":
     test_shared_nparray()
     test_controller()
+    manual_test_interactive()

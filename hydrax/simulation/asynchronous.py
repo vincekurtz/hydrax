@@ -1,5 +1,5 @@
 import time
-from multiprocessing import Event, Lock, shared_memory
+from multiprocessing import Event, Lock, Process, shared_memory
 from typing import Callable, Tuple
 
 import jax
@@ -90,17 +90,9 @@ class SharedMemoryMujocoData:
             self.mocap_quat = SharedMemoryNumpyArray(
                 np.array(mj_data.mocap_quat, dtype=np.float32)
             )
-        else:
-            # We need non-empty arrays, even if they are not used
-            self.mocap_pos = SharedMemoryNumpyArray(
-                np.zeros((3,), dtype=np.float32)
-            )
-            self.mocap_quat = SharedMemoryNumpyArray(
-                np.zeros((4,), dtype=np.float32)
-            )
 
 
-def controller(
+def run_controller(
     setup_fn: Callable[[], SamplingBasedController],
     shm_data: SharedMemoryMujocoData,
     ready: Event,
@@ -145,17 +137,117 @@ def controller(
         mjx_data = mjx_data.replace(
             qpos=jnp.array(shm_data.qpos.data),
             qvel=jnp.array(shm_data.qvel.data),
-            mocap_pos=jnp.array(shm_data.mocap_pos.data),
-            mocap_quat=jnp.array(shm_data.mocap_quat.data),
         )
+        if len(mjx_data.mocap_pos) > 0:
+            mjx_data = mjx_data.replace(
+                mocap_pos=jnp.array(shm_data.mocap_pos.data),
+                mocap_quat=jnp.array(shm_data.mocap_quat.data),
+            )
 
         # Do a planning step
         policy_params = jit_optimize(mjx_data, policy_params)
 
-        # Send the action to the simulator
+        # Send the action to the simulator.
+        # TODO: send the full parameters rather than assuming zero-order
+        # hold and a sufficiently high control rate
         shm_data.ctrl[:] = np.array(
             get_action(policy_params, 0.0), dtype=np.float32
         )
 
         # Print the current planning frequency
-        print(f"Controller running at {1/(time.time() - st):.2f} Hz")
+        print(f"Controller running at {1/(time.time() - st):.2f} Hz", end="\r")
+
+    # Preserve the last printed line
+    print("")
+
+
+def run_simulator(
+    mj_model: mujoco.MjModel,
+    mj_data: mujoco.MjData,
+    shm_data: SharedMemoryMujocoData,
+    ready: Event,
+    finished: Event,
+) -> None:
+    """Run a simulation, communicating with the controller over shared memory.
+
+    Args:
+        mj_model: Mujoco model for the simulation.
+        mj_data: Mujoco data specifying the initial state.
+        shm_data: Shared memory object for state and control action data.
+        ready: Shared flag for starting the simulation.
+        finished: Shared flag for stopping the simulation.
+    """
+    # Wait for the controller to be ready
+    ready.wait()
+
+    with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
+        while viewer.is_running():
+            start_time = time.time()
+
+            # Write the latest state to shared memory for the controller to read
+            shm_data.qpos[:] = np.copy(mj_data.qpos)
+            shm_data.qvel[:] = np.copy(mj_data.qvel)
+
+            if len(mj_data.mocap_pos) > 0:
+                shm_data.mocap_pos[:] = np.copy(mj_data.mocap_pos)
+                shm_data.mocap_quat[:] = np.copy(mj_data.mocap_quat)
+
+            # Read the lastest control values from shared memory
+            # TODO: actually query the spline rather than assuming zero-order
+            # hold and a sufficiently high control rate
+            mj_data.ctrl[:] = np.copy(shm_data.ctrl[:])
+
+            # Step the simulation
+            mujoco.mj_step(mj_model, mj_data)
+            viewer.sync()
+
+            # Try to run in roughly real-time
+            elapsed_time = time.time() - start_time
+            if elapsed_time < mj_model.opt.timestep:
+                time.sleep(mj_model.opt.timestep - elapsed_time)
+
+    # Signal that the simulation is done
+    finished.set()
+
+
+def run_interactive(
+    make_controller: Callable[[], SamplingBasedController],
+    mj_model: mujoco.MjModel,
+    mj_data: mujoco.MjData,
+) -> None:
+    """Run an asynchronous interactive simulation.
+
+    This is similar to `simulation.deterministic.run_interactive`, but runs the
+    controller and simulator in separate processes. This is more realistic, but
+    offers fewer features (e.g., no trace visualization).
+
+    Note: this takes a function that creates the controller, rather than the
+    controller itself, to ensure that all JAX data is created within the same
+    process.
+
+    Args:
+        make_controller: Function that sets up the controller.
+        mj_model: Mujoco model for the simulation.
+        mj_data: Mujoco data specifying the initial state.
+    """
+    # Create shared_memory data
+    shm_data = SharedMemoryMujocoData(mj_data)
+    ready = Event()
+    finished = Event()
+
+    # Set up the simulator and controller processes
+    sim = Process(
+        target=run_simulator,
+        args=(mj_model, mj_data, shm_data, ready, finished),
+    )
+    control = Process(
+        target=run_controller, args=(make_controller, shm_data, ready, finished)
+    )
+
+    # Run the simulation and controller in parallel
+    sim.start()
+    control.start()
+
+    # Clean up when done (e.g. the visualizer is closed)
+    sim.join()
+    control.join()
