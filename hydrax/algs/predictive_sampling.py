@@ -52,7 +52,7 @@ class PredictiveSampling(SamplingBasedController):
     def init_params(self, seed: int = 0) -> PSParams:
         """Initialize the policy parameters."""
         rng = jax.random.key(seed)
-        mean = jnp.zeros((self.task.planning_horizon - 1, self.task.model.nu))
+        mean = jnp.zeros((self.task.planning_horizon, self.task.model.nu))
         return PSParams(mean=mean, rng=rng)
 
     def sample_controls(self, params: PSParams) -> Tuple[jax.Array, PSParams]:
@@ -62,7 +62,7 @@ class PredictiveSampling(SamplingBasedController):
             sample_rng,
             (
                 self.num_samples,
-                self.task.planning_horizon - 1,
+                self.task.planning_horizon,
                 self.task.model.nu,
             ),
         )

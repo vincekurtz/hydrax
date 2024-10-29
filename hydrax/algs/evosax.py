@@ -64,7 +64,7 @@ class Evosax(SamplingBasedController):
 
         self.strategy = optimizer(
             popsize=num_samples,
-            num_dims=task.model.nu * (task.planning_horizon - 1),
+            num_dims=task.model.nu * task.planning_horizon,
             **kwargs,
         )
 
@@ -76,9 +76,7 @@ class Evosax(SamplingBasedController):
         """Initialize the policy parameters."""
         rng = jax.random.key(seed)
         rng, init_rng = jax.random.split(rng)
-        controls = jnp.zeros(
-            (self.task.planning_horizon - 1, self.task.model.nu)
-        )
+        controls = jnp.zeros((self.task.planning_horizon, self.task.model.nu))
         opt_state = self.strategy.initialize(init_rng, self.es_params)
         return EvosaxParams(controls=controls, opt_state=opt_state, rng=rng)
 
@@ -92,12 +90,12 @@ class Evosax(SamplingBasedController):
         )
 
         # evosax works with vectors of decision variables, so we reshape U to
-        # [batch_size, horizon - 1, nu].
+        # [batch_size, horizon, nu].
         controls = jnp.reshape(
             x,
             (
                 self.strategy.popsize,
-                self.task.planning_horizon - 1,
+                self.task.planning_horizon,
                 self.task.model.nu,
             ),
         )

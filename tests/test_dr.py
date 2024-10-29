@@ -46,12 +46,12 @@ def test_opt() -> None:
 
     # Check the rollout shapes. Should be
     # (randomizations, samples, timestep, ...)
-    assert rollouts.costs.shape == (3, 11, 5)
-    assert rollouts.controls.shape == (3, 11, 4, 2)
-    assert rollouts.observations.shape == (3, 11, 5, 4)
+    assert rollouts.costs.shape == (3, 11, 6)
+    assert rollouts.controls.shape == (3, 11, 5, 2)
+    assert rollouts.observations.shape == (3, 11, 6, 4)
 
     # Check the updated parameters
-    assert params.mean.shape == (4, 2)
+    assert params.mean.shape == (5, 2)
 
     # Check that the rollout costs are different across different models
     costs = jnp.sum(rollouts.costs, axis=(1, 2))
