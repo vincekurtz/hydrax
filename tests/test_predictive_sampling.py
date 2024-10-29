@@ -14,12 +14,12 @@ def test_predictive_sampling() -> None:
 
     # Initialize the policy parameters
     params = opt.init_params()
-    assert params.mean.shape == (task.planning_horizon - 1, 1)
+    assert params.mean.shape == (task.planning_horizon, 1)
     assert isinstance(params.rng, jax._src.prng.PRNGKeyArray)
 
     # Sample control sequences from the policy
     controls, new_params = opt.sample_controls(params)
-    assert controls.shape == (opt.num_samples + 1, task.planning_horizon - 1, 1)
+    assert controls.shape == (opt.num_samples + 1, task.planning_horizon, 1)
     assert new_params.rng != params.rng
 
     # Roll out the control sequences
@@ -28,28 +28,28 @@ def test_predictive_sampling() -> None:
 
     assert rollouts.costs.shape == (
         opt.num_samples + 1,
-        task.planning_horizon,
+        task.planning_horizon + 1,
     )
     assert rollouts.observations.shape == (
         opt.num_samples + 1,
-        task.planning_horizon,
+        task.planning_horizon + 1,
         2,
     )
     assert rollouts.controls.shape == (
         opt.num_samples + 1,
-        task.planning_horizon - 1,
+        task.planning_horizon,
         1,
     )
     assert rollouts.trace_sites.shape == (
         opt.num_samples + 1,
-        task.planning_horizon,
+        task.planning_horizon + 1,
         len(task.trace_site_ids),
         3,
     )
 
     # Pick the best rollout
     updated_params = opt.update_params(new_params, rollouts)
-    assert updated_params.mean.shape == (task.planning_horizon - 1, 1)
+    assert updated_params.mean.shape == (task.planning_horizon, 1)
     assert jnp.all(updated_params.mean != new_params.mean)
 
 
@@ -78,7 +78,7 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon) * task.dt
+        times = jnp.arange(task.planning_horizon + 1) * task.dt
 
         ax[0].plot(times, best_obs[:, 0])
         ax[0].set_ylabel(r"$\theta$")
