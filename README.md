@@ -79,7 +79,7 @@ Hydrax considers optimal control problems of the form
 
 ```math
 \begin{align}
-\min_{u_t} & \sum_{t=0}^{T-1} \ell(x_t, u_t) + \phi(x_T), \\
+\min_{u_t} & \sum_{t=0}^{T} \ell(x_t, u_t) + \phi(x_{T+1}), \\
 \mathrm{s.t.}~& x_{t+1} = f(x_t, u_t),
 \end{align}
 ```

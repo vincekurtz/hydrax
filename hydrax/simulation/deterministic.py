@@ -51,10 +51,9 @@ def run_interactive(
         trace_color: The RGBA color of the trace lines.
     """
     # Report the planning horizon in seconds for debugging
-    num_steps = controller.task.planning_horizon - 1
     print(
-        f"Planning with {num_steps} steps "
-        f"over a {num_steps * controller.task.dt} "
+        f"Planning with {controller.task.planning_horizon} steps "
+        f"over a {controller.task.planning_horizon * controller.task.dt} "
         f"second horizon."
     )
 

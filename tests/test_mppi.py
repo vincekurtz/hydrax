@@ -32,7 +32,7 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon) * task.dt
+        times = jnp.arange(task.planning_horizon + 1) * task.dt
 
         ax[0].plot(times, final_rollout.observations[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")
