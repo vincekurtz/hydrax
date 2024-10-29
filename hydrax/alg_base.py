@@ -16,10 +16,10 @@ class Trajectory:
     """Data class for storing rollout data.
 
     Attributes:
-        controls: Control actions for each time step (size N - 1).
-        costs: Costs associated with each time step (size N).
-        observations: Observations at each time step (size N).
-        trace_sites: Positions of trace sites at each time step (size N).
+        controls: Control actions for each time step (size T).
+        costs: Costs associated with each time step (size T+1).
+        observations: Observations at each time step (size T+1).
+        trace_sites: Positions of trace sites at each time step (size T+1).
     """
 
     controls: jax.Array
@@ -29,7 +29,7 @@ class Trajectory:
 
     def __len__(self):
         """Return the number of time steps in the trajectory (N)."""
-        return self.costs.shape[-1]
+        return self.costs.shape[-1] - 1
 
 
 class SamplingBasedController(ABC):

@@ -12,11 +12,11 @@ class Task(ABC):
 
     The task is a discrete-time optimal control problem of the form
 
-        minᵤ ϕ(x_T) + ∑ₜ ℓ(xₜ, uₜ)
+        minᵤ ϕ(x_{T+1}) + ∑ₜ ℓ(xₜ, uₜ)
         s.t. xₜ₊₁ = f(xₜ, uₜ)
 
     where the dynamics f(xₜ, uₜ) are defined by a MuJoCo model, and the costs
-    ℓ(xₜ, uₜ) and ϕ(x_T) are defined by the task instance itself.
+    ℓ(xₜ, uₜ) and ϕ(x_{T+1}) are defined by the task instance itself.
     """
 
     def __init__(
@@ -30,7 +30,7 @@ class Task(ABC):
 
         Args:
             mj_model: The MuJoCo model to use for simulation.
-            planning_horizon: The number of control steps to plan over.
+            planning_horizon: The number of control steps (T) to plan over.
             sim_steps_per_control_step: The number of simulation steps to take
                                         for each control step.
             trace_sites: A list of site names to visualize with traces.
