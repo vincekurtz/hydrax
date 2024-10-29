@@ -1,11 +1,10 @@
 import sys
 
 import mujoco
-import numpy as np
 
 from hydrax import ROOT
 from hydrax.algs import MPPI, PredictiveSampling
-from hydrax.mpc import run_interactive
+from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.walker import Walker
 
 """
@@ -30,13 +29,13 @@ else:
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/walker/scene.xml")
 mj_model.opt.timestep = 0.005
 mj_model.opt.iterations = 50
-start_state = np.zeros(mj_model.nq + mj_model.nv)
+mj_data = mujoco.MjData(mj_model)
 
 # Run the interactive simulation
 run_interactive(
-    mj_model,
     ctrl,
-    start_state,
+    mj_model,
+    mj_data,
     frequency=50,
     fixed_camera_id=0,
     show_traces=True,

@@ -2,12 +2,11 @@ import sys
 
 import evosax
 import mujoco
-import numpy as np
 
 from hydrax import ROOT
 from hydrax.algs import MPPI, Evosax, PredictiveSampling
-from hydrax.mpc import run_interactive
 from hydrax.risk import WorstCase
+from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.particle import Particle
 
 """
@@ -66,13 +65,13 @@ else:
 
 # Define the model used for simulation
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/particle/scene.xml")
-start_state = np.array([0.0, 0.0, 0.0, 0.0])
+mj_data = mujoco.MjData(mj_model)
 
 # Run the interactive simulation
 run_interactive(
-    mj_model,
     ctrl,
-    start_state,
+    mj_model,
+    mj_data,
     frequency=50,
     show_traces=True,
     max_traces=5,

@@ -2,11 +2,10 @@ import sys
 
 import evosax
 import mujoco
-import numpy as np
 
 from hydrax import ROOT
 from hydrax.algs import CEM, MPPI, Evosax, PredictiveSampling
-from hydrax.mpc import run_interactive
+from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.cube import CubeRotation
 
 """
@@ -59,13 +58,13 @@ else:
 
 # Define the model used for simulation
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
-start_state = np.concatenate([mj_model.qpos0, np.zeros(mj_model.nv)])
+mj_data = mujoco.MjData(mj_model)
 
 # Run the interactive simulation
 run_interactive(
-    mj_model,
     ctrl,
-    start_state,
+    mj_model,
+    mj_data,
     frequency=25,
     fixed_camera_id=None,
     show_traces=True,
