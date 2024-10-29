@@ -116,6 +116,12 @@ def run_controller(
     mjx_data = mjx.make_data(ctrl.task.model)
     policy_params = ctrl.init_params()
 
+    # Print out some planning horizon information
+    print(
+        f"Planning with {ctrl.task.planning_horizon} steps "
+        f"over a {ctrl.task.planning_horizon * ctrl.task.dt} second horizon."
+    )
+
     # Jit the optimizer step, then signal that we're ready to go
     print("Jitting controller...")
     st = time.time()
