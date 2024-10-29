@@ -62,8 +62,8 @@ def test_controller() -> None:
 def manual_test_interactive() -> None:
     """Test running an interactive simulation.
 
-    Note that this does not as a normal test, only when called directly, because
-    this will open a window and block the test suite.
+    Note that this does not run as a normal test, only when called directly. It
+    opens a window and would block the test suite.
     """
     mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/pendulum/scene.xml")
     mj_data = mujoco.MjData(mj_model)
