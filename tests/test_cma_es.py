@@ -15,22 +15,22 @@ def test_cmaes() -> None:
 
     # Initialize the policy parameters
     params = ctrl.init_params()
-    assert params.opt_state.C.shape == (19, 19)
+    assert params.opt_state.C.shape == (20, 20)
     assert params.opt_state.weights.shape == (32,)
 
     # Sample control sequences from the policy
     controls, params = ctrl.sample_controls(params)
-    assert controls.shape == (32, 19, 1)
+    assert controls.shape == (32, 20, 1)
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
     rollouts = ctrl.eval_rollouts(task.model, state, controls)
-    assert rollouts.costs.shape == (32, 20)
+    assert rollouts.costs.shape == (32, 21)
 
     # Update the policy parameters
     params = ctrl.update_params(params, rollouts)
-    assert params.controls.shape == (19, 1)
-    assert jnp.all(params.controls != jnp.zeros((19, 1)))
+    assert params.controls.shape == (20, 1)
+    assert jnp.all(params.controls != jnp.zeros((20, 1)))
     assert params.opt_state.best_fitness > 0.0
 
 
@@ -60,7 +60,7 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon) * task.dt
+        times = jnp.arange(task.planning_horizon + 1) * task.dt
 
         ax[0].plot(times, final_rollout.observations[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")
