@@ -14,7 +14,9 @@ offers limited features (e.g., no trace visualization).
 
 
 # For asynchronous simulation, we need to define the task and controller inside
-# a function. This ensures that all jax code is isolated in one process.
+# a function. This ensures that all jax code is isolated in one process. Any
+# jax code outside that process will result in various inscrutable `os.fork()`
+# and `CUDA_ERROR_NOT_INITIALIZED` errors.
 def make_controller() -> PredictiveSampling:
     """Set up the controller."""
     task = CubeRotation()

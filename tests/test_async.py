@@ -32,8 +32,13 @@ def test_shared_nparray() -> None:
     assert np.all(shared[1:] == original[1:])
 
 
-def test_controller() -> None:
-    """Test running the controller in a separate process."""
+def manual_test_controller() -> None:
+    """Test running the controller in a separate process.
+
+    This does not run as a normal test, only when called directly. This is
+    running any jax code outside the controller results in a `os.fork() is
+    incompatible with multithreaded code, and JAX is multithreaded` error.
+    """
     mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/pendulum/scene.xml")
     mj_data = mujoco.MjData(mj_model)
 
@@ -78,5 +83,5 @@ def manual_test_interactive() -> None:
 
 if __name__ == "__main__":
     test_shared_nparray()
-    test_controller()
+    manual_test_controller()
     manual_test_interactive()
