@@ -1,9 +1,8 @@
 import mujoco
-import numpy as np
 
 from hydrax import ROOT
 from hydrax.algs import PredictiveSampling
-from hydrax.mpc import run_interactive
+from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid import Humanoid
 
 """
@@ -18,15 +17,16 @@ ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.2)
 
 # Define the model used for simulation
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
-start_state = np.concatenate(
-    [mj_model.keyframe("stand").qpos, np.zeros(mj_model.nv)]
-)
+
+# Set the initial state
+mj_data = mujoco.MjData(mj_model)
+mj_data.qpos[:] = mj_model.keyframe("stand").qpos
 
 # Run the interactive simulation
 run_interactive(
-    mj_model,
     ctrl,
-    start_state,
+    mj_model,
+    mj_data,
     frequency=30,
     show_traces=True,
     max_traces=1,

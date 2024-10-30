@@ -10,11 +10,16 @@ from mujoco import mjx
 
 from hydrax.alg_base import SamplingBasedController
 
+"""
+Tools for deterministic (synchronous) simulation, with the simulator and
+controller running one after the other in the same thread.
+"""
+
 
 def run_interactive(
-    mj_model: mujoco.MjModel,
     controller: SamplingBasedController,
-    start_state: np.ndarray,
+    mj_model: mujoco.MjModel,
+    mj_data: mujoco.MjData,
     frequency: float,
     fixed_camera_id: int = None,
     show_traces: bool = True,
@@ -24,29 +29,27 @@ def run_interactive(
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
+    This is a deterministic simulation, with the controller and simulation
+    running in the same thread. This is useful for repeatability, but is less
+    realistic than asynchronous simulation.
+
+    Note: the actual control frequency may be slightly different than what is
+    requested, because the control period must be an integer multiple of the
+    simulation time step.
+
     Args:
-        mj_model: The MuJoCo model for the system to use for simulation. Could
-                  be slightly different from the model used by the controller.
         controller: The controller instance, which includes the task
                     (e.g., model, cost) definition.
-        start_state: The initial state x₀ = [q₀, v₀] of the system.
+        mj_model: The MuJoCo model for the system to use for simulation. Could
+                  be slightly different from the model used by the controller.
+        mj_data: A MuJoCo data object containing the initial system state.
         frequency: The requested control frequency (Hz) for replanning.
         fixed_camera_id: The camera ID to use for the fixed camera view.
         show_traces: Whether to show traces for the site positions.
         max_traces: The maximum number of traces to show at once.
         trace_width: The width of the trace lines (in pixels).
         trace_color: The RGBA color of the trace lines.
-
-    Note: the actual control frequency may be slightly different than what is
-    requested, because the control period must be an integer multiple of the
-    simulation time step.
     """
-    # Set the initial state
-    assert len(start_state) == mj_model.nq + mj_model.nv
-    mj_data = mujoco.MjData(mj_model)
-    mj_data.qpos[:] = start_state[: mj_model.nq]
-    mj_data.qvel[:] = start_state[mj_model.nq :]
-
     # Report the planning horizon in seconds for debugging
     print(
         f"Planning with {controller.task.planning_horizon} steps "
@@ -74,6 +77,7 @@ def run_interactive(
     jit_optimize = jax.jit(controller.optimize, donate_argnums=(1,))
 
     # Warm-up the controller
+    print("Jitting the controller...")
     st = time.time()
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
     print(f"Time to jit: {time.time() - st:.3f} seconds")
@@ -152,3 +156,6 @@ def run_interactive(
                 f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s",
                 end="\r",
             )
+
+    # Preserve the last printout
+    print("")

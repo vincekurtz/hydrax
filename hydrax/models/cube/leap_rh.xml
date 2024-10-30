@@ -11,7 +11,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
     iterations="4"
     ls_iterations="10"
   >
-    <flag eulerdamp="disable" />
+    <flag eulerdamp="disable"/>
   </option>
 
   <custom>
@@ -42,7 +42,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
     <!-- friction and fingertip geoms -->
     <geom friction="0.2" solref="0.01 1.5" solimp="0.0 0.95 0.001" />
     <default class="cube">
-      <geom friction="0.3 0.05 0.01" />
+      <geom friction="0.3 0.05 0.01" conaffinity="2" />
     </default>
     <default class="tip">
       <geom type="capsule" size="0.012 0.008" pos="0 -0.03 0.015" quat="0.717 0.717 0 0"
@@ -396,8 +396,8 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
             <inertial pos="0 0 -0.0070806" quat="0.707107 0.707107 0 0" mass="0.003"
               diaginertia="6.1932e-07 5.351e-07 2.1516e-07" />
             <joint name="th_axl" class="thumb_axl" />
-            <geom name="th_bs_collision_1" pos="0.01196 0 -0.0158" quat="0.707109 0.707105 0 0"
-              type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="thumb_base" />
+            <!-- <geom name="th_bs_collision_1" pos="0.01196 0 -0.0158" quat="0.707109 0.707105 0 0"
+              type="mesh" contype="0" conaffinity="0" group="1" density="0" mesh="thumb_base" /> -->
             <!-- <geom name="th_bs_collision_2" size="0.009 0.0165 0.002" pos="0 0 -0.0015"
             type="box"/>
             <geom name="th_bs_collision_3" size="0.007 0.002 0.01" pos="0 -0.015 -0.013" type="box"/>

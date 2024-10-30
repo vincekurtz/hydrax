@@ -21,7 +21,7 @@
     <light pos="0 0 1" />
     <body name="cube" pos="0.11 0.0 0.1" quat="1 0 0 0">
       <freejoint />
-      <geom name="cube" type="box" size=".035 .035 .035" mass=".108" material="cube" />
+      <geom class="cube" name="cube" type="box" size=".035 .035 .035" mass=".108" material="cube" />
       <site name="cube_center" pos="0 0 0" />
     </body>
   </worldbody>
