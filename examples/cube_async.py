@@ -12,18 +12,18 @@ Asynchronous simulation is more realistic than deterministic simulation, but
 offers limited features (e.g., no trace visualization).
 """
 
+# Asynchronous simulations must be wrapped in a __main__ block, see
+# https://docs.python.org/3/library/multiprocessing.html
 if __name__ == "__main__":
-    # Asynchronous simulations must be wrapped in a __main__ block, see
-    # https://docs.python.org/3/library/multiprocessing.html
-
     # Define the task and controller
     task = CubeRotation()
-
-    ctrl = PredictiveSampling(task, num_samples=32, noise_level=0.2, num_randomizations=32)
+    ctrl = PredictiveSampling(
+        task, num_samples=32, noise_level=0.2, num_randomizations=32
+    )
 
     # Define the model used for simulation (with more realistic parameters)
     mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
-    mj_model.opt.timestep = 0.002
+    mj_model.opt.timestep = 0.005
     mj_model.opt.iterations = 100
     mj_model.opt.ls_iterations = 50
     mj_model.opt.cone = mujoco.mjtCone.mjCONE_ELLIPTIC
