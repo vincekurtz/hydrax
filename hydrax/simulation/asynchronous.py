@@ -190,17 +190,17 @@ def run_simulator(
             start_time = time.time()
 
             # Write the latest state to shared memory for the controller to read
-            shm_data.qpos[:] = np.copy(mj_data.qpos)
-            shm_data.qvel[:] = np.copy(mj_data.qvel)
+            shm_data.qpos[:] = mj_data.qpos
+            shm_data.qvel[:] = mj_data.qvel
 
             if len(mj_data.mocap_pos) > 0:
-                shm_data.mocap_pos[:] = np.copy(mj_data.mocap_pos)
-                shm_data.mocap_quat[:] = np.copy(mj_data.mocap_quat)
+                shm_data.mocap_pos[:] = mj_data.mocap_pos
+                shm_data.mocap_quat[:] = mj_data.mocap_quat
 
             # Read the lastest control values from shared memory
             # TODO: actually query the spline rather than assuming zero-order
             # hold and a sufficiently high control rate
-            mj_data.ctrl[:] = np.copy(shm_data.ctrl[:])
+            mj_data.ctrl[:] = shm_data.ctrl[:]
 
             # Step the simulation
             mujoco.mj_step(mj_model, mj_data)
