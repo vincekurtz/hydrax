@@ -11,7 +11,7 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
     iterations="4"
     ls_iterations="10"
   >
-    <flag eulerdamp="disable" />
+    <flag eulerdamp="disable"/>
   </option>
 
   <custom>
@@ -40,17 +40,17 @@ Adopted from https://github.com/alberthli/mujoco_mpc/blob/leap-hardware/mjpc/tas
   <!-- defaults -->
   <default>
     <!-- friction and fingertip geoms -->
-    <geom friction="0.2" solref="0.01 1.5" solimp="0.0 0.95 0.001" />
+    <geom friction="0.2" solref="0.01 1.5" solimp="0.0 0.95 0.001" contype="1"/>
     <default class="cube">
-      <geom friction="0.3 0.05 0.01" />
+      <geom friction="0.3 0.05 0.01" conaffinity="1"/>
     </default>
     <default class="tip">
       <geom type="capsule" size="0.012 0.008" pos="0 -0.03 0.015" quat="0.717 0.717 0 0"
-        friction="0.7 0.05 0.0002" />
+        friction="0.7 0.05 0.0002"/>
     </default>
     <default class="thumb_tip">
       <geom type="capsule" size="0.012 0.008" pos="0.0 -0.04 -0.015" quat="0.717 0.717 0 0"
-        friction="0.7 0.05 0.0002" />
+        friction="0.7 0.05 0.0002"/>
     </default>
 
     <!-- actuators -->
