@@ -1,6 +1,6 @@
+import multiprocessing as mp
 import time
-from multiprocessing import Event, Lock, Process, shared_memory
-from typing import Callable, Tuple
+from multiprocessing import Event, shared_memory
 
 import jax
 import jax.numpy as jnp
@@ -24,46 +24,50 @@ of features (e.g., no trace visualization, zero-order-hold interpolation only).
 class SharedMemoryNumpyArray:
     """Helper class to store a numpy array in shared memory."""
 
-    def __init__(self, arr: np.ndarray):
+    def __init__(self, arr: np.ndarray, ctx: mp.context.BaseContext):
         """Create a shared memory numpy array.
 
         Args:
             arr: The numpy array to store in shared memory. Size and dtype must
                  be fixed.
+            ctx: The multiprocessing context to use for shared memory.
         """
         self.shm = shared_memory.SharedMemory(create=True, size=arr.nbytes)
-        self.data = np.ndarray(arr.shape, dtype=arr.dtype, buffer=self.shm.buf)
-        self.data[:] = arr[:]
-        self.lock = Lock()
+        shared_arr = np.ndarray(arr.shape, dtype=arr.dtype, buffer=self.shm.buf)
+        shared_arr[:] = arr[:]
+        self.shape = arr.shape
+        self.dtype = arr.dtype
+        self.lock = ctx.Lock()
 
     def __getitem__(self, key: int) -> np.ndarray:
         """Get an item from the shared array."""
-        return self.data[key]
+        shm = shared_memory.SharedMemory(name=self.shm.name)
+        arr = np.ndarray(self.shape, dtype=self.dtype, buffer=shm.buf)
+        return np.copy(arr[key])  # Need to copy here to avoid segfaults
 
     def __setitem__(self, key: int, value: np.ndarray) -> None:
         """Set an item in the shared array."""
         with self.lock:
-            self.data[key] = value
+            shm = shared_memory.SharedMemory(name=self.shm.name)
+            arr = np.ndarray(self.shape, dtype=self.dtype, buffer=shm.buf)
+            arr[key] = value
 
     def __str__(self) -> str:
         """Return the string representation of the shared array."""
-        return str(self.data)
+        shm = shared_memory.SharedMemory(name=self.shm.name)
+        arr = np.ndarray(self.shape, dtype=self.dtype, buffer=shm.buf)
+        return str(arr)
 
     def __del__(self) -> None:
         """Clean up the shared memory on deletion."""
         self.shm.close()
         self.shm.unlink()
 
-    @property
-    def shape(self) -> Tuple[int, ...]:
-        """Return the shape of the shared array."""
-        return self.shared_arr.shape
-
 
 class SharedMemoryMujocoData:
     """Helper class for passing mujoco data between concurrent processes."""
 
-    def __init__(self, mj_data: mujoco.MjData):
+    def __init__(self, mj_data: mujoco.MjData, ctx: mp.context.BaseContext):
         """Create shared memory objects for state and control data.
 
         Note that this does not copy the full mj_data object, only those fields
@@ -71,48 +75,43 @@ class SharedMemoryMujocoData:
 
         Args:
             mj_data: The mujoco data object to store in shared memory.
+            ctx: The multiprocessing context to use.
         """
         # N.B. we use float32 to match JAX's default precision
         self.qpos = SharedMemoryNumpyArray(
-            np.array(mj_data.qpos, dtype=np.float32)
+            np.array(mj_data.qpos, dtype=np.float32), ctx
         )
         self.qvel = SharedMemoryNumpyArray(
-            np.array(mj_data.qvel, dtype=np.float32)
+            np.array(mj_data.qvel, dtype=np.float32), ctx
         )
         self.ctrl = SharedMemoryNumpyArray(
-            np.zeros(mj_data.ctrl.shape, dtype=np.float32)
+            np.zeros(mj_data.ctrl.shape, dtype=np.float32), ctx
         )
 
         if len(mj_data.mocap_pos) > 0:
             self.mocap_pos = SharedMemoryNumpyArray(
-                np.array(mj_data.mocap_pos, dtype=np.float32)
+                np.array(mj_data.mocap_pos, dtype=np.float32), ctx
             )
             self.mocap_quat = SharedMemoryNumpyArray(
-                np.array(mj_data.mocap_quat, dtype=np.float32)
+                np.array(mj_data.mocap_quat, dtype=np.float32), ctx
             )
 
 
 def run_controller(
-    setup_fn: Callable[[], SamplingBasedController],
+    ctrl: SamplingBasedController,
     shm_data: SharedMemoryMujocoData,
     ready: Event,
     finished: Event,
 ) -> None:
     """Run the controller, communicating with the simulator over shared memory.
 
-    Note: we need to create the controller within this process, otherwise
-    JAX will complain about sharing data across processes. That's why we take
-    a callable `setup_fn` to create the controller, rather than the controller
-    itself.
-
     Args:
-        setup_fn: Function to set up the controller.
+        ctrl: The controller instance (which includes the task definition).
         shm_data: Shared memory object for state and control action data.
         ready: Shared flag for signaling that the controller is ready.
         finished: Shared flag for stopping the simulation.
     """
-    # Set up the controller
-    ctrl = setup_fn()
+    # Initialize the policy parameters and state estimate
     mjx_data = mjx.make_data(ctrl.task.model)
     policy_params = ctrl.init_params()
 
@@ -141,13 +140,13 @@ def run_controller(
         # Set the start state for the controller, reading the lastest state info
         # from shared memory
         mjx_data = mjx_data.replace(
-            qpos=jnp.array(shm_data.qpos.data),
-            qvel=jnp.array(shm_data.qvel.data),
+            qpos=jnp.array(shm_data.qpos[:]),
+            qvel=jnp.array(shm_data.qvel[:]),
         )
         if len(mjx_data.mocap_pos) > 0:
             mjx_data = mjx_data.replace(
-                mocap_pos=jnp.array(shm_data.mocap_pos.data),
-                mocap_quat=jnp.array(shm_data.mocap_quat.data),
+                mocap_pos=jnp.array(shm_data.mocap_pos[:]),
+                mocap_quat=jnp.array(shm_data.mocap_quat[:]),
             )
 
         # Do a planning step
@@ -217,7 +216,7 @@ def run_simulator(
 
 
 def run_interactive(
-    make_controller: Callable[[], SamplingBasedController],
+    controller: SamplingBasedController,
     mj_model: mujoco.MjModel,
     mj_data: mujoco.MjData,
 ) -> None:
@@ -227,27 +226,25 @@ def run_interactive(
     controller and simulator in separate processes. This is more realistic, but
     offers fewer features (e.g., no trace visualization).
 
-    Note: this takes a function that creates the controller, rather than the
-    controller itself, to ensure that all JAX data is created within the same
-    process.
-
     Args:
-        make_controller: Function that sets up the controller.
+        controller: The controller to use for planning.
         mj_model: Mujoco model for the simulation.
         mj_data: Mujoco data specifying the initial state.
     """
+    ctx = mp.get_context("spawn")  # Need to use spawn for jax compatibility
+
     # Create shared_memory data
-    shm_data = SharedMemoryMujocoData(mj_data)
-    ready = Event()
-    finished = Event()
+    shm_data = SharedMemoryMujocoData(mj_data, ctx)
+    ready = ctx.Event()
+    finished = ctx.Event()
 
     # Set up the simulator and controller processes
-    sim = Process(
+    sim = ctx.Process(
         target=run_simulator,
         args=(mj_model, mj_data, shm_data, ready, finished),
     )
-    control = Process(
-        target=run_controller, args=(make_controller, shm_data, ready, finished)
+    control = ctx.Process(
+        target=run_controller, args=(controller, shm_data, ready, finished)
     )
 
     # Run the simulation and controller in parallel
