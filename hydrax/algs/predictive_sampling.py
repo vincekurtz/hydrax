@@ -61,7 +61,7 @@ class PredictiveSampling(SamplingBasedController):
         noise = jax.random.normal(
             sample_rng,
             (
-                self.num_samples,
+                self.num_samples - 1,
                 self.task.planning_horizon,
                 self.task.model.nu,
             ),

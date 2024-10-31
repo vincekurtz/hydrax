@@ -19,7 +19,7 @@ def test_predictive_sampling() -> None:
 
     # Sample control sequences from the policy
     controls, new_params = opt.sample_controls(params)
-    assert controls.shape == (opt.num_samples + 1, task.planning_horizon, 1)
+    assert controls.shape == (opt.num_samples, task.planning_horizon, 1)
     assert new_params.rng != params.rng
 
     # Roll out the control sequences
@@ -27,21 +27,21 @@ def test_predictive_sampling() -> None:
     rollouts = opt.eval_rollouts(task.model, state, controls)
 
     assert rollouts.costs.shape == (
-        opt.num_samples + 1,
+        opt.num_samples,
         task.planning_horizon + 1,
     )
     assert rollouts.observations.shape == (
-        opt.num_samples + 1,
+        opt.num_samples,
         task.planning_horizon + 1,
         2,
     )
     assert rollouts.controls.shape == (
-        opt.num_samples + 1,
+        opt.num_samples,
         task.planning_horizon,
         1,
     )
     assert rollouts.trace_sites.shape == (
-        opt.num_samples + 1,
+        opt.num_samples,
         task.planning_horizon + 1,
         len(task.trace_site_ids),
         3,
