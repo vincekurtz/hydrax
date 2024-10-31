@@ -33,6 +33,10 @@ def test_walker() -> None:
     assert phi.shape == ()
     assert phi > 0.0
 
+    # Check observations
+    obs = task.get_obs(state)
+    assert obs.shape == (task.model.nq + task.model.nv - 1,)
+
 
 if __name__ == "__main__":
     test_walker()

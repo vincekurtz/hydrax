@@ -56,3 +56,9 @@ class Particle(Task):
         """Randomly shift the measured particle position."""
         shift = jax.random.uniform(rng, (2,), minval=-0.01, maxval=0.01)
         return {"qpos": data.qpos + shift}
+
+    def get_obs(self, state: mjx.Data) -> jax.Array:
+        """Observe the position relative to the target and the velocity."""
+        pos = state.site_xpos[self.pointmass_id, 0:2] - state.mocap_pos[0, 0:2]
+        vel = state.qvel[:]
+        return jnp.concatenate([pos, vel])
