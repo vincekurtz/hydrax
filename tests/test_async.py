@@ -57,7 +57,8 @@ def test_controller() -> None:
     )
 
     proc.start()
-    time.sleep(5)
+    ready.wait()
+    time.sleep(1)
     finished.set()
     proc.join()
 
