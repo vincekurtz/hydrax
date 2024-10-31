@@ -72,3 +72,7 @@ class Walker(Task):
             self._get_torso_velocity(state) - self.target_velocity
         )
         return 10.0 * height_cost + 3.0 * orientation_cost + 1.0 * velocity_cost
+
+    def get_obs(self, state: mjx.Data) -> jax.Array:
+        """Observe everything in the state except the horizontal position."""
+        return jnp.concatenate([jnp.delete(state.qpos, 1), state.qvel])

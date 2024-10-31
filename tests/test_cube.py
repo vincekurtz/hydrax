@@ -59,9 +59,6 @@ def test_task() -> None:
     state = state.replace(mocap_quat=jnp.array([[0.0, 1.0, 0.0, 0.0]]))
     state = jax.jit(mjx.forward)(task.model, state)
 
-    y = task.get_obs(state)
-    assert y.shape == (32 + 13,)
-
     # Check cube position relative to the target grasp position
     cube_position = task._get_cube_position_err(state)
     assert jnp.all(cube_position == jnp.array([0.0, 0.0, 0.07]))
@@ -70,6 +67,12 @@ def test_task() -> None:
     cube_orientation = task._get_cube_orientation_err(state)
     assert cube_orientation.shape == (3,)
     assert jnp.allclose(cube_orientation, jnp.array([-jnp.pi, 0.0, 0.0]))
+
+    # Test observation
+    obs = task.get_obs(state)
+    assert jnp.all(obs[0:3] == cube_position)
+    assert jnp.all(obs[3:6] == cube_orientation)
+    assert obs.shape == (6 + 16 + task.model.nv,)
 
 
 if __name__ == "__main__":
