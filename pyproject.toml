@@ -8,23 +8,21 @@ version = "0.0.1"
 description = "Sampling-based model predictive control on GPU with JAX/MJX"
 readme = "README.md"
 license = {text="MIT"}
-requires-python = ">=3.11.0"
+requires-python = ">=3.12.0"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python",
 ]
 dependencies = [
-    "jax[cuda12_local]==0.4.28",
-    "nvidia-cudnn-cu12==8.9.2.26",
-    "jaxlib==0.4.28",
-    "flax>=0.8.1",
-    "pytest>=7.4.2",
-    "ruff>=0.4.10",
-    "pre-commit>=3.7.1",
-    "matplotlib>=3.8.3",
-    "mujoco>=3.2.4",
-    "mujoco-mjx>=3.2.4",
-    "evosax>=0.1.6",
+    "jax[cuda12]==0.4.35",
+    "flax==0.10.0",
+    "pytest==8.3.3",
+    "ruff==0.7.1",
+    "pre-commit==4.0.1",
+    "matplotlib==3.9.2",
+    "mujoco==3.2.4",
+    "mujoco-mjx==3.2.4",
+    "evosax==0.1.6",
 ]
 
 [tool.ruff]

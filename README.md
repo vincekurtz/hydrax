@@ -41,7 +41,7 @@ conda activate hydrax
 Install the package and dependencies:
 
 ```bash
-pip install -e . --find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+pip install -e .
 ```
 
 (Optional) set up pre-commit hooks:
