@@ -76,6 +76,13 @@ class SamplingBasedController(ABC):
                 {key: 0 for key in randomizations.keys()}
             )
 
+        # Set up multi-device parallelism
+        # TODO: check that num_samples is divisible by num_devices
+        self.sharding = jax.sharding.NamedSharding(
+            jax.sharding.Mesh(jax.devices(), ("x")),
+            jax.sharding.PartitionSpec("x"),
+        )
+
     def optimize(self, state: mjx.Data, params: Any) -> Tuple[Any, Trajectory]:
         """Perform an optimization step to update the policy parameters.
 
@@ -90,6 +97,9 @@ class SamplingBasedController(ABC):
         # Sample random control sequences
         controls, params = self.sample_controls(params)
         controls = jnp.clip(controls, self.task.u_min, self.task.u_max)
+
+        # Shard the controls across devices
+        controls = jax.lax.with_sharding_constraint(controls, self.sharding)
 
         # Set the initial state for each rollout.
         states = jax.vmap(lambda _, x: x, in_axes=(0, None))(
