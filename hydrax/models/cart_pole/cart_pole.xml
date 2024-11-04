@@ -1,4 +1,4 @@
-<mujoco model="Cartpole">
+<mujoco model="cartpole">
   <option timestep="0.01" iterations="1" ls_iterations="5">
     <flag contact="disable"/>
   </option>

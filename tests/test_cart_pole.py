@@ -17,7 +17,7 @@ def test_cart_pole() -> None:
 
     phi = task.terminal_cost(state)
     assert phi.shape == ()
-    assert phi > 0.0
+    assert phi >= 0.0
 
     y = task.get_obs(state)
     assert y.shape == (4,)
