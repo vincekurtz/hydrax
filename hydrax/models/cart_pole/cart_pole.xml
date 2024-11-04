@@ -1,0 +1,24 @@
+<mujoco model="cart_pole">
+    <option solver="Newton" timestep="0.02" iterations="1" ls_iterations="4" />
+    <compiler inertiafromgeom="true" />
+    <default>
+        <joint armature="0" damping="1" limited="true" />
+        <geom contype="0" friction="1 0.1 0.1" />
+    </default>
+    <size nstack="3000" />
+    <worldbody>
+        <camera name="camera" pos="0.0 3.0 0.8" xyaxes="-1.0 0.0 0.0 0.0 0.0 1.0" mode="fixed"/>
+        <geom name="rail" pos="0 0 0.8" quat="0.707 0 0.707 0" size="0.02 1" type="capsule" />
+        <body name="cart" pos="0 0 0.8">
+            <joint axis="1 0 0" limited="true" name="slider" pos="0 0 0.1" range="-1 1" type="slide" />
+            <geom name="cart" pos="0 0 0" quat="0.707 0 0.707 0" size="0.1 0.1" type="capsule" />
+            <body name="pole" pos="0 0 0">
+                <joint axis="0 1 0" name="hinge" pos="0 0 0" range="-inf inf" type="hinge" />
+                <geom fromto="0 0 0 0.001 0 0.6" name="cpole" size="0.049 0.3" type="capsule" />
+            </body>
+        </body>
+    </worldbody>
+    <actuator>
+        <motor ctrllimited="true" ctrlrange="-1 1" gear="100" joint="slider" name="slide" />
+    </actuator>
+</mujoco>
