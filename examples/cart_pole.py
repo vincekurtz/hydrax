@@ -13,7 +13,7 @@ Run an interactive simulation of a cart-pole swingup
 task = CartPole()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=512, noise_level=0.5)
+ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.3)
 
 # Define the model used for simulation
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cart_pole/scene.xml")
@@ -25,6 +25,7 @@ run_interactive(
     mj_model,
     mj_data,
     frequency=50,
+    fixed_camera_id=0,
     show_traces=True,
-    max_traces=1,
+    max_traces=5,
 )

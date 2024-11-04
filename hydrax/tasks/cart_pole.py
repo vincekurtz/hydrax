@@ -18,8 +18,8 @@ class CartPole(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=10,
-            sim_steps_per_control_step=1,
+            planning_horizon=5,
+            sim_steps_per_control_step=10,
             trace_sites=["tip"],
         )
 
@@ -32,11 +32,14 @@ class CartPole(Task):
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
         theta_cost = self._distance_to_upright(state)
-        centering_cost = 0.1 * jnp.sum(jnp.square(state.qpos[0]))
-        return theta_cost + centering_cost
+        centering_cost = jnp.sum(jnp.square(state.qpos[0]))
+        velocity_cost = 0.01 * jnp.sum(jnp.square(state.qvel))
+        control_cost = 0.01 * jnp.sum(jnp.square(control))
+        return theta_cost + centering_cost + velocity_cost + control_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
         theta_cost = self._distance_to_upright(state)
-        centering_cost = 0.1 * jnp.sum(jnp.square(state.qpos[0]))
-        return theta_cost + centering_cost
+        centering_cost = jnp.sum(jnp.square(state.qpos[0]))
+        velocity_cost = 0.01 * jnp.sum(jnp.square(state.qvel))
+        return theta_cost + centering_cost + velocity_cost
