@@ -1,6 +1,5 @@
 import mujoco
 
-from hydrax import ROOT
 from hydrax.algs import PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid import Humanoid
@@ -16,7 +15,7 @@ task = Humanoid()
 ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.2)
 
 # Define the model used for simulation
-mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
+mj_model = task.mj_model
 
 # Set the initial state
 mj_data = mujoco.MjData(mj_model)

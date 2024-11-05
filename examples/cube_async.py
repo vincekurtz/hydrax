@@ -1,6 +1,5 @@
 import mujoco
 
-from hydrax import ROOT
 from hydrax.algs import PredictiveSampling
 from hydrax.simulation.asynchronous import run_interactive
 from hydrax.tasks.cube import CubeRotation
@@ -22,7 +21,7 @@ if __name__ == "__main__":
     )
 
     # Define the model used for simulation (with more realistic parameters)
-    mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
+    mj_model = task.mj_model
     mj_model.opt.timestep = 0.005
     mj_model.opt.iterations = 100
     mj_model.opt.ls_iterations = 50

@@ -3,7 +3,6 @@ import sys
 import evosax
 import mujoco
 
-from hydrax import ROOT
 from hydrax.algs import MPPI, Evosax, PredictiveSampling
 from hydrax.risk import WorstCase
 from hydrax.simulation.deterministic import run_interactive
@@ -64,7 +63,7 @@ else:
     sys.exit(1)
 
 # Define the model used for simulation
-mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/particle/scene.xml")
+mj_model = task.mj_model
 mj_data = mujoco.MjData(mj_model)
 
 # Run the interactive simulation

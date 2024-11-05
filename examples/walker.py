@@ -2,7 +2,6 @@ import sys
 
 import mujoco
 
-from hydrax import ROOT
 from hydrax.algs import MPPI, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.walker import Walker
@@ -26,7 +25,7 @@ else:
     sys.exit(1)
 
 # Define the model used for simulation
-mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/walker/scene.xml")
+mj_model = task.mj_model
 mj_model.opt.timestep = 0.005
 mj_model.opt.iterations = 50
 mj_data = mujoco.MjData(mj_model)
