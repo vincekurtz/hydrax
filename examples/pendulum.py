@@ -3,7 +3,6 @@ import sys
 import mujoco
 import numpy as np
 
-from hydrax import ROOT
 from hydrax.algs import MPPI, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.pendulum import Pendulum
@@ -27,7 +26,7 @@ else:
     sys.exit(1)
 
 # Define the model used for simulation
-mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/pendulum/scene.xml")
+mj_model = task.mj_model
 
 # Set the initial state
 mj_data = mujoco.MjData(mj_model)
