@@ -39,6 +39,7 @@ class Task(ABC):
               Newton iterations, etc., are set in the model itself.
         """
         assert isinstance(mj_model, mujoco.MjModel)
+        self.mj_model = mj_model
         self.model = mjx.put_model(mj_model)
         self.planning_horizon = planning_horizon
         self.sim_steps_per_control_step = sim_steps_per_control_step
