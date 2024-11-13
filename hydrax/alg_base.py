@@ -89,6 +89,33 @@ class SamplingBasedController(ABC):
         controls, params = self.sample_controls(params)
         controls = jnp.clip(controls, self.task.u_min, self.task.u_max)
 
+        # Roll out the control sequences, applying domain randomizations and
+        # combining costs using self.risk_strategy.
+        rng, dr_rng = jax.random.split(params.rng)
+        rollouts = self.rollout_with_randomizations(state, controls, dr_rng)
+        params = params.replace(rng=rng)
+
+        # Update the policy parameters based on the combined costs
+        params = self.update_params(params, rollouts)
+        return params, rollouts
+
+    def rollout_with_randomizations(
+        self,
+        state: mjx.Data,
+        controls: jax.Array,
+        rng: jax.Array,
+    ) -> Trajectory:
+        """Compute rollout costs, applying domain randomizations.
+
+        Args:
+            state: The initial state x₀.
+            controls: The control sequences, size (num rollouts, horizon - 1).
+            rng: The random number generator key for randomizing initial states.
+
+        Returns:
+            A Trajectory object containing the control, costs, and trace sites.
+            Costs are aggregated over domains using the given risk strategy.
+        """
         # Set the initial state for each rollout.
         states = jax.vmap(lambda _, x: x, in_axes=(0, None))(
             jnp.arange(self.num_randomizations), state
@@ -96,13 +123,11 @@ class SamplingBasedController(ABC):
 
         if self.num_randomizations > 1:
             # Randomize the initial states for each domain randomization
-            rng, subrng = jax.random.split(params.rng)
-            subrngs = jax.random.split(subrng, self.num_randomizations)
+            subrngs = jax.random.split(rng, self.num_randomizations)
             randomizations = jax.vmap(self.task.domain_randomize_data)(
                 states, subrngs
             )
             states = states.tree_replace(randomizations)
-            params = params.replace(rng=rng)
 
         # Apply the control sequences, parallelized over both rollouts and
         # domain randomizations.
@@ -112,15 +137,12 @@ class SamplingBasedController(ABC):
 
         # Combine the costs from different domain randomizations using the
         # specified risk strategy.
-        flat_costs = self.risk_strategy.combine_costs(rollouts.costs)
-        flat_controls = rollouts.controls[0]  # identical over randomizations
-        flat_rollouts = rollouts.replace(
-            costs=flat_costs, controls=flat_controls
+        costs = self.risk_strategy.combine_costs(rollouts.costs)
+        controls = rollouts.controls[0]  # identical over randomizations
+        trace_sites = rollouts.trace_sites[0]  # visualization only, take 1st
+        return rollouts.replace(
+            costs=costs, controls=controls, trace_sites=trace_sites
         )
-
-        # Update the policy parameters based on the combined costs
-        params = self.update_params(params, flat_rollouts)
-        return params, rollouts
 
     @partial(jax.vmap, in_axes=(None, None, None, 0))
     def eval_rollouts(

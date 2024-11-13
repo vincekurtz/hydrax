@@ -64,9 +64,9 @@ def test_open_loop() -> None:
         params, rollouts = jit_opt(state, params)
 
     # Pick the best rollout (first axis is for domain randomization, unused)
-    total_costs = jnp.sum(rollouts.costs[0], axis=1)
+    total_costs = jnp.sum(rollouts.costs, axis=1)
     best_idx = jnp.argmin(total_costs)
-    best_ctrl = rollouts.controls[0, best_idx]
+    best_ctrl = rollouts.controls[best_idx]
     assert total_costs[best_idx] <= 9.0
 
     states, _ = jax.jit(opt.eval_rollouts)(task.model, state, best_ctrl[None])

@@ -11,7 +11,7 @@ def test_open_loop() -> None:
     """Use MPPI for open-loop pendulum swingup."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = MPPI(task, num_samples=32, noise_level=0.1, temperature=0.1)
+    opt = MPPI(task, num_samples=32, noise_level=0.1, temperature=0.01)
     jit_opt = jax.jit(opt.optimize)
 
     # Initialize the system state and policy parameters
