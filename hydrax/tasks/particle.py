@@ -12,7 +12,9 @@ from hydrax.task_base import Task
 class Particle(Task):
     """A velocity-controlled planar point mass chases a target position."""
 
-    def __init__(self):
+    def __init__(
+        self, planning_horizon: int = 5, sim_steps_per_control_step: int = 5
+    ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/particle/scene.xml"
@@ -20,8 +22,8 @@ class Particle(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=5,
-            sim_steps_per_control_step=5,
+            planning_horizon=planning_horizon,
+            sim_steps_per_control_step=sim_steps_per_control_step,
             trace_sites=["pointmass"],
         )
 
