@@ -132,8 +132,8 @@ def run_interactive(
                                 viewer.user_scn.geoms[ii],
                                 mujoco.mjtGeom.mjGEOM_LINE,
                                 trace_width,
-                                rollouts.trace_sites[0, i, j, k],
-                                rollouts.trace_sites[0, i, j + 1, k],
+                                rollouts.trace_sites[i, j, k],
+                                rollouts.trace_sites[i, j + 1, k],
                             )
                             ii += 1
 

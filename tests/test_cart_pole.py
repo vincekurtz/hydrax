@@ -19,9 +19,6 @@ def test_cart_pole() -> None:
     assert phi.shape == ()
     assert phi >= 0.0
 
-    y = task.get_obs(state)
-    assert y.shape == (4,)
-
 
 if __name__ == "__main__":
     test_cart_pole()

@@ -68,12 +68,6 @@ def test_task() -> None:
     assert cube_orientation.shape == (3,)
     assert jnp.allclose(cube_orientation, jnp.array([-jnp.pi, 0.0, 0.0]))
 
-    # Test observation
-    obs = task.get_obs(state)
-    assert jnp.all(obs[0:3] == cube_position)
-    assert jnp.all(obs[3:6] == cube_orientation)
-    assert obs.shape == (6 + 16 + task.model.nv,)
-
 
 if __name__ == "__main__":
     test_mjx_model()

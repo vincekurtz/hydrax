@@ -25,9 +25,12 @@ def test_open_loop() -> None:
         params, _ = jit_opt(state, params)
 
     # Roll out the solution, check that it's good enough
-    final_rollout = jax.jit(opt.eval_rollouts)(
+    states, final_rollout = jax.jit(opt.eval_rollouts)(
         task.model, state, params.mean[None]
     )
+    theta = states.qpos[0, :, 0]
+    theta_dot = states.qvel[0, :, 0]
+
     total_cost = jnp.sum(final_rollout.costs[0])
     assert total_cost <= 9.0
     assert jnp.all(params.cov >= opt.sigma_min)
@@ -35,15 +38,15 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon + 1) * task.dt
+        times = jnp.arange(task.planning_horizon) * task.dt
 
-        ax[0].plot(times, final_rollout.observations[0, :, 0])
+        ax[0].plot(times, theta)
         ax[0].set_ylabel(r"$\theta$")
 
-        ax[1].plot(times, final_rollout.observations[0, :, 1])
+        ax[1].plot(times, theta_dot)
         ax[1].set_ylabel(r"$\dot{\theta}$")
 
-        ax[2].step(times[0:-1], final_rollout.controls[0], where="post")
+        ax[2].step(times, final_rollout.controls[0], where="post")
         ax[2].axhline(-1.0, color="black", linestyle="--")
         ax[2].axhline(1.0, color="black", linestyle="--")
         ax[2].set_ylabel("u")

@@ -18,13 +18,11 @@ class Trajectory:
     Attributes:
         controls: Control actions for each time step (size T).
         costs: Costs associated with each time step (size T+1).
-        observations: Observations at each time step (size T+1).
         trace_sites: Positions of trace sites at each time step (size T+1).
     """
 
     controls: jax.Array
     costs: jax.Array
-    observations: jax.Array
     trace_sites: jax.Array
 
     def __len__(self):
@@ -91,6 +89,33 @@ class SamplingBasedController(ABC):
         controls, params = self.sample_controls(params)
         controls = jnp.clip(controls, self.task.u_min, self.task.u_max)
 
+        # Roll out the control sequences, applying domain randomizations and
+        # combining costs using self.risk_strategy.
+        rng, dr_rng = jax.random.split(params.rng)
+        rollouts = self.rollout_with_randomizations(state, controls, dr_rng)
+        params = params.replace(rng=rng)
+
+        # Update the policy parameters based on the combined costs
+        params = self.update_params(params, rollouts)
+        return params, rollouts
+
+    def rollout_with_randomizations(
+        self,
+        state: mjx.Data,
+        controls: jax.Array,
+        rng: jax.Array,
+    ) -> Trajectory:
+        """Compute rollout costs, applying domain randomizations.
+
+        Args:
+            state: The initial state x₀.
+            controls: The control sequences, size (num rollouts, horizon - 1).
+            rng: The random number generator key for randomizing initial states.
+
+        Returns:
+            A Trajectory object containing the control, costs, and trace sites.
+            Costs are aggregated over domains using the given risk strategy.
+        """
         # Set the initial state for each rollout.
         states = jax.vmap(lambda _, x: x, in_axes=(0, None))(
             jnp.arange(self.num_randomizations), state
@@ -98,36 +123,31 @@ class SamplingBasedController(ABC):
 
         if self.num_randomizations > 1:
             # Randomize the initial states for each domain randomization
-            rng, subrng = jax.random.split(params.rng)
-            subrngs = jax.random.split(subrng, self.num_randomizations)
+            subrngs = jax.random.split(rng, self.num_randomizations)
             randomizations = jax.vmap(self.task.domain_randomize_data)(
                 states, subrngs
             )
             states = states.tree_replace(randomizations)
-            params = params.replace(rng=rng)
 
         # Apply the control sequences, parallelized over both rollouts and
         # domain randomizations.
-        rollouts = jax.vmap(
+        _, rollouts = jax.vmap(
             self.eval_rollouts, in_axes=(self.randomized_axes, 0, None)
         )(self.model, states, controls)
 
         # Combine the costs from different domain randomizations using the
         # specified risk strategy.
-        flat_costs = self.risk_strategy.combine_costs(rollouts.costs)
-        flat_controls = rollouts.controls[0]  # identical over randomizations
-        flat_rollouts = rollouts.replace(
-            costs=flat_costs, controls=flat_controls
+        costs = self.risk_strategy.combine_costs(rollouts.costs)
+        controls = rollouts.controls[0]  # identical over randomizations
+        trace_sites = rollouts.trace_sites[0]  # visualization only, take 1st
+        return rollouts.replace(
+            costs=costs, controls=controls, trace_sites=trace_sites
         )
-
-        # Update the policy parameters based on the combined costs
-        params = self.update_params(params, flat_rollouts)
-        return params, rollouts
 
     @partial(jax.vmap, in_axes=(None, None, None, 0))
     def eval_rollouts(
         self, model: mjx.Model, state: mjx.Data, controls: jax.Array
-    ) -> Trajectory:
+    ) -> Tuple[mjx.Data, Trajectory]:
         """Rollout control sequences (in parallel) and compute the costs.
 
         Args:
@@ -136,16 +156,16 @@ class SamplingBasedController(ABC):
             controls: The control sequences, size (num rollouts, horizon - 1).
 
         Returns:
-            A Trajectory object containing the costs, controls, observations.
+            The states (stacked) experienced during the rollouts.
+            A Trajectory object containing the control, costs, and trace sites.
         """
 
         def _scan_fn(
             x: mjx.Data, u: jax.Array
-        ) -> Tuple[mjx.Data, Tuple[jax.Array, jax.Array]]:
+        ) -> Tuple[mjx.Data, Tuple[mjx.Data, jax.Array, jax.Array]]:
             """Compute the cost and observation, then advance the state."""
             x = mjx.forward(model, x)  # compute site positions
             cost = self.task.dt * self.task.running_cost(x, u)
-            obs = self.task.get_obs(x)
             sites = self.task.get_trace_sites(x)
 
             # Advance the state for several steps, zero-order hold on control
@@ -156,23 +176,20 @@ class SamplingBasedController(ABC):
                 x.replace(ctrl=u),
             )
 
-            return x, (cost, obs, sites)
+            return x, (x, cost, sites)
 
-        final_state, (costs, observations, trace_sites) = jax.lax.scan(
+        final_state, (states, costs, trace_sites) = jax.lax.scan(
             _scan_fn, state, controls
         )
         final_cost = self.task.terminal_cost(final_state)
-        final_obs = self.task.get_obs(final_state)
         final_trace_sites = self.task.get_trace_sites(final_state)
 
         costs = jnp.append(costs, final_cost)
-        observations = jnp.vstack([observations, final_obs])
         trace_sites = jnp.append(trace_sites, final_trace_sites[None], axis=0)
 
-        return Trajectory(
+        return states, Trajectory(
             controls=controls,
             costs=costs,
-            observations=observations,
             trace_sites=trace_sites,
         )
 

@@ -89,18 +89,6 @@ class Task(ABC):
         """
         pass
 
-    def get_obs(self, state: mjx.Data) -> jax.Array:
-        """Get the observation vector at the current time step.
-
-        Args:
-            state: The current state xₜ.
-
-        Returns:
-            The observation vector yₜ.
-        """
-        # The default is to return the full state as the observation
-        return jnp.concatenate([state.qpos, state.qvel])
-
     def get_trace_sites(self, state: mjx.Data) -> jax.Array:
         """Get the positions of the trace sites at the current time step.
 
