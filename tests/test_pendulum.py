@@ -19,9 +19,6 @@ def test_pendulum() -> None:
     assert phi.shape == ()
     assert phi > 0.0
 
-    y = task.get_obs(state)
-    assert y.shape == (2,)
-
 
 if __name__ == "__main__":
     test_pendulum()

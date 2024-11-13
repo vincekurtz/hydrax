@@ -24,10 +24,6 @@ def test_particle() -> None:
     assert phi.shape == ()
     assert phi > 0.0
 
-    y = task.get_obs(state)
-    assert y.shape == (4,)
-    assert y[1] == -0.1
-
 
 if __name__ == "__main__":
     test_particle()

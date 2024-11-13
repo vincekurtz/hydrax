@@ -18,13 +18,11 @@ class Trajectory:
     Attributes:
         controls: Control actions for each time step (size T).
         costs: Costs associated with each time step (size T+1).
-        observations: Observations at each time step (size T+1).
         trace_sites: Positions of trace sites at each time step (size T+1).
     """
 
     controls: jax.Array
     costs: jax.Array
-    observations: jax.Array
     trace_sites: jax.Array
 
     def __len__(self):
@@ -136,7 +134,7 @@ class SamplingBasedController(ABC):
             controls: The control sequences, size (num rollouts, horizon - 1).
 
         Returns:
-            A Trajectory object containing the costs, controls, observations.
+            A Trajectory object containing the control, costs, and trace sites.
         """
 
         def _scan_fn(
@@ -145,7 +143,6 @@ class SamplingBasedController(ABC):
             """Compute the cost and observation, then advance the state."""
             x = mjx.forward(model, x)  # compute site positions
             cost = self.task.dt * self.task.running_cost(x, u)
-            obs = self.task.get_obs(x)
             sites = self.task.get_trace_sites(x)
 
             # Advance the state for several steps, zero-order hold on control
@@ -156,23 +153,20 @@ class SamplingBasedController(ABC):
                 x.replace(ctrl=u),
             )
 
-            return x, (cost, obs, sites)
+            return x, (cost, sites)
 
-        final_state, (costs, observations, trace_sites) = jax.lax.scan(
+        final_state, (costs, trace_sites) = jax.lax.scan(
             _scan_fn, state, controls
         )
         final_cost = self.task.terminal_cost(final_state)
-        final_obs = self.task.get_obs(final_state)
         final_trace_sites = self.task.get_trace_sites(final_state)
 
         costs = jnp.append(costs, final_cost)
-        observations = jnp.vstack([observations, final_obs])
         trace_sites = jnp.append(trace_sites, final_trace_sites[None], axis=0)
 
         return Trajectory(
             controls=controls,
             costs=costs,
-            observations=observations,
             trace_sites=trace_sites,
         )
 
