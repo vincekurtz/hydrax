@@ -10,14 +10,16 @@ from hydrax.task_base import Task
 class Humanoid(Task):
     """Locomotion with the Unitree G1 humanoid."""
 
-    def __init__(self):
+    def __init__(
+        self, planning_horizon: int = 2, sim_steps_per_control_step: int = 50
+    ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
 
         super().__init__(
             mj_model,
-            planning_horizon=2,
-            sim_steps_per_control_step=50,
+            planning_horizon=planning_horizon,
+            sim_steps_per_control_step=sim_steps_per_control_step,
             trace_sites=["imu", "left_foot", "right_foot"],
         )
 

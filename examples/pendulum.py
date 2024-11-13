@@ -12,7 +12,7 @@ Run an interactive simulation of the pendulum swingup task.
 """
 
 # Define the task (cost and dynamics)
-task = Pendulum()
+task = Pendulum(planning_horizon=10, sim_steps_per_control_step=5)
 
 # Set the controller based on command-line arguments
 if len(sys.argv) == 1 or sys.argv[1] == "ps":

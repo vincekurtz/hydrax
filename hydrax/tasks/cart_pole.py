@@ -10,7 +10,9 @@ from hydrax.task_base import Task
 class CartPole(Task):
     """A cart-pole swingup task."""
 
-    def __init__(self):
+    def __init__(
+        self, planning_horizon: int = 10, sim_steps_per_control_step: int = 10
+    ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/cart_pole/scene.xml"
@@ -18,8 +20,8 @@ class CartPole(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=10,
-            sim_steps_per_control_step=10,
+            planning_horizon=planning_horizon,
+            sim_steps_per_control_step=sim_steps_per_control_step,
             trace_sites=["tip"],
         )
 
