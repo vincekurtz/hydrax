@@ -24,16 +24,11 @@ def test_predictive_sampling() -> None:
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
-    rollouts = opt.eval_rollouts(task.model, state, controls)
+    _, rollouts = opt.eval_rollouts(task.model, state, controls)
 
     assert rollouts.costs.shape == (
         opt.num_samples + 1,
         task.planning_horizon + 1,
-    )
-    assert rollouts.observations.shape == (
-        opt.num_samples + 1,
-        task.planning_horizon + 1,
-        2,
     )
     assert rollouts.controls.shape == (
         opt.num_samples + 1,
@@ -71,22 +66,23 @@ def test_open_loop() -> None:
     # Pick the best rollout (first axis is for domain randomization, unused)
     total_costs = jnp.sum(rollouts.costs[0], axis=1)
     best_idx = jnp.argmin(total_costs)
-    best_obs = rollouts.observations[0, best_idx]
     best_ctrl = rollouts.controls[0, best_idx]
     assert total_costs[best_idx] <= 9.0
+
+    states, _ = jax.jit(opt.eval_rollouts)(task.model, state, best_ctrl[None])
 
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon + 1) * task.dt
+        times = jnp.arange(task.planning_horizon) * task.dt
 
-        ax[0].plot(times, best_obs[:, 0])
+        ax[0].plot(times, states.qpos[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")
 
-        ax[1].plot(times, best_obs[:, 1])
+        ax[1].plot(times, states.qvel[0, :, 1])
         ax[1].set_ylabel(r"$\dot{\theta}$")
 
-        ax[2].step(times[0:-1], best_ctrl, where="post")
+        ax[2].step(times, best_ctrl, where="post")
         ax[2].axhline(-1.0, color="black", linestyle="--")
         ax[2].axhline(1.0, color="black", linestyle="--")
         ax[2].set_ylabel("u")

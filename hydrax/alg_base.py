@@ -106,7 +106,7 @@ class SamplingBasedController(ABC):
 
         # Apply the control sequences, parallelized over both rollouts and
         # domain randomizations.
-        rollouts = jax.vmap(
+        _, rollouts = jax.vmap(
             self.eval_rollouts, in_axes=(self.randomized_axes, 0, None)
         )(self.model, states, controls)
 
@@ -125,7 +125,7 @@ class SamplingBasedController(ABC):
     @partial(jax.vmap, in_axes=(None, None, None, 0))
     def eval_rollouts(
         self, model: mjx.Model, state: mjx.Data, controls: jax.Array
-    ) -> Trajectory:
+    ) -> Tuple[mjx.Data, Trajectory]:
         """Rollout control sequences (in parallel) and compute the costs.
 
         Args:
@@ -134,12 +134,13 @@ class SamplingBasedController(ABC):
             controls: The control sequences, size (num rollouts, horizon - 1).
 
         Returns:
+            The states (stacked) experienced during the rollouts.
             A Trajectory object containing the control, costs, and trace sites.
         """
 
         def _scan_fn(
             x: mjx.Data, u: jax.Array
-        ) -> Tuple[mjx.Data, Tuple[jax.Array, jax.Array]]:
+        ) -> Tuple[mjx.Data, Tuple[mjx.Data, jax.Array, jax.Array]]:
             """Compute the cost and observation, then advance the state."""
             x = mjx.forward(model, x)  # compute site positions
             cost = self.task.dt * self.task.running_cost(x, u)
@@ -153,9 +154,9 @@ class SamplingBasedController(ABC):
                 x.replace(ctrl=u),
             )
 
-            return x, (cost, sites)
+            return x, (x, cost, sites)
 
-        final_state, (costs, trace_sites) = jax.lax.scan(
+        final_state, (states, costs, trace_sites) = jax.lax.scan(
             _scan_fn, state, controls
         )
         final_cost = self.task.terminal_cost(final_state)
@@ -164,7 +165,7 @@ class SamplingBasedController(ABC):
         costs = jnp.append(costs, final_cost)
         trace_sites = jnp.append(trace_sites, final_trace_sites[None], axis=0)
 
-        return Trajectory(
+        return states, Trajectory(
             controls=controls,
             costs=costs,
             trace_sites=trace_sites,

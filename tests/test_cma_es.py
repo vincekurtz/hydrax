@@ -24,7 +24,7 @@ def test_cmaes() -> None:
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
-    rollouts = ctrl.eval_rollouts(task.model, state, controls)
+    _, rollouts = ctrl.eval_rollouts(task.model, state, controls)
     assert rollouts.costs.shape == (32, 21)
 
     # Update the policy parameters
@@ -52,23 +52,24 @@ def test_open_loop() -> None:
     # Pick the best rollout
     best_cost = params.opt_state.best_fitness
     best_ctrl = params.controls
-    final_rollout = jax.jit(opt.eval_rollouts)(
+    states, final_rollout = jax.jit(opt.eval_rollouts)(
         task.model, state, best_ctrl[None]
     )
+
     assert jnp.allclose(best_cost, jnp.sum(final_rollout.costs[0]))
 
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon + 1) * task.dt
+        times = jnp.arange(task.planning_horizon) * task.dt
 
-        ax[0].plot(times, final_rollout.observations[0, :, 0])
+        ax[0].plot(times, states.qpos[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")
 
-        ax[1].plot(times, final_rollout.observations[0, :, 1])
+        ax[1].plot(times, states.qvel[0, :, 0])
         ax[1].set_ylabel(r"$\dot{\theta}$")
 
-        ax[2].step(times[0:-1], final_rollout.controls[0], where="post")
+        ax[2].step(times, final_rollout.controls[0], where="post")
         ax[2].axhline(-1.0, color="black", linestyle="--")
         ax[2].axhline(1.0, color="black", linestyle="--")
         ax[2].set_ylabel("u")
