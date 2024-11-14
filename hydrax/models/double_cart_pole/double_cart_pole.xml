@@ -32,6 +32,6 @@
   </worldbody>
 
   <actuator>
-    <motor name="slide" joint="slider" gear="10" ctrllimited="true" ctrlrange="-1 1" />
+    <motor name="slide" joint="slider" gear="20" ctrllimited="true" ctrlrange="-1 1" />
   </actuator>
 </mujoco>
