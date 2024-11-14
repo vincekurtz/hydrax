@@ -36,13 +36,13 @@ class DoubleCartPole(Task):
         """The running cost ℓ(xₜ, uₜ)."""
         theta_cost = self._distance_to_upright(state)
         centering_cost = jnp.sum(jnp.square(state.qpos[0]))
-        velocity_cost = 0.01 * jnp.sum(jnp.square(state.qvel))
+        velocity_cost = 0.1 * jnp.sum(jnp.square(state.qvel[1:]))
         control_cost = 0.01 * jnp.sum(jnp.square(control))
         return theta_cost + centering_cost + velocity_cost + control_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
         theta_cost = 10 * self._distance_to_upright(state)
-        centering_cost = jnp.sum(jnp.square(state.qpos[0]))
-        velocity_cost = 0.01 * jnp.sum(jnp.square(state.qvel))
+        centering_cost = 0.1 * jnp.sum(jnp.square(state.qpos[0]))
+        velocity_cost = 0.1 * jnp.sum(jnp.square(state.qvel[1:]))
         return theta_cost + centering_cost + velocity_cost
