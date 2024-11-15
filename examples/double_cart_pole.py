@@ -13,7 +13,7 @@ is actuated, and the goal is to swing up the pendulum and balance it upright.
 task = DoubleCartPole()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=512, noise_level=0.3)
+ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.3)
 
 # Define the model used for simulation
 mj_model = task.mj_model

@@ -11,7 +11,7 @@ class DoubleCartPole(Task):
     """A swing-up task for a double pendulum on a cart."""
 
     def __init__(
-        self, planning_horizon: int = 10, sim_steps_per_control_step: int = 10
+        self, planning_horizon: int = 10, sim_steps_per_control_step: int = 8
     ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
@@ -45,5 +45,5 @@ class DoubleCartPole(Task):
         """The terminal cost ϕ(x_T)."""
         upright_cost = 10 * self._distance_to_upright(state)
         centering_cost = 10 * jnp.square(state.qpos[0])
-        velocity_cost = 0.1 * jnp.sum(jnp.square(state.qvel))
+        velocity_cost = jnp.sum(jnp.square(state.qvel))
         return upright_cost + centering_cost + velocity_cost
