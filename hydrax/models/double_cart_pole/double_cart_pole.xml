@@ -6,12 +6,11 @@
   <default>
     <default class="pole">
       <joint type="hinge" axis="0 1 0"  damping="2e-6"/>
-      <geom type="capsule" fromto="0 0 0 0 0 1" size="0.045" mass=".1"/>
+      <geom type="capsule" fromto="0 0 -1 0 0 0" size="0.045" mass=".1"/>
     </default>
   </default>
 
   <worldbody>
-    <light name="light" pos="0 0 6"/>
     <camera name="fixed" pos="0 -8 2" zaxis="0 -1 0"/>
     <camera name="lookatcart" mode="targetbody" target="cart" pos="0 -2 2"/>
     <geom name="rail1" type="capsule" pos="0  .07 2" zaxis="1 0 0" size="0.02 4"/>
@@ -22,10 +21,10 @@
       <body name="pole_1" childclass="pole">
         <joint name="hinge_1" damping="1.0e-4"/>
         <geom name="pole_1"/>
-        <body name="pole_2" childclass="pole" pos="0 0 1">
+        <body name="pole_2" childclass="pole" pos="0 0 -1">
           <joint name="hinge_2" damping="1.0e-4"/>
           <geom name="pole_2"/>
-          <site name="tip" pos="0 0 1"/>
+          <site name="tip" pos="0 0 -1"/>
         </body>
       </body>
     </body>
