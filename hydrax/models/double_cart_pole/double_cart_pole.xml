@@ -11,7 +11,6 @@
   </default>
 
   <worldbody>
-    <light name="light" pos="0 0 8"/>
     <camera name="fixed" pos="0 -8 2" zaxis="0 -1 0"/>
     <camera name="lookatcart" mode="targetbody" target="cart" pos="0 -2 2"/>
     <geom name="rail1" type="capsule" pos="0  .07 2" zaxis="1 0 0" size="0.02 4"/>
