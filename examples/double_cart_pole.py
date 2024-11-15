@@ -18,7 +18,6 @@ ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.3)
 # Define the model used for simulation
 mj_model = task.mj_model
 mj_data = mujoco.MjData(mj_model)
-mj_data.qpos[1] = 3.14  # Set the pole to be facing down
 
 # Run the interactive simulation
 run_interactive(
