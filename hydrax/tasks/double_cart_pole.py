@@ -30,24 +30,20 @@ class DoubleCartPole(Task):
     def _distance_to_upright(self, state: mjx.Data) -> jax.Array:
         """Get a measure of distance to the upright position."""
         tip_z = state.site_xpos[self.tip_id, 2]
-        return jnp.square(tip_z - 4.0)
-
-    def _distance_to_centered(self, state: mjx.Data) -> jax.Array:
-        """Distance to center is measured at the tip, not the cart."""
         tip_x = state.site_xpos[self.tip_id, 0]
-        return jnp.square(tip_x)
+        cart_x = state.qpos[0]
+        return jnp.square(tip_z - 4.0) + jnp.square(tip_x - cart_x)
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
-        theta_cost = self._distance_to_upright(state)
-        centering_cost = self._distance_to_centered(state)
+        upright_cost = self._distance_to_upright(state)
         velocity_cost = 0.1 * jnp.sum(jnp.square(state.qvel[1:]))
-        control_cost = 0.01 * jnp.sum(jnp.square(control))
-        return theta_cost + centering_cost + velocity_cost + control_cost
+        control_cost = 0.001 * jnp.sum(jnp.square(control))
+        return upright_cost + velocity_cost + control_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        theta_cost = 10 * self._distance_to_upright(state)
-        centering_cost = 10 * self._distance_to_centered(state)
-        velocity_cost = 0.1 * jnp.sum(jnp.square(state.qvel[1:]))
-        return theta_cost + centering_cost + velocity_cost
+        upright_cost = 10 * self._distance_to_upright(state)
+        centering_cost = 10 * jnp.square(state.qpos[0])
+        velocity_cost = 0.1 * jnp.sum(jnp.square(state.qvel))
+        return upright_cost + centering_cost + velocity_cost
