@@ -253,3 +253,14 @@ Available risk strategies:
 | Exponential | Take an exponentially weighted average with parameter $\gamma$. This strategy could be risk-averse ($\gamma > 0$) or risk-seeking ($\gamma < 0$).  | [`hydrax.risk.ExponentialWeightedAverage`](hydrax/risk.py) |
 | VaR | Use the [Value at Risk (VaR)](https://en.wikipedia.org/wiki/Value_at_risk). | [`hydrax.risk.ValueAtRisk`](hydrax/risk.py) |
 | CVaR | Use the [Conditional Value at Risk (CVaR)](https://en.wikipedia.org/wiki/Expected_shortfall). | [`hydrax.risk.ConditionalValueAtRisk`](hydrax/risk.py) |
+
+## Citation
+
+```
+@misc{kurtz2024hydrax,
+  title={Hydrax: Sampling-based model predictive control on GPU with JAX and MuJoCo MJX},
+  author={Kurtz, Vince},
+  year={2024},
+  note={https://github.com/vincekurtz/hydrax}
+}
+```
