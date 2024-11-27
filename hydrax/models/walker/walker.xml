@@ -2,13 +2,18 @@
   <!-- Adopted from the MJPC walker task
    https://github.com/google-deepmind/mujoco_mpc/tree/main/mjpc/tasks/walker``
    -->
-  <option timestep="0.01" iterations="1" ls_iterations="8">
+  <option timestep="0.01" iterations="1" ls_iterations="6">
     <flag eulerdamp="disable"/>
   </option>
 
+  <custom>
+    <numeric data="5" name="max_contact_points"/>
+    <numeric data="5" name="max_geom_pairs"/>
+  </custom>
+
   <default>
-    <joint damping=".1" armature="0.01" limited="true" solimplimit="0 .99 .01"/>
-    <geom contype="1" conaffinity="0" friction=".7 .1 .1"/>
+    <joint damping=".1" armature="0.01" limited="true" />
+    <geom contype="1" conaffinity="0" friction=".5" solref="0.02 1.0" solimp="0.0 0.95 0.01"/>
     <motor ctrlrange="-1 1" ctrllimited="true"/>
     <site size="0.01"/>
     <default class="walker">
