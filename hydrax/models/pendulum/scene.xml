@@ -2,12 +2,12 @@
   <!-- Model that includes the pendulum along with scene details like lighting and a ground. -->
   <include file="pendulum.xml"/>
 
-  <statistic center="0 0 0.55" extent="1.1"/>
+  <statistic center="0 0 1.5" extent="2.0"/>
 
   <visual>
     <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
     <rgba haze="0.15 0.25 0.35 1"/>
-    <global azimuth="150" elevation="-20" offwidth="1920" offheight="1080"/>
+    <global elevation="0.0"/>
   </visual>
 
   <asset>

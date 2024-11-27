@@ -5,7 +5,7 @@
 
   <default>
     <default class="pole">
-      <joint type="hinge" axis="0 1 0"  damping="2e-6"/>
+      <joint type="hinge" axis="0 1 0" damping="1e-2"/>
       <geom type="capsule" fromto="0 0 -1 0 0 0" size="0.045" mass=".1"/>
     </default>
   </default>
@@ -19,10 +19,10 @@
       <joint name="slider" type="slide" limited="true" axis="1 0 0" range="-3.8 3.8" solreflimit=".08 1" damping="1.0e-4"/>
       <geom name="cart" type="box" size="0.2 0.15 0.1" mass="1"/>
       <body name="pole_1" childclass="pole">
-        <joint name="hinge_1" damping="1.0e-4"/>
+        <joint name="hinge_1"/>
         <geom name="pole_1"/>
         <body name="pole_2" childclass="pole" pos="0 0 -1">
-          <joint name="hinge_2" damping="1.0e-4"/>
+          <joint name="hinge_2"/>
           <geom name="pole_2"/>
           <site name="tip" pos="0 0 -1"/>
         </body>

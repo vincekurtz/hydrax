@@ -27,7 +27,7 @@ class CartPole(Task):
 
     def _distance_to_upright(self, state: mjx.Data) -> jax.Array:
         """Get a measure of distance to the upright position."""
-        theta = state.qpos[1]
+        theta = state.qpos[1] + jnp.pi
         theta_err = jnp.array([jnp.cos(theta) - 1, jnp.sin(theta)])
         return jnp.sum(jnp.square(theta_err))
 
