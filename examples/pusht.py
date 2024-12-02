@@ -16,6 +16,8 @@ ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.5)
 
 # Define the model used for simulation
 mj_model = task.mj_model
+mj_model.opt.timestep = 0.001
+mj_model.opt.iterations = 100
 mj_data = mujoco.MjData(mj_model)
 
 # Run the interactive simulation
@@ -23,6 +25,6 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=100,
+    frequency=50,
     show_traces=True,
 )

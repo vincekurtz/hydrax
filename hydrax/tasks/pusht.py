@@ -11,7 +11,7 @@ class PushT(Task):
     """Push a T-shaped block to a desired pose."""
 
     def __init__(
-        self, planning_horizon: int = 3, sim_steps_per_control_step: int = 4
+        self, planning_horizon: int = 5, sim_steps_per_control_step: int = 10
     ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
@@ -22,7 +22,7 @@ class PushT(Task):
             mj_model,
             planning_horizon=planning_horizon,
             sim_steps_per_control_step=sim_steps_per_control_step,
-            trace_sites=[],
+            trace_sites=["pusher"],
         )
 
         # Get sensor ids
@@ -50,17 +50,18 @@ class PushT(Task):
         position_err = self._get_position_err(state)
         orientation_err = self._get_orientation_err(state)
 
-        position_cost = 0.1 * jnp.sum(jnp.square(position_err))
-        orientation_cost = 0.1 * jnp.sum(jnp.square(orientation_err))
+        position_cost = jnp.sum(jnp.square(position_err))
+        orientation_cost = jnp.sum(jnp.square(orientation_err))
+        control_cost = 0.001 * jnp.sum(jnp.square(control))
 
-        return position_cost + orientation_cost
+        return position_cost + orientation_cost + control_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ℓ_T(x_T)."""
         position_err = self._get_position_err(state)
         orientation_err = self._get_orientation_err(state)
 
-        position_cost = 0.1 * jnp.sum(jnp.square(position_err))
-        orientation_cost = 0.1 * jnp.sum(jnp.square(orientation_err))
+        position_cost = jnp.sum(jnp.square(position_err))
+        orientation_cost = jnp.sum(jnp.square(orientation_err))
 
         return position_cost + orientation_cost
