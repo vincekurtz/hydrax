@@ -4,7 +4,7 @@
   <default>
     <position ctrllimited="true" ctrlrange="-0.3 0.3" kp="0.1" dampratio="1.0"/>
     <default class="goal">
-      <geom conaffinity="0" contype="0" rgba="0 1 0 0.1"/>
+      <geom conaffinity="0" contype="0" rgba="0 1 0 0.2"/>
     </default>
   </default>
 
@@ -33,4 +33,9 @@
     <position name="x_motor" joint="root_x" />
     <position name="y_motor" joint="root_y" />
   </actuator>
+
+  <sensor>
+    <framepos name="position" objtype="body" objname="T" reftype="body" refname="goal"/>
+    <framequat name="orientation" objtype="body" objname="T" reftype="body" refname="goal"/>
+  </sensor>
 </mujoco>
