@@ -1,0 +1,36 @@
+<mujoco model="pusht">
+  <option timestep="0.01" iterations="1" ls_iterations="4" />
+
+  <default>
+    <position ctrllimited="true" ctrlrange="-0.3 0.3" kp="0.1" dampratio="1.0"/>
+    <default class="goal">
+      <geom conaffinity="0" contype="0" rgba="0 1 0 0.1"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <body name="goal" mocap="true" pos="0.1 0.1 0.011" quat="1 0 0 0">
+      <geom class="goal" name="goal_bottom" type="box" size=".01 0.03 0.01"/>
+      <geom class="goal" name="goal_top" type="box" size=".03 0.01 0.01" pos="0.0 0.04 0.0"/>
+    </body>
+
+    <body name="T" pos="0 0 0.011">
+      <joint name="T_x" type="slide" pos="0 0 0" axis="1 0 0" damping="0.2" />
+      <joint name="T_y" type="slide" pos="0 0 0" axis="0 1 0" damping="0.2" />
+      <joint name="T_z" axis="0 0 1" damping="0.0001"/>
+      <geom name="bottom" type="box" size=".01 0.03 0.01" />
+      <geom name="top" type="box" size=".03 0.01 0.01" pos="0.0 0.04 0.0" />
+    </body>
+
+    <body name="pusher" pos="0 .1 .01">
+      <joint name="root_x" type="slide" pos="0 0 0" axis="1 0 0" />
+      <joint name="root_y" type="slide" pos="0 0 0" axis="0 1 0" />
+      <geom name="pusher" type="sphere" size=".008" rgba="1 0 0 1"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="x_motor" joint="root_x" />
+    <position name="y_motor" joint="root_y" />
+  </actuator>
+</mujoco>
