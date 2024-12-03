@@ -11,7 +11,7 @@ class PushT(Task):
     """Push a T-shaped block to a desired pose."""
 
     def __init__(
-        self, planning_horizon: int = 5, sim_steps_per_control_step: int = 10
+        self, planning_horizon: int = 3, sim_steps_per_control_step: int = 10
     ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
