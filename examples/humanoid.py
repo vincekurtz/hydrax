@@ -12,7 +12,7 @@ Run an interactive simulation of the humanoid task.
 task = Humanoid()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.2)
+ctrl = PredictiveSampling(task, num_samples=512, noise_level=0.3)
 
 # Define the model used for simulation
 mj_model = task.mj_model

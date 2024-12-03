@@ -11,7 +11,7 @@ class Humanoid(Task):
     """Locomotion with the Unitree G1 humanoid."""
 
     def __init__(
-        self, planning_horizon: int = 2, sim_steps_per_control_step: int = 50
+        self, planning_horizon: int = 3, sim_steps_per_control_step: int = 30
     ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
@@ -31,6 +31,9 @@ class Humanoid(Task):
         # Set the target velocity (m/s) and height
         self.target_velocity = 0.0
         self.target_height = 0.9
+
+        # Standing configuration
+        self.qstand = jnp.array(mj_model.keyframe("stand").qpos)
 
     def _get_torso_height(self, state: mjx.Data) -> jax.Array:
         """Get the height of the torso above the ground."""
@@ -60,11 +63,14 @@ class Humanoid(Task):
             self._get_torso_height(state) - self.target_height
         )
         control_cost = jnp.sum(jnp.square(control))
+        # nominal configuration ignores x and y positions
+        nominal_cost = jnp.sum(jnp.square(state.qpos[2:] - self.qstand[2:]))
         return (
             1.0 * orientation_cost
             + 0.1 * velocity_cost
             + 1.0 * height_cost
-            + 0.5 * control_cost
+            + 0.1 * control_cost
+            + 0.1 * nominal_cost
         )
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
