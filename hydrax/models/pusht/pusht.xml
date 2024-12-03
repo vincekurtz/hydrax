@@ -2,7 +2,7 @@
   <option timestep="0.01" iterations="1" ls_iterations="4" />
 
   <default>
-    <position ctrllimited="true" ctrlrange="-0.2 0.2" kp="1.0" dampratio="1.0"/>
+    <position ctrllimited="true" ctrlrange="-0.3 0.3" kp="1.0" dampratio="1.0"/>
     <default class="goal">
       <geom conaffinity="0" contype="0" rgba="0 1 0 0.2"/>
     </default>
@@ -15,7 +15,7 @@
       <geom class="goal" name="goal_top" type="box" size=".03 0.01 0.01" pos="0.0 0.03 0.0"/>
     </body>
 
-    <body name="block" pos="0.1 0.1 0.009" quat="0.7 0.0 0.0 0.7">
+    <body name="block" pos="0.0 0.0 0.009">
       <joint name="T_x" type="slide" pos="0 0 0" axis="1 0 0" />
       <joint name="T_y" type="slide" pos="0 0 0" axis="0 1 0" />
       <joint name="T_z" axis="0 0 1"/>
