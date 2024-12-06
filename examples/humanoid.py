@@ -21,6 +21,8 @@ mj_model = task.mj_model
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = mj_model.keyframe("stand").qpos
 
+print(mj_model.nq, mj_model.nv)
+
 # Run the interactive simulation
 run_interactive(
     ctrl,
