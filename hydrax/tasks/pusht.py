@@ -11,7 +11,7 @@ class PushT(Task):
     """Push a T-shaped block to a desired pose."""
 
     def __init__(
-        self, planning_horizon: int = 4, sim_steps_per_control_step: int = 10
+        self, planning_horizon: int = 5, sim_steps_per_control_step: int = 10
     ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
@@ -45,22 +45,24 @@ class PushT(Task):
         goal_quat = jnp.array([1.0, 0.0, 0.0, 0.0])
         return mjx._src.math.quat_sub(block_quat, goal_quat)
 
+    def _close_to_block_err(self, state: mjx.Data) -> jax.Array:
+        """Position of the pusher block relative to the block."""
+        block_pos = state.qpos[:2]
+        pusher_pos = state.qpos[3:] + jnp.array([0.0, 0.1])  # y bias
+        return block_pos - pusher_pos
+
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
         position_err = self._get_position_err(state)
         orientation_err = self._get_orientation_err(state)
+        close_to_block_err = self._close_to_block_err(state)
 
         position_cost = jnp.sum(jnp.square(position_err))
         orientation_cost = jnp.sum(jnp.square(orientation_err))
+        close_to_block_cost = jnp.sum(jnp.square(close_to_block_err))
 
-        return position_cost + orientation_cost
+        return position_cost + orientation_cost + 0.1 * close_to_block_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ℓ_T(x_T)."""
-        position_err = self._get_position_err(state)
-        orientation_err = self._get_orientation_err(state)
-
-        position_cost = jnp.sum(jnp.square(position_err))
-        orientation_cost = jnp.sum(jnp.square(orientation_err))
-
-        return position_cost + orientation_cost
+        return self.running_cost(state, jnp.zeros(self.model.nu))
