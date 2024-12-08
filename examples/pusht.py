@@ -1,6 +1,6 @@
 import mujoco
 
-from hydrax.algs import PredictiveSampling
+from hydrax.algs import MPPI
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.pusht import PushT
 
@@ -12,7 +12,8 @@ Run an interactive simulation of the push-T task with predictive sampling.
 task = PushT()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.4)
+# ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.4)
+ctrl = MPPI(task, num_samples=1024, noise_level=0.4, temperature=0.001)
 
 # Define the model used for simulation
 mj_model = task.mj_model

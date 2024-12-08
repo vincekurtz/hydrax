@@ -3,10 +3,11 @@
 
   <default>
     <position ctrllimited="true" ctrlrange="-0.3 0.3" kp="1.0" dampratio="1.0"/>
+    <velocity ctrllimited="true" ctrlrange="-0.5 0.5" kv="0.1"/>
     <default class="goal">
       <geom conaffinity="0" contype="0" rgba="0 1 0 0.2"/>
     </default>
-    <geom friction="0.5" solimp="0.0 0.95 0.005" solref="0.02 1"/>
+    <geom friction="1.0" solimp="0.0 0.95 0.005" solref="0.02 1"/>
   </default>
 
   <worldbody>
@@ -15,7 +16,7 @@
       <geom class="goal" name="goal_top" type="box" size=".03 0.01 0.01" pos="0.0 0.03 0.0"/>
     </body>
 
-    <body name="block" pos="0.0 0.0 0.009">
+    <body name="block" pos="0.0 0.0 0.0095">
       <joint name="T_x" type="slide" pos="0 0 0" axis="1 0 0" />
       <joint name="T_y" type="slide" pos="0 0 0" axis="0 1 0" />
       <joint name="T_z" axis="0 0 1"/>
@@ -32,8 +33,8 @@
   </worldbody>
 
   <actuator>
-    <position name="x_motor" joint="root_x" />
-    <position name="y_motor" joint="root_y" />
+    <velocity name="x_motor" joint="root_x" />
+    <velocity name="y_motor" joint="root_y" />
   </actuator>
 
   <sensor>
