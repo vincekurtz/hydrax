@@ -12,7 +12,7 @@ Run an interactive simulation of the humanoid task.
 task = Humanoid()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=512, noise_level=0.3)
+ctrl = PredictiveSampling(task, num_samples=512, noise_level=1.0)
 
 # Define the model used for simulation
 mj_model = task.mj_model
@@ -20,8 +20,6 @@ mj_model = task.mj_model
 # Set the initial state
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = mj_model.keyframe("stand").qpos
-
-print(mj_model.nq, mj_model.nv)
 
 # Run the interactive simulation
 run_interactive(
