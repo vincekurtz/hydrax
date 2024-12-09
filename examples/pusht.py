@@ -12,7 +12,9 @@ Run an interactive simulation of the push-T task with predictive sampling.
 task = PushT()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.4)
+ctrl = PredictiveSampling(
+    task, num_samples=128, noise_level=0.4, num_randomizations=4
+)
 
 # Define the model used for simulation
 mj_model = task.mj_model

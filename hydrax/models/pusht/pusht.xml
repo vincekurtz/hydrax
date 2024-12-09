@@ -10,7 +10,7 @@
   </default>
 
   <worldbody>
-    <body name="goal" mocap="true" pos="0.0 0.0 0.01">
+    <body name="goal" mocap="true" pos="0.0 0.0 0.009">
       <geom class="goal" name="goal_bottom" type="box" size=".01 0.04 0.01"/>
       <geom class="goal" name="goal_top" type="box" size=".03 0.01 0.01" pos="0.0 0.03 0.0"/>
     </body>

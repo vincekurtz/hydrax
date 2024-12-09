@@ -1,3 +1,5 @@
+from typing import Dict
+
 import jax
 import jax.numpy as jnp
 import mujoco
@@ -61,8 +63,17 @@ class PushT(Task):
         orientation_cost = jnp.sum(jnp.square(orientation_err))
         close_to_block_cost = jnp.sum(jnp.square(close_to_block_err))
 
-        return position_cost + orientation_cost + 0.1 * close_to_block_cost
+        return position_cost + orientation_cost + 0.01 * close_to_block_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ℓ_T(x_T)."""
         return self.running_cost(state, jnp.zeros(self.model.nu))
+
+    def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
+        """Randomize the level of friction."""
+        n_geoms = self.model.geom_friction.shape[0]
+        multiplier = jax.random.uniform(rng, (n_geoms,), minval=0.1, maxval=2.0)
+        new_frictions = self.model.geom_friction.at[:, 0].set(
+            self.model.geom_friction[:, 0] * multiplier
+        )
+        return {"geom_friction": new_frictions}
