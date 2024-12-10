@@ -159,8 +159,8 @@
                     diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="left_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="left_ankle_roll_link"/>
-                  <geom pos="-0.03 0.0 -0.015" class="foot_collision" />
-                  <geom pos="0.1 0.0 -0.015" class="foot_collision" />
+                  <geom pos="-0.04 0.0 -0.015" class="foot_collision" />
+                  <geom pos="0.11 0.0 -0.015" class="foot_collision" />
                 </body>
               </body>
             </body>
@@ -201,8 +201,8 @@
                     mass="0.391" diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="right_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="right_ankle_roll_link"/>
-                  <geom pos="-0.03 0.0 -0.015" class="foot_collision" />
-                  <geom pos="0.1 0.0 -0.015" class="foot_collision" />
+                  <geom pos="-0.04 0.0 -0.015" class="foot_collision" />
+                  <geom pos="0.11 0.0 -0.015" class="foot_collision" />
                 </body>
               </body>
             </body>
