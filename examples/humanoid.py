@@ -16,13 +16,13 @@ ctrl = MPPI(
     task,
     num_samples=128,
     noise_level=1.0,
-    temperature=0.01,
+    temperature=0.1,
     num_randomizations=4,
 )
 
 # Define the model used for simulation
 mj_model = task.mj_model
-mj_model.opt.timestep = 0.01
+mj_model.opt.timestep = 0.005
 
 # Set the initial state so the robot falls and needs to stand back up
 mj_data = mujoco.MjData(mj_model)
