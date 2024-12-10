@@ -1,21 +1,21 @@
 <mujoco model="g1">
   <compiler angle="radian" meshdir="assets" autolimits="true"/>
 
-  <option timestep="0.01" iterations="1" ls_iterations="5">
+  <option timestep="0.03" iterations="1" ls_iterations="5">
     <flag eulerdamp="disable"/>
   </option>
 
   <custom>
-    <numeric data="15" name="max_contact_points" />
-    <numeric data="15" name="max_geom_pairs" />
+    <numeric data="5" name="max_contact_points" />
+    <numeric data="5" name="max_geom_pairs" />
   </custom>
 
   <default>
     <geom condim="3"/>
     <default class="g1">
       <site rgba="1 0 0 1" size="0.01" group="5"/>
-      <joint damping="0.5" armature="0.01" frictionloss="0.1"/>
-      <position dampratio="1" inheritrange="1"/>
+      <joint damping="0.0" armature="1.0" frictionloss="0.0"/>
+      <velocity kv="0.01" ctrllimited="true" ctrlrange="-5.0 5.0"/>
       <default class="arm_joint">
         <position kp="10" forcerange="-20 20"/>
       </default>
@@ -159,8 +159,8 @@
                     diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="left_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="left_ankle_roll_link"/>
-                  <geom pos="-0.03 0.0 -0.015" class="foot_collision" />
-                  <geom pos="0.1 0.0 -0.015" class="foot_collision" />
+                  <geom pos="-0.04 0.0 -0.015" class="foot_collision" />
+                  <geom pos="0.11 0.0 -0.015" class="foot_collision" />
                 </body>
               </body>
             </body>
@@ -201,8 +201,8 @@
                     mass="0.391" diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="right_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="right_ankle_roll_link"/>
-                  <geom pos="-0.03 0.0 -0.015" class="foot_collision" />
-                  <geom pos="0.1 0.0 -0.015" class="foot_collision" />
+                  <geom pos="-0.04 0.0 -0.015" class="foot_collision" />
+                  <geom pos="0.11 0.0 -0.015" class="foot_collision" />
                 </body>
               </body>
             </body>
@@ -293,34 +293,34 @@
   </worldbody>
 
   <actuator>
-    <position class="hip_joint" name="left_hip_pitch_joint" joint="left_hip_pitch_joint"/>
-    <position class="hip_joint" name="right_hip_pitch_joint" joint="right_hip_pitch_joint"/>
-    <position class="hip_joint" name="left_hip_roll_joint" joint="left_hip_roll_joint"/>
-    <position class="hip_joint" name="right_hip_roll_joint" joint="right_hip_roll_joint"/>
-    <position class="hip_joint" name="right_hip_yaw_joint" joint="right_hip_yaw_joint"/>
-    <position class="hip_joint" name="left_hip_yaw_joint" joint="left_hip_yaw_joint"/>
+    <velocity class="hip_joint" name="left_hip_pitch_joint" joint="left_hip_pitch_joint"/>
+    <velocity class="hip_joint" name="right_hip_pitch_joint" joint="right_hip_pitch_joint"/>
+    <velocity class="hip_joint" name="left_hip_roll_joint" joint="left_hip_roll_joint"/>
+    <velocity class="hip_joint" name="right_hip_roll_joint" joint="right_hip_roll_joint"/>
+    <velocity class="hip_joint" name="right_hip_yaw_joint" joint="right_hip_yaw_joint"/>
+    <velocity class="hip_joint" name="left_hip_yaw_joint" joint="left_hip_yaw_joint"/>
 
-    <position class="knee_joint" name="left_knee_joint" joint="left_knee_joint"/>
-    <position class="knee_joint" name="right_knee_joint" joint="right_knee_joint"/>
+    <velocity class="knee_joint" name="left_knee_joint" joint="left_knee_joint"/>
+    <velocity class="knee_joint" name="right_knee_joint" joint="right_knee_joint"/>
 
-    <position class="ankle_joint" name="left_ankle_pitch_joint" joint="left_ankle_pitch_joint"/>
-    <position class="ankle_joint" name="left_ankle_roll_joint" joint="left_ankle_roll_joint"/>
-    <position class="ankle_joint" name="right_ankle_pitch_joint" joint="right_ankle_pitch_joint"/>
-    <position class="ankle_joint" name="right_ankle_roll_joint" joint="right_ankle_roll_joint"/>
+    <velocity class="ankle_joint" name="left_ankle_pitch_joint" joint="left_ankle_pitch_joint"/>
+    <velocity class="ankle_joint" name="left_ankle_roll_joint" joint="left_ankle_roll_joint"/>
+    <velocity class="ankle_joint" name="right_ankle_pitch_joint" joint="right_ankle_pitch_joint"/>
+    <velocity class="ankle_joint" name="right_ankle_roll_joint" joint="right_ankle_roll_joint"/>
 
-    <position class="torso_joint" name="torso_joint" joint="torso_joint"/>
+    <velocity class="torso_joint" name="torso_joint" joint="torso_joint"/>
 
-    <position class="arm_joint" name="left_shoulder_pitch_joint" joint="left_shoulder_pitch_joint"/>
-    <position class="arm_joint" name="left_shoulder_roll_joint" joint="left_shoulder_roll_joint"/>
-    <position class="arm_joint" name="left_shoulder_yaw_joint" joint="left_shoulder_yaw_joint"/>
-    <position class="arm_joint" name="left_elbow_pitch_joint" joint="left_elbow_pitch_joint"/>
-    <position class="arm_joint" name="left_elbow_roll_joint" joint="left_elbow_roll_joint"/>
+    <velocity class="arm_joint" name="left_shoulder_pitch_joint" joint="left_shoulder_pitch_joint"/>
+    <velocity class="arm_joint" name="left_shoulder_roll_joint" joint="left_shoulder_roll_joint"/>
+    <velocity class="arm_joint" name="left_shoulder_yaw_joint" joint="left_shoulder_yaw_joint"/>
+    <velocity class="arm_joint" name="left_elbow_pitch_joint" joint="left_elbow_pitch_joint"/>
+    <velocity class="arm_joint" name="left_elbow_roll_joint" joint="left_elbow_roll_joint"/>
 
-    <position class="arm_joint" name="right_shoulder_pitch_joint" joint="right_shoulder_pitch_joint"/>
-    <position class="arm_joint" name="right_shoulder_roll_joint" joint="right_shoulder_roll_joint"/>
-    <position class="arm_joint" name="right_shoulder_yaw_joint" joint="right_shoulder_yaw_joint"/>
-    <position class="arm_joint" name="right_elbow_pitch_joint" joint="right_elbow_pitch_joint"/>
-    <position class="arm_joint" name="right_elbow_roll_joint" joint="right_elbow_roll_joint"/>
+    <velocity class="arm_joint" name="right_shoulder_pitch_joint" joint="right_shoulder_pitch_joint"/>
+    <velocity class="arm_joint" name="right_shoulder_roll_joint" joint="right_shoulder_roll_joint"/>
+    <velocity class="arm_joint" name="right_shoulder_yaw_joint" joint="right_shoulder_yaw_joint"/>
+    <velocity class="arm_joint" name="right_elbow_pitch_joint" joint="right_elbow_pitch_joint"/>
+    <velocity class="arm_joint" name="right_elbow_roll_joint" joint="right_elbow_roll_joint"/>
 
   </actuator>
 
