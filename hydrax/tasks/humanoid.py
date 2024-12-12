@@ -45,8 +45,8 @@ class Humanoid(Task):
         """Get the rotation from the current torso orientation to upright."""
         sensor_adr = self.model.sensor_adr[self.orientation_sensor_id]
         quat = state.sensordata[sensor_adr : sensor_adr + 4]
-        goal_quat = jnp.array([1.0, 0.0, 0.0, 0.0])
-        return mjx._src.math.quat_sub(quat, goal_quat)
+        upright = jnp.array([0.0, 0.0, 1.0])
+        return mjx._src.math.rotate(upright, quat)
 
     def _get_torso_velocity(self, state: mjx.Data) -> jax.Array:
         """Get the horizontal velocity of the torso."""
@@ -65,8 +65,7 @@ class Humanoid(Task):
             self._get_torso_height(state) - self.target_height
         )
         control_cost = jnp.sum(jnp.square(control))
-        # nominal configuration ignores x and y positions
-        nominal_cost = jnp.sum(jnp.square(state.qpos[2:] - self.qstand[2:]))
+        nominal_cost = jnp.sum(jnp.square(state.qpos[7:] - self.qstand[7:]))
         return (
             1.0 * orientation_cost
             + 0.1 * velocity_cost
