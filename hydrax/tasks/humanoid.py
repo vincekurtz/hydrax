@@ -10,7 +10,7 @@ from hydrax.task_base import Task
 
 
 class Humanoid(Task):
-    """Locomotion with the Unitree G1 humanoid."""
+    """Standup task for the Unitree G1 humanoid."""
 
     def __init__(
         self, planning_horizon: int = 3, sim_steps_per_control_step: int = 10
@@ -30,8 +30,7 @@ class Humanoid(Task):
         self.velocity_sensor_id = mj_model.sensor("imu-body-linvel").id
         self.torso_id = mj_model.site("imu").id
 
-        # Set the target velocity (m/s) and height
-        self.target_velocity = 0.0
+        # Set the target height
         self.target_height = 0.9
 
         # Standing configuration
@@ -48,18 +47,10 @@ class Humanoid(Task):
         upright = jnp.array([0.0, 0.0, 1.0])
         return mjx._src.math.rotate(upright, quat)
 
-    def _get_torso_velocity(self, state: mjx.Data) -> jax.Array:
-        """Get the horizontal velocity of the torso."""
-        sensor_adr = self.model.sensor_adr[self.velocity_sensor_id]
-        return state.sensordata[sensor_adr]
-
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
         orientation_cost = jnp.sum(
             jnp.square(self._get_torso_orientation(state))
-        )
-        velocity_cost = jnp.square(
-            self._get_torso_velocity(state) - self.target_velocity
         )
         height_cost = jnp.square(
             self._get_torso_height(state) - self.target_height
@@ -68,7 +59,6 @@ class Humanoid(Task):
         nominal_cost = jnp.sum(jnp.square(state.qpos[7:] - self.qstand[7:]))
         return (
             1.0 * orientation_cost
-            + 0.1 * velocity_cost
             + 10.0 * height_cost
             + 0.1 * nominal_cost
             + 0.01 * control_cost
