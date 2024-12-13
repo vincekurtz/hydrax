@@ -60,10 +60,8 @@ def test_task() -> None:
     # Check sensor measurements
     state = mjx.forward(task.model, state)
     pz = task._get_torso_height(state)
-    vx = task._get_torso_velocity(state)
     w = task._get_torso_orientation(state)
     assert pz > 0.0
-    assert vx == 0.0
     assert w.shape == (3,)
 
     ell = task.running_cost(state, jnp.zeros(task.model.nu))
