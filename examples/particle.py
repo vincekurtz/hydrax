@@ -78,7 +78,7 @@ elif args.algorithm == "rs":
         task, evosax.RandomSearch, num_samples=16, es_params=es_params
     )
 else:
-    parser.error("Invalid algorithm specified.")
+    parser.error("Invalid algorithm")
 
 # Define the model used for simulation
 mj_model = task.mj_model
