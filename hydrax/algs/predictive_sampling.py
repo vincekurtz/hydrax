@@ -69,7 +69,7 @@ class PredictiveSampling(SamplingBasedController):
         controls = params.mean + self.noise_level * noise
 
         # The original mean of the distribution is included as a sample
-        controls = jnp.append(params.mean[None, ...], controls, axis=0)
+        controls = controls.at[0].set(params.mean)
 
         return controls, params.replace(rng=rng)
 

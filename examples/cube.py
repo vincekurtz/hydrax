@@ -1,4 +1,4 @@
-import sys
+import argparse
 
 import evosax
 import mujoco
@@ -17,13 +17,26 @@ Double click on the floating target cube, then change the goal orientation with
 # Define the task (cost and dynamics)
 task = CubeRotation()
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(
+    description="Run an interactive simulation of the cube rotation task."
+)
+subparsers = parser.add_subparsers(
+    dest="algorithm", help="Sampling algorithm (choose one)"
+)
+subparsers.add_parser("ps", help="Predictive Sampling")
+subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
+subparsers.add_parser("cem", help="Cross-Entropy Method")
+subparsers.add_parser("cmaes", help="CMA-ES")
+args = parser.parse_args()
+
 # Set the controller based on command-line arguments
-if len(sys.argv) == 1 or sys.argv[1] == "ps":
+if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
     ctrl = PredictiveSampling(
         task, num_samples=32, noise_level=0.2, num_randomizations=32
     )
-elif sys.argv[1] == "mppi":
+elif args.algorithm == "mppi":
     print("Running MPPI")
     ctrl = MPPI(
         task,
@@ -32,7 +45,7 @@ elif sys.argv[1] == "mppi":
         temperature=0.001,
         num_randomizations=8,
     )
-elif sys.argv[1] == "cem":
+elif args.algorithm == "cem":
     print("Running CEM")
     ctrl = CEM(
         task,
@@ -42,7 +55,7 @@ elif sys.argv[1] == "cem":
         sigma_min=0.5,
         num_randomizations=8,
     )
-elif sys.argv[1] == "cmaes":
+elif args.algorithm == "cmaes":
     print("Running CMA-ES")
     ctrl = Evosax(
         task,
@@ -52,8 +65,7 @@ elif sys.argv[1] == "cmaes":
         num_randomizations=8,
     )
 else:
-    print("Usage: python cube.py [ps|mppi|cem|cmaes]")
-    sys.exit(1)
+    parser.error("Invalid algorithm")
 
 # Define the model used for simulation
 mj_model = task.mj_model
