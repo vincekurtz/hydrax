@@ -1,4 +1,4 @@
-import sys
+import argparse
 
 import mujoco
 
@@ -13,16 +13,26 @@ Run an interactive simulation of the walker task.
 # Define the task (cost and dynamics)
 task = Walker()
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(
+    description="Run an interactive simulation of the walker task."
+)
+subparsers = parser.add_subparsers(
+    dest="algorithm", help="Sampling algorithm (choose one)"
+)
+subparsers.add_parser("ps", help="Predictive Sampling")
+subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
+args = parser.parse_args()
+
 # Set the controller based on command-line arguments
-if len(sys.argv) == 1 or sys.argv[1] == "ps":
+if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
     ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.5)
-elif sys.argv[1] == "mppi":
+elif args.algorithm == "mppi":
     print("Running MPPI")
     ctrl = MPPI(task, num_samples=128, noise_level=0.5, temperature=0.1)
 else:
-    print("Usage: python walker.py [ps|mppi]")
-    sys.exit(1)
+    parser.error("Invalid algorithm")
 
 # Define the model used for simulation
 mj_model = task.mj_model
