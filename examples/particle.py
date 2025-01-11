@@ -21,9 +21,8 @@ task = Particle()
 parser = argparse.ArgumentParser(
     description="Run an interactive simulation of the particle tracking task."
 )
-
 subparsers = parser.add_subparsers(
-    dest="algorithm", required=False, help="Sampling algorithm (choose one)"
+    dest="algorithm", help="Sampling algorithm (choose one)"
 )
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
@@ -34,7 +33,6 @@ subparsers.add_parser(
 subparsers.add_parser("de", help="Differential Evolution")
 subparsers.add_parser("gld", help="Gradient-Less Descent")
 subparsers.add_parser("rs", help="Uniform Random Search")
-
 args = parser.parse_args()
 
 # Set the controller based on command-line arguments

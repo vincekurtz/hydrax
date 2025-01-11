@@ -21,15 +21,13 @@ task = CubeRotation()
 parser = argparse.ArgumentParser(
     description="Run an interactive simulation of the cube rotation task."
 )
-
 subparsers = parser.add_subparsers(
-    dest="algorithm", required=False, help="Sampling algorithm (choose one)"
+    dest="algorithm", help="Sampling algorithm (choose one)"
 )
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
 subparsers.add_parser("cmaes", help="CMA-ES")
-
 args = parser.parse_args()
 
 # Set the controller based on command-line arguments
