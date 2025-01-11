@@ -45,8 +45,8 @@ def test_opt() -> None:
     params, rollouts = ctrl.optimize(state, params)
 
     # Check the rollout shapes. Should be still be (samples, timestep, ...)
-    assert rollouts.costs.shape == (11, 6)
-    assert rollouts.controls.shape == (11, 5, 2)
+    assert rollouts.costs.shape == (10, 6)
+    assert rollouts.controls.shape == (10, 5, 2)
 
     # Check the updated parameters
     assert params.mean.shape == (5, 2)
