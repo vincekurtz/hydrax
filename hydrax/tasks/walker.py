@@ -22,7 +22,7 @@ class Walker(Task):
             mj_model,
             planning_horizon=planning_horizon,
             sim_steps_per_control_step=sim_steps_per_control_step,
-            trace_sites=["torso_site"],
+            trace_sites=["torso_site", "left_foot_site", "right_foot_site"],
         )
 
         # Get sensor ids
