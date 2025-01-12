@@ -154,13 +154,14 @@
                 <joint name="left_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="left_ankle_pitch_link"/>
                 <body name="left_ankle_roll_link" pos="0 0 -0.017558">
-                  <site name="left_foot" pos="0 0 0"/>
                   <inertial pos="0.024762 2e-05 -0.012526" quat="0.000771333 0.734476 0.000921291 0.678634" mass="0.391"
                     diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="left_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="left_ankle_roll_link"/>
                   <geom pos="-0.04 0.0 -0.015" class="foot_collision" />
                   <geom pos="0.11 0.0 -0.015" class="foot_collision" />
+                  <site name="left_heel" pos="-0.04 0.0 -0.015"/>
+                  <site name="left_toe" pos="0.11 0.0 -0.015"/>
                 </body>
               </body>
             </body>
@@ -196,13 +197,14 @@
                 <joint name="right_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="right_ankle_pitch_link"/>
                 <body name="right_ankle_roll_link" pos="0 0 -0.017558">
-                  <site name="right_foot" pos="0 0 0"/>
                   <inertial pos="0.024762 -2e-05 -0.012526" quat="-0.000771333 0.734476 -0.000921291 0.678634"
                     mass="0.391" diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="right_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="right_ankle_roll_link"/>
                   <geom pos="-0.04 0.0 -0.015" class="foot_collision" />
                   <geom pos="0.11 0.0 -0.015" class="foot_collision" />
+                  <site name="right_heel" pos="-0.04 0.0 -0.015"/>
+                  <site name="right_toe" pos="0.11 0.0 -0.015"/>
                 </body>
               </body>
             </body>
@@ -329,6 +331,12 @@
     <accelerometer name="imu-linear-acceleration" site="imu" cutoff="157"/>
     <framequat name="imu-body-quat" objtype="site" objname="imu"/>
     <framelinvel name="imu-body-linvel" objtype="site" objname="imu"/>
+    <subtreecom name="com" body="pelvis"/>
+    <subtreelinvel name="com_vel" body="pelvis"/>
+    <framepos name="left_heel" objtype="site" objname="left_heel"/>
+    <framepos name="left_toe" objtype="site" objname="left_toe"/>
+    <framepos name="right_heel" objtype="site" objname="right_heel"/>
+    <framepos name="right_toe" objtype="site" objname="right_toe"/>
   </sensor>
 
   <keyframe>

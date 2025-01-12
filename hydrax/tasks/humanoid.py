@@ -22,13 +22,26 @@ class Humanoid(Task):
             mj_model,
             planning_horizon=planning_horizon,
             sim_steps_per_control_step=sim_steps_per_control_step,
-            trace_sites=["imu", "left_foot", "right_foot"],
+            trace_sites=["imu", "left_toe", "right_toe"],
         )
 
-        # Get sensor and site ids
-        self.orientation_sensor_id = mj_model.sensor("imu-body-quat").id
-        self.velocity_sensor_id = mj_model.sensor("imu-body-linvel").id
+        # Get site ids
         self.torso_id = mj_model.site("imu").id
+
+        # Get sensor addresses
+        self.ori_adr = mj_model.sensor_adr[mj_model.sensor("imu-body-quat").id]
+        self.com_adr = mj_model.sensor_adr[mj_model.sensor("com").id]
+        self.com_vel_adr = mj_model.sensor_adr[mj_model.sensor("com_vel").id]
+        self.left_toe_adr = mj_model.sensor_adr[mj_model.sensor("left_toe").id]
+        self.right_toe_adr = mj_model.sensor_adr[
+            mj_model.sensor("right_toe").id
+        ]
+        self.left_heel_adr = mj_model.sensor_adr[
+            mj_model.sensor("left_heel").id
+        ]
+        self.right_heel_adr = mj_model.sensor_adr[
+            mj_model.sensor("right_heel").id
+        ]
 
         # Set the target height
         self.target_height = 0.9
@@ -36,14 +49,45 @@ class Humanoid(Task):
         # Standing configuration
         self.qstand = jnp.array(mj_model.keyframe("stand").qpos)
 
+    def _average_foot_position(self, state: mjx.Data) -> jax.Array:
+        """Get the average foot position in the x/y plane."""
+        # x, y positions of the toes and heels of the left and right feet
+        lt = state.sensordata[self.left_toe_adr : self.left_toe_adr + 2]
+        rt = state.sensordata[self.right_toe_adr : self.right_toe_adr + 2]
+        lh = state.sensordata[self.left_heel_adr : self.left_heel_adr + 2]
+        rh = state.sensordata[self.right_heel_adr : self.right_heel_adr + 2]
+
+        # Average foot position in the world frame
+        return 0.25 * (lt + rt + lh + rh)
+
+    def _get_capture_point(self, state: mjx.Data) -> jax.Array:
+        """Approximately where we should step to avoid falling."""
+        # Position of the center-of-mass
+        com_pos_xy = state.sensordata[self.com_adr : self.com_adr + 2]
+
+        # Velocity of the center-of-mass
+        com_vel_xy = state.sensordata[self.com_vel_adr : self.com_vel_adr + 2]
+
+        # Capture point dynamics
+        omega = jnp.sqrt(9.81 / self.target_height)
+        return com_pos_xy + com_vel_xy / omega
+
     def _get_torso_height(self, state: mjx.Data) -> jax.Array:
-        """Get the height of the torso above the ground."""
-        return state.site_xpos[self.torso_id, 2]
+        """Get the height of the torso above the feet."""
+        torso_height = state.site_xpos[self.torso_id, 2]
+
+        # Foot heights
+        lt_height = state.sensordata[self.left_toe_adr + 2]
+        rt_height = state.sensordata[self.right_toe_adr + 2]
+        lh_height = state.sensordata[self.left_heel_adr + 2]
+        rh_height = state.sensordata[self.right_heel_adr + 2]
+        avg_foot_height = 0.25 * (lt_height + rt_height + lh_height + rh_height)
+
+        return torso_height - avg_foot_height
 
     def _get_torso_orientation(self, state: mjx.Data) -> jax.Array:
         """Get the rotation from the current torso orientation to upright."""
-        sensor_adr = self.model.sensor_adr[self.orientation_sensor_id]
-        quat = state.sensordata[sensor_adr : sensor_adr + 4]
+        quat = state.sensordata[self.ori_adr : self.ori_adr + 4]
         upright = jnp.array([0.0, 0.0, 1.0])
         return mjx._src.math.rotate(upright, quat)
 
@@ -55,15 +99,22 @@ class Humanoid(Task):
         height_cost = jnp.square(
             self._get_torso_height(state) - self.target_height
         )
+        balance_cost = jnp.sum(
+            jnp.square(
+                self._average_foot_position(state)
+                - self._get_capture_point(state)
+            )
+        )
         control_cost = jnp.sum(jnp.square(control))
         nominal_cost = jnp.sum(jnp.square(state.qpos[7:] - self.qstand[7:]))
         velocity_cost = jnp.sum(jnp.square(state.qvel[0:6]))
         return (
-            1.0 * orientation_cost
-            + 10.0 * height_cost
-            + 0.01 * nominal_cost
-            + 0.001 * velocity_cost
-            + 0.001 * control_cost
+            1.00 * orientation_cost
+            + 100.00 * height_cost
+            + 10.00 * balance_cost
+            + 1.0 * nominal_cost
+            + 0.10 * velocity_cost
+            + 0.01 * control_cost
         )
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
