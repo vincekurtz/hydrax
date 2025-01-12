@@ -1,6 +1,6 @@
 import mujoco
 
-from hydrax.algs import MPPI
+from hydrax.algs import PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid import Humanoid
 
@@ -12,12 +12,18 @@ Run an interactive simulation of the humanoid task.
 task = Humanoid()
 
 # Set up the controller
-ctrl = MPPI(
+# ctrl = MPPI(
+#     task,
+#     num_samples=128,
+#     noise_level=1.0,
+#     temperature=0.1,
+#     num_randomizations=4,
+# )
+ctrl = PredictiveSampling(
     task,
     num_samples=128,
     noise_level=1.0,
-    temperature=0.1,
-    num_randomizations=4,
+    num_randomizations=1,
 )
 
 # Define the model used for simulation
@@ -35,6 +41,6 @@ run_interactive(
     mj_model,
     mj_data,
     frequency=50,
-    show_traces=False,
-    max_traces=1,
+    show_traces=True,
+    max_traces=5,
 )

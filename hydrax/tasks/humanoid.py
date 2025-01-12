@@ -57,16 +57,18 @@ class Humanoid(Task):
         )
         control_cost = jnp.sum(jnp.square(control))
         nominal_cost = jnp.sum(jnp.square(state.qpos[7:] - self.qstand[7:]))
+        velocity_cost = jnp.sum(jnp.square(state.qvel[0:6]))
         return (
             1.0 * orientation_cost
             + 10.0 * height_cost
-            + 0.1 * nominal_cost
-            + 0.01 * control_cost
+            + 0.01 * nominal_cost
+            + 0.001 * velocity_cost
+            + 0.001 * control_cost
         )
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        return self.running_cost(state, jnp.zeros(self.model.nu))
+        return 10 * self.running_cost(state, jnp.zeros(self.model.nu))
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize the friction parameters."""
