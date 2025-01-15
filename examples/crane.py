@@ -24,5 +24,5 @@ run_interactive(
     mj_model,
     mj_data,
     frequency=30,
-    show_traces=False,
+    show_traces=True,
 )
