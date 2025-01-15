@@ -11,7 +11,7 @@ class Crane(Task):
     """A luffing crane moves a payload to a target position."""
 
     def __init__(
-        self, planning_horizon: int = 3, sim_steps_per_control_step: int = 50
+        self, planning_horizon: int = 2, sim_steps_per_control_step: int = 40
     ):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
@@ -45,7 +45,6 @@ class Crane(Task):
         # Compute cost terms
         position_cost = jnp.sum(jnp.square(payload_pos))
         velocity_cost = jnp.sum(jnp.square(payload_vel))
-        # control_cost = jnp.sum(jnp.square(control))
         return position_cost + 0.1 * velocity_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:

@@ -1,6 +1,6 @@
 <mujoco>
   <!-- Simulator options -->
-  <option timestep="0.005" iterations="1" ls_iterations="10"/>
+  <option timestep="0.01" iterations="1" ls_iterations="10"/>
 
   <!-- Defaults -->
   <default>
