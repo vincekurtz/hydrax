@@ -1,6 +1,6 @@
 <mujoco>
   <!-- Simulator options -->
-  <option timestep="0.01" iterations="1" ls_iterations="10"/>
+  <option timestep="0.005" iterations="1" ls_iterations="10"/>
 
   <!-- Defaults -->
   <default>
@@ -11,10 +11,7 @@
 
   <!-- The robot -->
   <worldbody>
-    <!-- The movable base is a 'mocap' body. This allows us to control its
-      position and orientation by writing into data.mocap_{pos,quat} rather than
-      data.ctrl, as we would for an actuated joint. -->
-    <body name="boat" pos="0 0 0.3" mocap="true">
+    <body name="base" pos="0 0 0.3">
       <geom type="box" size="0.2 0.2 0.05"/>
       <body name="imu1" pos="0.05 0.0 0.05">
         <geom type="box" size=".022 .024 0.003" rgba="1 0 0 1" />
@@ -22,7 +19,7 @@
       </body>
 
       <!-- The slew/yaw joint rotates the crane. -->
-      <body name="base" pos="0 0 0.1" quat="0.707 0 0 0.707">
+      <body name="trunk" pos="0 0 0.1" quat="0.707 0 0 0.707">
         <joint name="slew" type="hinge" axis="0 0 1" pos="0 0 -.075"/>
         <geom type="cylinder" size=".025 .05"/>
 
@@ -103,8 +100,8 @@
   </sensor>
 
   <actuator>
-    <intvelocity name="slew" joint="slew" actrange="-10 10" ctrlrange="-0.5 0.5" kp="5" kv="0.5" />
-    <intvelocity name="luff" joint="luff" actrange="0 1" ctrlrange="-0.5 0.5" kp="5" kv="0.5" />
-    <intvelocity name="hoist" joint="hoist" actrange="0 2" ctrlrange="-0.5 0.5" kp="0.1" kv="0.01" />
+    <position name="slew" joint="slew" ctrlrange="-1 1" kp="1" kv="0.5" />
+    <position name="luff" joint="luff" ctrlrange="0 1" kp="1" kv="0.5" />
+    <position name="hoist" joint="hoist" ctrlrange="0 2" kp="0.02" kv="0.01" />
   </actuator>
 </mujoco>

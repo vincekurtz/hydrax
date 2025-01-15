@@ -66,10 +66,11 @@ class PredictiveSampling(SamplingBasedController):
                 self.task.model.nu,
             ),
         )
+        mean = jnp.clip(params.mean, self.task.u_min, self.task.u_max)
         controls = params.mean + self.noise_level * noise
 
         # The original mean of the distribution is included as a sample
-        controls = controls.at[0].set(params.mean)
+        controls = controls.at[0].set(mean)
 
         return controls, params.replace(rng=rng)
 
