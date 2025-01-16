@@ -79,5 +79,5 @@ testpaths = [
     "tests",
 ]
 
-[tool.setuptools]
-packages = ["hydrax"]
+[tool.setuptools.package-dir]
+hydrax = "hydrax"
