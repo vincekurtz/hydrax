@@ -32,15 +32,23 @@ class Crane(Task):
             mj_model.sensor("payload_vel").id
         ]
 
+    def _get_payload_position(self, state: mjx.Data) -> jax.Array:
+        """Get the position of the payload relative to the target."""
+        return state.sensordata[
+            self.payload_pos_sensor_adr : self.payload_pos_sensor_adr + 3
+        ]
+
+    def _get_payload_velocity(self, state: mjx.Data) -> jax.Array:
+        """Get the velocity of the payload."""
+        return state.sensordata[
+            self.payload_vel_sensor_adr : self.payload_vel_sensor_adr + 3
+        ]
+
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ) encourages payload tracking."""
         # Get the position and velocity of the payload relative to the target
-        payload_pos = state.sensordata[
-            self.payload_pos_sensor_adr : self.payload_pos_sensor_adr + 3
-        ]
-        payload_vel = state.sensordata[
-            self.payload_vel_sensor_adr : self.payload_vel_sensor_adr + 3
-        ]
+        payload_pos = self._get_payload_position(state)
+        payload_vel = self._get_payload_velocity(state)
 
         # Compute cost terms
         position_cost = jnp.sum(jnp.square(payload_pos))

@@ -12,7 +12,7 @@
   <!-- The robot -->
   <worldbody>
     <body name="base" pos="0 0 0.3">
-      <geom type="box" size="0.2 0.2 0.05"/>
+      <geom type="box" size="0.2 0.2 0.05" />
       <body name="imu1" pos="0.05 0.0 0.05">
         <geom type="box" size=".022 .024 0.003" rgba="1 0 0 1" />
         <site name="imu1_site" />
@@ -20,12 +20,12 @@
 
       <!-- The slew/yaw joint rotates the crane. -->
       <body name="trunk" pos="0 0 0.1" quat="0.707 0 0 0.707">
-        <joint name="slew" type="hinge" axis="0 0 1" pos="0 0 -.075"/>
-        <geom type="cylinder" size=".025 .05"/>
+        <joint name="slew" type="hinge" axis="0 0 1" pos="0 0 -.075" />
+        <geom type="cylinder" size=".025 .05" />
 
         <!-- The luff/pitch joint moves the boom up and down. -->
         <body pos="0 0 .1">
-          <geom type="box" size=".05 .05 .05"/>
+          <geom type="box" size=".05 .05 .05" />
           <body name="boom" pos="1.1 0 .12">
             <joint name="luff" type="hinge" axis="0 -1 0" pos="-1.1 0 -.12" range="0 60" />
 
@@ -35,7 +35,7 @@
               <body pos="0 -.0525 -.05375">
                 <geom type="box" size=".025 .0025 .05125" />
                 <body name="imu2" pos="0.0 -0.0055 0.0">
-                  <geom type="box" size=".022 .003 0.024" rgba="1 0 0 1"/>
+                  <geom type="box" size=".022 .003 0.024" rgba="1 0 0 1" />
                   <site name="imu2_site" />
                 </body>
               </body>
@@ -51,38 +51,40 @@
               <site name="imu3_site" />
             </body>
 
-            <!-- We model the rope as a stiff sliding joint, since it doesn't
-                 bend much in practice. -->
-            <body name="rope" pos="1.22 0.0 -0.0375">
-              <joint name="boom_mount" type="ball"/>
-
-              <!-- A dummy geometry for the rope, since moving bodies must
-               have non-zero mass-->
-              <geom type="capsule" size=".01 0.02" pos="0 0 -0.02"/>
-
-              <!-- The payload -->
-              <body name="payload" pos="0 0 -0.21">
-                <joint name="hoist" type="slide" axis="0 0 -1" range="0 2"/>
-                <joint name="payload_mount" type="ball" pos="0 0 0.15"/>
-                <geom type="capsule" size=".01 0.15" rgba="0.99 0.99 0.99 1"/>
-
-                <!-- We assume we can measure the position of the end of the
-                 payload -->
-                <site name="payload_end" pos="0 0 -0.15"/>
-              </body>
-            </body>
+            <!-- The site for attaching the cable -->
+            <site name="boom_end" pos="1.22 0 -0.0375" />
 
           </body>
         </body>
       </body>
     </body>
 
+    <!-- The payload -->
+    <body name="payload" pos="0.0 2.32 0.3">
+      <joint type="free" />
+      <geom type="capsule" size=".01 0.15" rgba="0.99 0.99 0.99 1.0" />
+
+      <!-- Site to attach the top of the payload -->
+      <site name="payload_top" pos="0 0 0.15" />
+
+      <!-- We assume we can measure the position of the end of the payload -->
+      <site name="payload_end" pos="0 0 -0.15" />
+    </body>
+
     <!-- Target payload position-->
     <body name="target" pos="0.05 2.0 0.3" mocap="true">
       <site name="target" />
-      <geom type="sphere" size="0.02" rgba="0 1 0 1"/>
+      <geom type="sphere" size="0.02" rgba="0 1 0 1" />
     </body>
   </worldbody>
+
+  <!-- The cable holding the payload -->
+  <tendon>
+    <spatial name="cable" damping="0.0">
+      <site site="boom_end"/>
+      <site site="payload_top"/>
+    </spatial>
+  </tendon>
 
   <!-- Sensors -->
   <sensor>
@@ -102,6 +104,6 @@
   <actuator>
     <position name="slew" joint="slew" ctrlrange="-1 1" kp="1" kv="0.5" />
     <position name="luff" joint="luff" ctrlrange="0 1" kp="1" kv="0.5" />
-    <position name="hoist" joint="hoist" ctrlrange="0 2" kp="0.02" kv="0.01" />
+    <position name="hoist" tendon="cable" kp="0.02" kv="0.01" ctrlrange="0.05 2.0"/>
   </actuator>
 </mujoco>
