@@ -127,7 +127,7 @@ def run_interactive(
                 ii = 0
                 for k in range(num_trace_sites):
                     for i in range(num_traces):
-                        for j in range(controller.task.planning_horizon - 1):
+                        for j in range(controller.task.planning_horizon):
                             mujoco.mjv_connector(
                                 viewer.user_scn.geoms[ii],
                                 mujoco.mjtGeom.mjGEOM_LINE,
