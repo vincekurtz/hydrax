@@ -1,12 +1,15 @@
 <mujoco>
   <!-- Simulator options -->
-  <option timestep="0.01" iterations="1" ls_iterations="10"/>
+  <option timestep="0.01" iterations="1" ls_iterations="10" integrator="implicitfast"/>
 
   <!-- Defaults -->
   <default>
     <!-- no contact, everything is grey-->
-    <geom rgba="0.5 0.5 0.5 1" conaffinity="0" density="1.0"/>
-    <joint damping="1e-5"/>
+    <geom rgba="0.5 0.5 0.5 1" conaffinity="0"/>
+
+    <!-- Note that joint damping has a big impact on sim stability, esp. with
+         the tendon -->
+    <joint damping="1e-3"/>
   </default>
 
   <!-- The robot -->
@@ -45,7 +48,10 @@
             </body>
 
             <!-- The boom itself -->
-            <geom type="box" size="1.22 .0375 .0375" />
+            <!-- Note that we use a lower density (1000 is default) to reduce
+                 the mass ratios in the sim, which makes the sim more stable.
+            -->
+            <geom type="box" density="100" size="1.22 .0375 .0375" />
             <body name="imu3" pos="0 -0.0405 0">
               <geom type="box" size=".020 .003 0.023" rgba="1 0 0 1" />
               <site name="imu3_site" />
@@ -102,8 +108,8 @@
   </sensor>
 
   <actuator>
-    <position name="slew" joint="slew" ctrlrange="-1 1" kp="1" kv="0.5" />
-    <position name="luff" joint="luff" ctrlrange="0 1" kp="1" kv="0.5" />
-    <position name="hoist" tendon="cable" kp="0.02" kv="0.01" ctrlrange="0.05 2.0"/>
+    <position name="slew" joint="slew" ctrlrange="-1 1" kp="10" dampratio="1.0" />
+    <position name="luff" joint="luff" ctrlrange="0 1" kp="100" dampratio="1.0" />
+    <position name="hoist" tendon="cable" kp="10" dampratio="1.0" forcerange="-10000 0" ctrlrange="0.05 2.0"/>
   </actuator>
 </mujoco>
