@@ -5,7 +5,7 @@ from hydrax.tasks.walker import Walker
 
 
 def test_walker() -> None:
-    """Make sure we can instantiate the Pendulum task."""
+    """Make sure we can instantiate the Walker task."""
     task = Walker()
     assert isinstance(task, Walker)
     assert task.torso_position_sensor >= 0
