@@ -4,7 +4,7 @@ Sampling-based model predictive control on GPU with
 [JAX](https://jax.readthedocs.io/) and
 [MuJoCo MJX](https://mujoco.readthedocs.io/en/stable/mjx.html).
 
-![A planar walker running MPPI](img/walker.gif)
+![A humanoid running MPPI](img/humanoid.gif)
 &nbsp;&nbsp;&nbsp;
 ![A robot hand rotating a cube](img/cube.gif)
 
@@ -65,10 +65,11 @@ Launch an interactive pendulum swingup simulation with predictive sampling:
 python examples/pendulum.py ps
 ```
 
-Launch an interactive planar walker simulation (shown above) with MPPI:
+Launch an interactive humanoid standup simulation (shown above) with MPPI and
+online domain randomization:
 
 ```bash
-python examples/walker mppi
+python examples/humanoid.py
 ```
 
 Other demos can be found in the `examples` folder.
