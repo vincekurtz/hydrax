@@ -15,10 +15,10 @@ task = Crane()
 # Set up the controller
 ctrl = PredictiveSampling(
     task,
-    num_samples=32,
+    num_samples=8,
     noise_level=0.05,
-    num_randomizations=8,
-    risk_strategy=ConditionalValueAtRisk(0.5),
+    num_randomizations=32,
+    risk_strategy=ConditionalValueAtRisk(7.0),
 )
 
 # Define the model used for simulation
