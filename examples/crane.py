@@ -18,7 +18,7 @@ ctrl = PredictiveSampling(
     num_samples=8,
     noise_level=0.05,
     num_randomizations=32,
-    risk_strategy=ConditionalValueAtRisk(7.0),
+    risk_strategy=ConditionalValueAtRisk(0.1),
 )
 
 # Define the model used for simulation
