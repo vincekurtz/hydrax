@@ -17,7 +17,7 @@ from hydrax import ROOT
 ##
 
 # Load the sequence of configurations (30 FPS) from huggingface
-filename = "dance1_subject2.csv"
+filename = "walk1_subject1.csv"
 dataset = np.loadtxt(
     hf_hub_download(
         repo_id="unitreerobotics/LAFAN1_Retargeting_Dataset",
@@ -28,34 +28,33 @@ dataset = np.loadtxt(
     delimiter=",",
 )
 
+# Convert the dataset to mujoco format, with wxyz quaternion
+pos = dataset[:, :3]
+xyzw = dataset[:, 3:7]
+wxyz = np.concatenate([xyzw[:, 3:], xyzw[:, :3]], axis=1)
+dataset = np.concatenate([pos, wxyz, dataset[:, 7:]], axis=1)
 
-def to_mujoco(q: np.ndarray) -> np.ndarray:
-    """Convert a configuration from the LAFAN1 dataset to the G1 model."""
-    pos = q[:3]
-    xyzw = q[3:7]
-    wxyz = np.array([xyzw[3], xyzw[0], xyzw[1], xyzw[2]])
-    qpos = np.concatenate([pos, wxyz, q[7:]])
-    return qpos
+
+def get_configuration(t: float) -> np.ndarray:
+    """Get the configuration at time t."""
+    i = int(t * 30.0)  # The dataset runs at 30 FPS
+    i = min(max(0, i), dataset.shape[0] - 1)
+    return dataset[i, :]
 
 
 # Set up a mujoco model
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
 mj_data = mujoco.MjData(mj_model)
 
-# Set the initial state
-mj_data.qpos[:] = to_mujoco(dataset[0, :])
-
 # Start the visualizer, and step through the dataset
+dt = 0.01
 with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
-    i = 0.0
+    t = 0.0
     while viewer.is_running():
-        mj_data.qpos[:] = to_mujoco(dataset[int(i), :])
-        mj_data.time = i / 30.0
+        mj_data.qpos[:] = get_configuration(t)
+        mj_data.time = t
         mujoco.mj_forward(mj_model, mj_data)
         viewer.sync()
 
-        time.sleep(1.0 / 30.0)
-
-        i += 1
-        if i >= dataset.shape[0]:
-            i = 0.0
+        time.sleep(dt)
+        t += dt

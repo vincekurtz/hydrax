@@ -9,7 +9,7 @@ from hydrax import ROOT
 from hydrax.task_base import Task
 
 
-class Humanoid(Task):
+class HumanoidStandup(Task):
     """Standup task for the Unitree G1 humanoid."""
 
     def __init__(

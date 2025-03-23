@@ -5,10 +5,10 @@ import mujoco
 from hydrax.algs import MPPI
 from hydrax.simulation.asynchronous import run_interactive as run_async
 from hydrax.simulation.deterministic import run_interactive
-from hydrax.tasks.humanoid import Humanoid
+from hydrax.tasks.humanoid_standup import HumanoidStandup
 
 """
-Run an interactive simulation of the humanoid task.
+Run an interactive simulation of the humanoid standup task.
 """
 
 # Need to be wrapped in main loop for async simulation
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Define the task (cost and dynamics)
-    task = Humanoid()
+    task = HumanoidStandup()
 
     # Set up the controller
     ctrl = MPPI(

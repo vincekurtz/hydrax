@@ -7,7 +7,7 @@ import mujoco
 from mujoco import mjx
 
 from hydrax import ROOT
-from hydrax.tasks.humanoid import Humanoid
+from hydrax.tasks.humanoid_standup import HumanoidStandup
 
 
 def test_mjx_model() -> None:
@@ -50,7 +50,7 @@ def test_mjx_model() -> None:
 
 def test_task() -> None:
     """Test the humanoid task."""
-    task = Humanoid()
+    task = HumanoidStandup()
     assert task.orientation_sensor_id >= 0
     assert task.torso_id >= 0
 
