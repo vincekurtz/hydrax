@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 
 import mujoco
 import mujoco.viewer
@@ -27,36 +28,33 @@ dataset = np.loadtxt(
     delimiter=",",
 )
 
+
+def to_mujoco(q: np.ndarray) -> np.ndarray:
+    """Convert a configuration from the LAFAN1 dataset to the G1 model."""
+    pos = q[:3]
+    xyzw = q[3:7]
+    wxyz = np.array([xyzw[3], xyzw[0], xyzw[1], xyzw[2]])
+    qpos = np.concatenate([pos, wxyz, q[7:]])
+    return qpos
+
+
 # Set up a mujoco model
 mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
 mj_data = mujoco.MjData(mj_model)
 
-
-def to_mujoco_qpos(q):
-    pos = q[0:3]
-    quat = q[3:7]
-    qpos = np.zeros(mj_model.nq)
-    qpos[0:3] = pos
-    qpos[3:7] = quat
-    return qpos
-
-
 # Set the initial state
-mj_data.qpos[:] = to_mujoco_qpos(dataset[0, :])
+mj_data.qpos[:] = to_mujoco(dataset[0, :])
 
 # Start the visualizer, and step through the dataset
 with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
     i = 0.0
     while viewer.is_running():
-        mj_data.qpos[:] = to_mujoco_qpos(dataset[int(i), :])
+        mj_data.qpos[:] = to_mujoco(dataset[int(i), :])
         mj_data.time = i / 30.0
         mujoco.mj_forward(mj_model, mj_data)
-
         viewer.sync()
 
-        print("Press [ENTER] to continue")
-        input()
-        # time.sleep(1.0 / 30.0)
+        time.sleep(1.0 / 30.0)
 
         i += 1
         if i >= dataset.shape[0]:
