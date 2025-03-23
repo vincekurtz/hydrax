@@ -5,14 +5,14 @@ import numpy as np
 
 from hydrax.algs import MPPI, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
-from hydrax.tasks.pendulum import Pendulum
+from hydrax.tasks.time_varying_pendulum import TimeVaryingPendulum
 
 """
 Run an interactive simulation of the pendulum swingup task.
 """
 
 # Define the task (cost and dynamics)
-task = Pendulum(planning_horizon=10, sim_steps_per_control_step=5)
+task = TimeVaryingPendulum(planning_horizon=10, sim_steps_per_control_step=5)
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -28,7 +28,7 @@ args = parser.parse_args()
 # Set the controller based on command-line arguments
 if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
-    ctrl = PredictiveSampling(task, num_samples=32, noise_level=0.1)
+    ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.1)
 elif args.algorithm == "mppi":
     print("Running MPPI")
     ctrl = MPPI(task, num_samples=32, noise_level=0.1, temperature=0.1)

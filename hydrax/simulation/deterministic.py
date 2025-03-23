@@ -115,6 +115,7 @@ def run_interactive(
                 qvel=jnp.array(mj_data.qvel),
                 mocap_pos=jnp.array(mj_data.mocap_pos),
                 mocap_quat=jnp.array(mj_data.mocap_quat),
+                time=mj_data.time,
             )
 
             # Do a replanning step
