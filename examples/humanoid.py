@@ -33,7 +33,7 @@ if __name__ == "__main__":
     ctrl = MPPI(
         task,
         num_samples=128,
-        noise_level=1.0,
+        noise_level=0.5,
         temperature=0.1,
         num_randomizations=4,
     )

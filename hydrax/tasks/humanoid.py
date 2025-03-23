@@ -22,13 +22,13 @@ class Humanoid(Task):
             mj_model,
             planning_horizon=planning_horizon,
             sim_steps_per_control_step=sim_steps_per_control_step,
-            trace_sites=["imu", "left_foot", "right_foot"],
+            trace_sites=["imu_in_torso", "left_foot", "right_foot"],
         )
 
         # Get sensor and site ids
-        self.orientation_sensor_id = mj_model.sensor("imu-body-quat").id
-        self.velocity_sensor_id = mj_model.sensor("imu-body-linvel").id
-        self.torso_id = mj_model.site("imu").id
+        self.orientation_sensor_id = mj_model.sensor("imu_in_torso_quat").id
+        self.velocity_sensor_id = mj_model.sensor("imu_in_torso_linvel").id
+        self.torso_id = mj_model.site("imu_in_torso").id
 
         # Set the target height
         self.target_height = 0.9
