@@ -6,12 +6,12 @@
   </option>
 
   <custom>
-    <numeric data="5" name="max_contact_points" />
-    <numeric data="5" name="max_geom_pairs" />
+    <numeric data="15" name="max_contact_points" />
+    <numeric data="15" name="max_geom_pairs" />
   </custom>
 
   <default>
-    <geom condim="3"/>
+    <geom condim="3" solimp="0.0 0.95 0.01"/>
     <default class="g1">
       <site rgba="1 0 0 1" size="0.01" group="5"/>
       <joint damping="0.0" armature="1.0" frictionloss="0.0"/>
