@@ -20,7 +20,7 @@ class HumanoidMocap(Task):
 
     def __init__(
         self,
-        planning_horizon: int = 5,
+        planning_horizon: int = 4,
         sim_steps_per_control_step: int = 5,
         reference_filename: str = "walk1_subject1.csv",
     ):
@@ -84,7 +84,7 @@ class HumanoidMocap(Task):
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        q_ref = self._get_reference_configuration(0.0)
+        q_ref = self._get_reference_configuration(state.time)
         q = state.qpos
         q_err = self.cost_weights * (q - q_ref)
         return 0.0 * jnp.sum(jnp.square(q_err))

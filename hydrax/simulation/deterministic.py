@@ -80,12 +80,9 @@ def run_interactive(
     print("Jitting the controller...")
     st = time.time()
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+    policy_params, rollouts = jit_optimize(mjx_data, policy_params)
     print(f"Time to jit: {time.time() - st:.3f} seconds")
     num_traces = min(rollouts.controls.shape[1], max_traces)
-
-    # Run a few optimization steps to warm up the controller 
-    for _ in range(50):
-        policy_params, rollouts = jit_optimize(mjx_data, policy_params)
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
