@@ -3,9 +3,9 @@ from typing import Dict
 import jax
 import jax.numpy as jnp
 import mujoco
-from mujoco import mjx
-from huggingface_hub import hf_hub_download
 import numpy as np
+from huggingface_hub import hf_hub_download
+from mujoco import mjx
 
 from hydrax import ROOT
 from hydrax.task_base import Task
@@ -19,7 +19,10 @@ class HumanoidMocap(Task):
     """
 
     def __init__(
-        self, planning_horizon: int = 3, sim_steps_per_control_step: int = 5, reference_filename: str = "walk1_subject1.csv"
+        self,
+        planning_horizon: int = 5,
+        sim_steps_per_control_step: int = 5,
+        reference_filename: str = "walk1_subject1.csv",
     ):
         """Load the MuJoCo model and set task parameters.
 
@@ -55,7 +58,7 @@ class HumanoidMocap(Task):
 
         # Cost weights
         cost_weights = np.ones(mj_model.nq)
-        cost_weights[:7] = 0.0  # Base pose is more important
+        cost_weights[:7] = 10.0  # Base pose is more important
         self.cost_weights = jnp.array(cost_weights)
 
     def _get_reference_configuration(self, t: jax.Array) -> jax.Array:
@@ -67,7 +70,6 @@ class HumanoidMocap(Task):
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
         # Configuration error weighs the base pose more heavily
-        # q_ref = self._get_reference_configuration(state.time)
         q_ref = self._get_reference_configuration(state.time)
         q = state.qpos
         q_err = self.cost_weights * (q - q_ref)
