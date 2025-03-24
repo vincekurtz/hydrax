@@ -87,7 +87,9 @@ class HumanoidMocap(Task):
         q_ref = self._get_reference_configuration(state.time)
         q = state.qpos
         q_err = self.cost_weights * (q - q_ref)
-        return 0.0 * jnp.sum(jnp.square(q_err))
+        # N.B. we multiply by dt to ensure the terminal cost is comparable to
+        # the running cost, since this isn't a proper cost-to-go.
+        return self.dt * jnp.sum(jnp.square(q_err))
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize the friction parameters."""
