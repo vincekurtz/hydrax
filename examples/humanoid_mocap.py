@@ -10,13 +10,13 @@ Run an interactive simulation of the humanoid motion capture tracking task.
 
 
 # Define the task (cost and dynamics)
-task = HumanoidMocap(reference_filename="run1_subject2.csv")
+task = HumanoidMocap(reference_filename="walk1_subject1.csv")
 
 # Set up the controller
 ctrl = CEM(
     task,
     num_samples=512,
-    num_elites=10,
+    num_elites=20,
     sigma_start=0.1,
     sigma_min=0.1,
 )
@@ -39,4 +39,5 @@ run_interactive(
     mj_data,
     frequency=100,
     show_traces=False,
+    reference=task.reference,
 )

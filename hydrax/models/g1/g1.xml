@@ -1,7 +1,7 @@
 <mujoco model="g1_29dof_rev_1_0">
   <compiler angle="radian" meshdir="assets" autolimits="true"/>
 
-  <option timestep="0.02" iterations="1" ls_iterations="5">
+  <option timestep="0.015" iterations="1" ls_iterations="5">
     <flag eulerdamp="disable"/>
   </option>
 
