@@ -33,19 +33,21 @@ if __name__ == "__main__":
     ctrl = MPPI(
         task,
         num_samples=128,
-        noise_level=0.5,
+        noise_level=0.3,
         temperature=0.1,
         num_randomizations=4,
     )
 
-    # Define the model used for simulation
+    # Define the model used for simulation (stiffer contact parameters)
     mj_model = task.mj_model
     mj_model.opt.timestep = 0.01
+    mj_model.opt.o_solimp = [0.9, 0.95, 0.001, 0.5, 2]
+    mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 
     # Set the initial state so the robot falls and needs to stand back up
     mj_data = mujoco.MjData(mj_model)
     mj_data.qpos[:] = mj_model.keyframe("stand").qpos
-    mj_data.qpos[3:7] = [0.7, 0.0, 0.7, 0.0]
+    mj_data.qpos[3:7] = [0.7, 0.0, -0.7, 0.0]
 
     # Run the interactive simulation
     if args.asynchronous:

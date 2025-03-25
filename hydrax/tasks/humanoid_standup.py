@@ -55,14 +55,8 @@ class HumanoidStandup(Task):
         height_cost = jnp.square(
             self._get_torso_height(state) - self.target_height
         )
-        control_cost = jnp.sum(jnp.square(control))
         nominal_cost = jnp.sum(jnp.square(state.qpos[7:] - self.qstand[7:]))
-        return (
-            1.0 * orientation_cost
-            + 10.0 * height_cost
-            + 0.1 * nominal_cost
-            + 0.01 * control_cost
-        )
+        return 10.0 * orientation_cost + 10.0 * height_cost + 0.1 * nominal_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
