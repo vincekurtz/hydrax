@@ -16,7 +16,7 @@ controller running one after the other in the same thread.
 """
 
 
-def run_interactive(
+def run_interactive(  # noqa: PLR0912, PLR0915
     controller: SamplingBasedController,
     mj_model: mujoco.MjModel,
     mj_data: mujoco.MjData,
@@ -26,6 +26,8 @@ def run_interactive(
     max_traces: int = 5,
     trace_width: float = 5.0,
     trace_color: Sequence = [1.0, 1.0, 1.0, 0.1],
+    reference: np.ndarray = None,
+    reference_fps: float = 30.0,
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -49,6 +51,8 @@ def run_interactive(
         max_traces: The maximum number of traces to show at once.
         trace_width: The width of the trace lines (in pixels).
         trace_color: The RGBA color of the trace lines.
+        reference: The reference trajectory (qs) to visualize.
+        reference_fps: The frame rate of the reference trajectory.
     """
     # Report the planning horizon in seconds for debugging
     print(
@@ -80,8 +84,21 @@ def run_interactive(
     print("Jitting the controller...")
     st = time.time()
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+    policy_params, rollouts = jit_optimize(mjx_data, policy_params)
     print(f"Time to jit: {time.time() - st:.3f} seconds")
     num_traces = min(rollouts.controls.shape[1], max_traces)
+
+    # Ghost reference setup
+    if reference is not None:
+        ref_data = mujoco.MjData(mj_model)
+        assert reference.shape[1] == mj_model.nq
+        ref_data.qpos[:] = reference[0, :]
+        mujoco.mj_forward(mj_model, ref_data)
+
+        vopt = mujoco.MjvOption()
+        vopt.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True  # Transparent.
+        pert = mujoco.MjvPerturb()
+        catmask = mujoco.mjtCatBit.mjCAT_DYNAMIC  # only show dynamic bodies
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
@@ -106,6 +123,12 @@ def run_interactive(
                 )
                 viewer.user_scn.ngeom += 1
 
+        # Add geometry for the ghost reference
+        if reference is not None:
+            mujoco.mjv_addGeoms(
+                mj_model, ref_data, vopt, pert, catmask, viewer.user_scn
+            )
+
         while viewer.is_running():
             start_time = time.time()
 
@@ -115,6 +138,7 @@ def run_interactive(
                 qvel=jnp.array(mj_data.qvel),
                 mocap_pos=jnp.array(mj_data.mocap_pos),
                 mocap_quat=jnp.array(mj_data.mocap_quat),
+                time=mj_data.time,
             )
 
             # Do a replanning step
@@ -136,6 +160,23 @@ def run_interactive(
                                 rollouts.trace_sites[i, j + 1, k],
                             )
                             ii += 1
+
+            # Update the ghost reference
+            if reference is not None:
+                t_ref = mj_data.time * reference_fps
+                i_ref = int(t_ref)
+                i_ref = min(i_ref, reference.shape[0] - 1)
+                ref_data.qpos[:] = reference[i_ref]
+                mujoco.mj_forward(mj_model, ref_data)
+                mujoco.mjv_updateScene(
+                    mj_model,
+                    ref_data,
+                    vopt,
+                    pert,
+                    viewer.cam,
+                    catmask,
+                    viewer.user_scn,
+                )
 
             # Step the simulation
             for i in range(sim_steps_per_replan):

@@ -9,7 +9,7 @@ from hydrax import ROOT
 from hydrax.task_base import Task
 
 
-class Humanoid(Task):
+class HumanoidStandup(Task):
     """Standup task for the Unitree G1 humanoid."""
 
     def __init__(
@@ -22,13 +22,13 @@ class Humanoid(Task):
             mj_model,
             planning_horizon=planning_horizon,
             sim_steps_per_control_step=sim_steps_per_control_step,
-            trace_sites=["imu", "left_foot", "right_foot"],
+            trace_sites=["imu_in_torso", "left_foot", "right_foot"],
         )
 
         # Get sensor and site ids
-        self.orientation_sensor_id = mj_model.sensor("imu-body-quat").id
-        self.velocity_sensor_id = mj_model.sensor("imu-body-linvel").id
-        self.torso_id = mj_model.site("imu").id
+        self.orientation_sensor_id = mj_model.sensor("imu_in_torso_quat").id
+        self.velocity_sensor_id = mj_model.sensor("imu_in_torso_linvel").id
+        self.torso_id = mj_model.site("imu_in_torso").id
 
         # Set the target height
         self.target_height = 0.9
@@ -55,14 +55,8 @@ class Humanoid(Task):
         height_cost = jnp.square(
             self._get_torso_height(state) - self.target_height
         )
-        control_cost = jnp.sum(jnp.square(control))
         nominal_cost = jnp.sum(jnp.square(state.qpos[7:] - self.qstand[7:]))
-        return (
-            1.0 * orientation_cost
-            + 10.0 * height_cost
-            + 0.1 * nominal_cost
-            + 0.01 * control_cost
-        )
+        return 10.0 * orientation_cost + 10.0 * height_cost + 0.1 * nominal_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
