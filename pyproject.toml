@@ -23,6 +23,7 @@ dependencies = [
     "mujoco==3.2.4",
     "mujoco-mjx==3.2.4",
     "evosax==0.1.6",
+    "huggingface_hub==0.29.3",
 ]
 
 [tool.ruff]
