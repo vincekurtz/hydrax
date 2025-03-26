@@ -10,10 +10,11 @@ Sampling-based model predictive control on GPU with
 
 ## About
 
-Hydrax implements various sampling-based MPC algorithms on GPU. It is heavily inspired by
-[MJPC](https://github.com/google-deepmind/mujoco_mpc), but focuses exclusively
-on sampling-based algorithms, runs on hardware accelerators via JAX and MJX, and
-includes support for [online domain randomization](#domain-randomization).
+Hydrax implements various sampling-based MPC algorithms on GPU. It is heavily
+inspired by [MJPC](https://github.com/google-deepmind/mujoco_mpc), but focuses
+exclusively on sampling-based algorithms, runs on hardware accelerators via JAX
+and MJX, and includes support for [online domain
+randomization](#domain-randomization).
 
 Available methods:
 
@@ -69,7 +70,7 @@ Launch an interactive humanoid standup simulation (shown above) with MPPI and
 online domain randomization:
 
 ```bash
-python examples/humanoid.py
+python examples/humanoid_standup.py
 ```
 
 Other demos can be found in the `examples` folder.
@@ -112,8 +113,8 @@ The dynamics ($f$) are specified by a `mujoco.MjModel` that is passed to the
 constructor. Other constructor arguments specify the planning horizon $T$ and
 other details.
 
-For the cost, simply implement the `running_cost` ($\ell$) and
-`terminal_cost` ($\phi$) methods.
+For the cost, simply implement the `running_cost` ($\ell$) and `terminal_cost`
+($\phi$) methods.
 
 See [`hydrax.tasks`](hydrax/tasks) for some example task implementations.
 
@@ -125,8 +126,8 @@ Hydrax considers sampling-based MPC algorithms that follow the following
 ![Generic sampling-based MPC algorithm block](img/spc_alg.png)
 
 The meaning of the parameters $\theta$ differ depending on the algorithm. In
-predictive sampling, for example, $\theta$ is the mean of a Gaussian distribution
-that the controls $U = [u_0, u_1, ...]$ are sampled from.
+predictive sampling, for example, $\theta$ is the mean of a Gaussian
+distribution that the controls $U = [u_0, u_1, ...]$ are sampled from.
 
 To implement a new planning algorithm, you'll need to inherit from
 [`hydrax.alg_base.SamplingBasedController`](hydrax/alg_base.py) and implement
@@ -164,7 +165,7 @@ rollout data in a [`Trajectory`](hydrax/alg_base.py) object.
 
 **Note**: because of
 [the way JAX handles randomness](https://jax.readthedocs.io/en/latest/random-numbers.html),
-we assume the PRNG key is stored as one of parameters $\theta$. This is why
+we assume the PRNG key is stored as one of the parameters $\theta$. This is why
 `sample_controls` returns updated parameters along with the control samples
 $U^{(1:N)}$.
 
