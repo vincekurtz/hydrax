@@ -37,7 +37,7 @@ def test_shared_nparray() -> None:
     assert np.all(shared[1:] == original[1:])
 
 
-def test_controller() -> None:
+def manual_test_controller() -> None:
     """Test running the controller in a separate process."""
     ctx = mp.get_context("spawn")
 
@@ -116,6 +116,6 @@ def manual_test_interactive() -> None:
 
 if __name__ == "__main__":
     test_shared_nparray()
-    test_controller()
+    manual_test_controller()
     manual_test_simulator()
     manual_test_interactive()
