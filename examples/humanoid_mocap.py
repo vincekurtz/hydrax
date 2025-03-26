@@ -1,3 +1,5 @@
+import argparse
+
 import mujoco
 
 from hydrax.algs import CEM
@@ -8,9 +10,25 @@ from hydrax.tasks.humanoid_mocap import HumanoidMocap
 Run an interactive simulation of the humanoid motion capture tracking task.
 """
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(
+    description="Run an interactive simulation of mocap tracking with the G1."
+)
+parser.add_argument(
+    "--reference_filename",
+    type=str,
+    default="walk1_subject1.csv",
+    help="Reference mocap file name, from https://huggingface.co/datasets/unitreerobotics/LAFAN1_Retargeting_Dataset/tree/main/g1.",
+)
+parser.add_argument(
+    "--show_reference",
+    action="store_true",
+    help="Show the reference trajectory as a 'ghost' in the simulation.",
+)
+args = parser.parse_args()
 
 # Define the task (cost and dynamics)
-task = HumanoidMocap(reference_filename="walk1_subject1.csv")
+task = HumanoidMocap(reference_filename=args.reference_filename)
 
 # Set up the controller
 ctrl = CEM(
@@ -33,11 +51,16 @@ mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = task.reference[0]
 
+if args.show_reference:
+    reference = task.reference
+else:
+    reference = None
+
 run_interactive(
     ctrl,
     mj_model,
     mj_data,
     frequency=100,
     show_traces=False,
-    reference=task.reference,
+    reference=reference,
 )
