@@ -28,7 +28,7 @@ args = parser.parse_args()
 # Set the controller based on command-line arguments
 if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
-    ctrl = PredictiveSampling(task, num_samples=1024, noise_level=0.1)
+    ctrl = PredictiveSampling(task, num_samples=32, noise_level=0.1)
 elif args.algorithm == "mppi":
     print("Running MPPI")
     ctrl = MPPI(task, num_samples=32, noise_level=0.1, temperature=0.1)
