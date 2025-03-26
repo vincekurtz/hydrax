@@ -5,4 +5,4 @@ __pycache__
 *.pt
 *.pkl
 *.egg-info
-MUJOCO_LOG.txt
+MUJOCO_LOG.TXT
