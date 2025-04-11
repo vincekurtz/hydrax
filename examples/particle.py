@@ -46,6 +46,8 @@ if args.algorithm == "ps" or args.algorithm is None:
         risk_strategy=WorstCase(),
         T=0.25,
         dt=0.05,
+        spline_type="zero",
+        num_knots=11,
     )
 
 elif args.algorithm == "mppi":
@@ -57,6 +59,8 @@ elif args.algorithm == "mppi":
         temperature=0.01,
         T=0.25,
         dt=0.05,
+        spline_type="zero",
+        num_knots=11,
     )
 
 elif args.algorithm == "cmaes":
@@ -68,6 +72,8 @@ elif args.algorithm == "cmaes":
         elite_ratio=0.5,
         T=0.25,
         dt=0.05,
+        spline_type="zero",
+        num_knots=11,
     )
 
 elif args.algorithm == "samr":
@@ -78,6 +84,8 @@ elif args.algorithm == "samr":
         num_samples=16,
         T=0.25,
         dt=0.05,
+        spline_type="zero",
+        num_knots=11,
     )
 
 elif args.algorithm == "de":
@@ -88,6 +96,8 @@ elif args.algorithm == "de":
         num_samples=16,
         T=0.25,
         dt=0.05,
+        spline_type="zero",
+        num_knots=11,
     )
 
 elif args.algorithm == "gld":
@@ -98,6 +108,8 @@ elif args.algorithm == "gld":
         num_samples=16,
         T=0.25,
         dt=0.05,
+        spline_type="zero",
+        num_knots=11,
     )
 
 elif args.algorithm == "rs":
@@ -113,6 +125,8 @@ elif args.algorithm == "rs":
         es_params=es_params,
         T=0.25,
         dt=0.05,
+        spline_type="zero",
+        num_knots=11,
     )
 else:
     parser.error("Invalid algorithm")
