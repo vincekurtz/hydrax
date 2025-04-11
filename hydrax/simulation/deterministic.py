@@ -56,8 +56,8 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     """
     # Report the planning horizon in seconds for debugging
     print(
-        f"Planning with {controller.task.H} steps "
-        f"over a {controller.task.T} "
+        f"Planning with {controller.H} steps "
+        f"over a {controller.T} "
         f"second horizon."
     )
 
@@ -110,7 +110,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         # Set up rollout traces
         if show_traces:
             num_trace_sites = len(controller.task.trace_site_ids)
-            for i in range(num_trace_sites * num_traces * controller.task.H):
+            for i in range(num_trace_sites * num_traces * controller.H):
                 mujoco.mjv_initGeom(
                     viewer.user_scn.geoms[i],
                     type=mujoco.mjtGeom.mjGEOM_LINE,
@@ -149,7 +149,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 ii = 0
                 for k in range(num_trace_sites):
                     for i in range(num_traces):
-                        for j in range(controller.task.H):
+                        for j in range(controller.H):
                             mujoco.mjv_connector(
                                 viewer.user_scn.geoms[ii],
                                 mujoco.mjtGeom.mjGEOM_LINE,

@@ -16,7 +16,9 @@ ctrl = PredictiveSampling(
     task,
     num_samples=128,
     noise_level=0.3,
-    spline_type="zero",
+    spline_type="cubic",
+    T=1.0,
+    dt=0.1,
     num_knots=11,
 )
 

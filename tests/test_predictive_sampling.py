@@ -18,7 +18,7 @@ def test_predictive_sampling() -> None:
     assert isinstance(params.rng, jax._src.prng.PRNGKeyArray)
 
     # Sample control sequences from the policy
-    controls, new_params = opt.sample_controls(params)
+    controls, new_params = opt.sample_knots(params)
     assert controls.shape == (opt.num_samples, task.planning_horizon, 1)
     assert new_params.rng != params.rng
 

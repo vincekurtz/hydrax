@@ -28,6 +28,8 @@ class PredictiveSampling(SamplingBasedController):
         num_randomizations: int = 1,
         risk_strategy: RiskStrategy = None,
         seed: int = 0,
+        T: float = 1.0,
+        dt: float = 0.01,
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
         num_knots: int = 4,
     ) -> None:
@@ -41,6 +43,8 @@ class PredictiveSampling(SamplingBasedController):
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
+            T: The time horizon for the rollout in seconds.
+            dt: The time step for the controller in seconds.
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
@@ -50,6 +54,8 @@ class PredictiveSampling(SamplingBasedController):
             num_randomizations=num_randomizations,
             risk_strategy=risk_strategy,
             seed=seed,
+            T=T,
+            dt=dt,
             spline_type=spline_type,
             num_knots=num_knots,
         )
@@ -61,7 +67,7 @@ class PredictiveSampling(SamplingBasedController):
         _params = super().init_params(seed)
         return PSParams(mean=_params.mean, rng=_params.rng)
 
-    def sample_controls(self, params: PSParams) -> Tuple[jax.Array, PSParams]:
+    def sample_knots(self, params: PSParams) -> Tuple[jax.Array, PSParams]:
         """Sample a control sequence."""
         rng, sample_rng = jax.random.split(params.rng)
         noise = jax.random.normal(

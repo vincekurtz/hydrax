@@ -19,7 +19,7 @@ def test_cmaes() -> None:
     assert params.opt_state.weights.shape == (32,)
 
     # Sample control sequences from the policy
-    controls, params = ctrl.sample_controls(params)
+    controls, params = ctrl.sample_knots(params)
     assert controls.shape == (32, 20, 1)
 
     # Roll out the control sequences
