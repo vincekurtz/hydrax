@@ -49,14 +49,14 @@ pip install -e .
 pip install -e .[dev]
 ```
 
-(Optional) set up pre-commit hooks:
+(Optional) Set up pre-commit hooks if using development dependencies:
 
 ```bash
 pre-commit autoupdate
 pre-commit install
 ```
 
-(Optional) run unit tests:
+(Optional) Run unit tests if using development dependencies:
 
 ```bash
 pytest
