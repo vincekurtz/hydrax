@@ -37,6 +37,10 @@ ctrl = CEM(
     num_elites=20,
     sigma_start=0.1,
     sigma_min=0.1,
+    T=0.6,
+    dt=0.1,
+    spline_type="zero",
+    num_knots=4,
 )
 
 # Define the model used for simulation

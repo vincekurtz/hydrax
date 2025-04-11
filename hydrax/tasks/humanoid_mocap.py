@@ -18,23 +18,15 @@ class HumanoidMocap(Task):
     https://huggingface.co/datasets/unitreerobotics/LAFAN1_Retargeting_Dataset/.
     """
 
-    def __init__(
-        self,
-        planning_horizon: int = 4,
-        sim_steps_per_control_step: int = 5,
-        reference_filename: str = "walk1_subject1.csv",
-    ):
+    def __init__(self, reference_filename: str = "walk1_subject1.csv") -> None:
         """Load the MuJoCo model and set task parameters.
 
         The list of available reference files can be found at
         https://huggingface.co/datasets/unitreerobotics/LAFAN1_Retargeting_Dataset/tree/main/g1.
         """
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
-
         super().__init__(
             mj_model,
-            planning_horizon=planning_horizon,
-            sim_steps_per_control_step=sim_steps_per_control_step,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
         )
 
