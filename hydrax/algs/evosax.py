@@ -45,8 +45,10 @@ class Evosax(SamplingBasedController):
         num_randomizations: int = 1,
         risk_strategy: RiskStrategy = None,
         seed: int = 0,
+        T: float = 1.0,
+        dt: float = 0.01,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize the controller.
 
         Args:
@@ -58,9 +60,18 @@ class Evosax(SamplingBasedController):
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
+            T: The time horizon for the rollout in seconds.
+            dt: The time step for the controller in seconds.
             **kwargs: Additional keyword arguments for the optimizer.
         """
-        super().__init__(task, num_randomizations, risk_strategy, seed)
+        super().__init__(
+            task,
+            num_randomizations=num_randomizations,
+            risk_strategy=risk_strategy,
+            seed=seed,
+            T=T,
+            dt=dt,
+        )
 
         self.strategy = optimizer(
             popsize=num_samples,
@@ -80,7 +91,7 @@ class Evosax(SamplingBasedController):
         opt_state = self.strategy.initialize(init_rng, self.es_params)
         return EvosaxParams(controls=controls, opt_state=opt_state, rng=rng)
 
-    def sample_controls(
+    def sample_knots(
         self, params: EvosaxParams
     ) -> Tuple[jax.Array, EvosaxParams]:
         """Sample control sequences from the proposal distribution."""
