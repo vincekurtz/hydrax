@@ -14,16 +14,20 @@ classifiers = [
     "Programming Language :: Python",
 ]
 dependencies = [
-    "jax[cuda12]==0.4.35",
-    "flax==0.10.0",
-    "pytest==8.3.3",
-    "ruff==0.7.1",
-    "pre-commit==4.0.1",
-    "matplotlib==3.9.2",
-    "mujoco==3.2.4",
-    "mujoco-mjx==3.2.4",
-    "evosax==0.1.6",
-    "huggingface_hub==0.29.3",
+    "evosax>=0.1.6",
+    "flax>=0.10.0",
+    "huggingface_hub>=0.29.3",
+    "jax[cuda12]>=0.4.35",
+    "mujoco>=3.2.4",
+    "mujoco-mjx>=3.2.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "matplotlib>=3.9.2",
+    "pre-commit>=4.0.1",
+    "pytest>=8.3.3",
+    "ruff>=0.7.1",
 ]
 
 [tool.ruff]

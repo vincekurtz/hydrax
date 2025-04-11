@@ -42,7 +42,11 @@ conda activate hydrax
 Install the package and dependencies:
 
 ```bash
+# option 1: required deps only
 pip install -e .
+
+# option 2: all deps (including dev)
+pip install -e .[dev]
 ```
 
 (Optional) set up pre-commit hooks:
