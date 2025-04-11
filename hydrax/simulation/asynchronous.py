@@ -117,8 +117,8 @@ def run_controller(
 
     # Print out some planning horizon information
     print(
-        f"Planning with {ctrl.task.planning_horizon} steps "
-        f"over a {ctrl.task.planning_horizon * ctrl.task.dt} second horizon."
+        f"Planning with {ctrl.H} steps "
+        f"over a {ctrl.H * ctrl.dt} second horizon."
     )
 
     # Jit the optimizer step, then signal that we're ready to go
@@ -160,7 +160,9 @@ def run_controller(
         )
 
         # Print the current planning frequency
-        print(f"Controller running at {1/(time.time() - st):.2f} Hz", end="\r")
+        print(
+            f"Controller running at {1 / (time.time() - st):.2f} Hz", end="\r"
+        )
 
     # Preserve the last printed line
     print("")
