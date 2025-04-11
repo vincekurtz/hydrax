@@ -13,12 +13,18 @@ task = PushT()
 
 # Set up the controller
 ctrl = PredictiveSampling(
-    task, num_samples=128, noise_level=0.4, num_randomizations=4
+    task,
+    num_samples=128,
+    noise_level=0.4,
+    num_randomizations=4,
+    T=0.5,
+    dt=0.05,
+    spline_type="zero",
+    num_knots=6,
 )
 
 # Define the model used for simulation
 mj_model = task.mj_model
-mj_model.opt.timestep = 0.001
 mj_model.opt.iterations = 100
 mj_model.opt.ls_iterations = 50
 mj_data = mujoco.MjData(mj_model)
