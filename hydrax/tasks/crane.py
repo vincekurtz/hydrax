@@ -12,20 +12,12 @@ from hydrax.task_base import Task
 class Crane(Task):
     """A luffing crane moves a payload to a target position."""
 
-    def __init__(
-        self, planning_horizon: int = 2, sim_steps_per_control_step: int = 40
-    ):
+    def __init__(self) -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/crane/scene.xml"
         )
-
-        super().__init__(
-            mj_model,
-            planning_horizon=planning_horizon,
-            sim_steps_per_control_step=sim_steps_per_control_step,
-            trace_sites=["payload_end"],
-        )
+        super().__init__(mj_model, trace_sites=["payload_end"])
 
         self.payload_pos_sensor_adr = mj_model.sensor_adr[
             mj_model.sensor("payload_pos").id
