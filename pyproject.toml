@@ -68,7 +68,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ["hydra"]
+known-first-party = ["hydrax"]
 split-on-trailing-comma = false
 
 [tool.ruff.format]
