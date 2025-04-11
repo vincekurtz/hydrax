@@ -61,19 +61,44 @@ elif args.algorithm == "mppi":
 
 elif args.algorithm == "cmaes":
     print("Running CMA-ES")
-    ctrl = Evosax(task, evosax.Sep_CMA_ES, num_samples=16, elite_ratio=0.5)
+    ctrl = Evosax(
+        task,
+        evosax.Sep_CMA_ES,
+        num_samples=16,
+        elite_ratio=0.5,
+        T=0.25,
+        dt=0.05,
+    )
 
 elif args.algorithm == "samr":
     print("Running genetic algorithm with Self-Adaptation Mutation Rate (SAMR)")
-    ctrl = Evosax(task, evosax.SAMR_GA, num_samples=16)
+    ctrl = Evosax(
+        task,
+        evosax.SAMR_GA,
+        num_samples=16,
+        T=0.25,
+        dt=0.05,
+    )
 
 elif args.algorithm == "de":
     print("Running Differential Evolution (DE)")
-    ctrl = Evosax(task, evosax.DE, num_samples=16)
+    ctrl = Evosax(
+        task,
+        evosax.DE,
+        num_samples=16,
+        T=0.25,
+        dt=0.05,
+    )
 
 elif args.algorithm == "gld":
     print("Running Gradient-Less Descent (GLD)")
-    ctrl = Evosax(task, evosax.GLD, num_samples=16)
+    ctrl = Evosax(
+        task,
+        evosax.GLD,
+        num_samples=16,
+        T=0.25,
+        dt=0.05,
+    )
 
 elif args.algorithm == "rs":
     print("Running uniform random search")
@@ -82,7 +107,12 @@ elif args.algorithm == "rs":
         range_max=1.0,
     )
     ctrl = Evosax(
-        task, evosax.RandomSearch, num_samples=16, es_params=es_params
+        task,
+        evosax.RandomSearch,
+        num_samples=16,
+        es_params=es_params,
+        T=0.25,
+        dt=0.05,
     )
 else:
     parser.error("Invalid algorithm")
