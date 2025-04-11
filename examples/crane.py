@@ -22,7 +22,7 @@ ctrl = PredictiveSampling(
     T=0.8,
     dt=0.4,
     spline_type="zero",
-    num_knots=2,
+    num_knots=3,
 )
 
 # Define the model used for simulation
