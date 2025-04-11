@@ -46,7 +46,7 @@ def get_interp_func(method: InterpMethodType) -> InterpFuncType:
         # we use "cubic" to mean natural splines, not local, which corresponds
         # to the "cubic2" method in interpax
         # https://github.com/f0uriest/interpax/blob/163c348925167f82a3658a094458cb2608f189ff/interpax/_spline.py#L47
-        method = "cubic" if method == "cubic" else "linear"
+        method = "cubic2" if method == "cubic" else "linear"
         interp_func = vmap(
             lambda tq, tk, knots: interp1d(tq, tk, knots, method=method),
             in_axes=(None, None, 0),
