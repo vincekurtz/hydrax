@@ -5,12 +5,11 @@ from typing import Any, Literal, Tuple
 import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
-from interpax import interp1d
-from jax import vmap
 from mujoco import mjx
 
 from hydrax.risk import AverageCost, RiskStrategy
 from hydrax.task_base import Task
+from hydrax.utils.spline import get_interp_func
 
 
 @dataclass
@@ -82,27 +81,7 @@ class SamplingBasedController(ABC):
         self.T = task.T  # time horizon for the rollout in seconds
         self.spline_type = spline_type
         self.num_knots = num_knots
-
-        if spline_type in ["linear", "cubic"]:
-            method = "linear" if spline_type == "linear" else "cubic"
-            self.interp_func = vmap(
-                lambda tq, tk, knots: interp1d(tq, tk, knots, method=method),
-                in_axes=(None, None, 0),
-            )  # times are not batched, but knots are
-        elif spline_type == "zero":
-            # for a zero-order spline, take the "next" knot as the control
-            # ex: tq = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
-            #     tk = [0.0, 0.25, 0.5]
-            #     inds = [0, 0, 0, 1, 1, 2]  # searchsorted trick does this
-            #     interp_func(tq, tk, knots) = knots[:, inds]
-            self.interp_func = vmap(
-                lambda tq, tk, knots: knots[
-                    jnp.searchsorted(tk, tq, side="right") - 1
-                ],
-                in_axes=(None, None, 0),
-            )
-        else:
-            raise ValueError(f"Invalid spline type: {spline_type}")
+        self.interp_func = get_interp_func(spline_type)
 
         # Use a single model (no domain randomization) by default
         self.model = task.model
