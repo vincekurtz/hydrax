@@ -92,6 +92,7 @@ class SamplingBasedController(ABC):
         # Spline setup for control interpolation
         self.spline_type = spline_type
         self.num_knots = num_knots
+        self.tk = jnp.linspace(0.0, self.T, self.num_knots)  # knot times
         self.interp_func = get_interp_func(spline_type)
 
         # Use a single model (no domain randomization) by default
@@ -170,9 +171,8 @@ class SamplingBasedController(ABC):
             states = states.tree_replace(randomizations)
 
         # compute the control sequence from the knots
-        tq = jnp.linspace(0.0, self.T - self.dt, self.H)  # ctrl times
-        tk = jnp.linspace(0.0, self.T, self.num_knots)  # knot times
-        controls = self.interp_func(tq, tk, knots)  # (num_rollouts, H, nu)
+        tq = jnp.linspace(0.0, self.T - self.dt, self.H)  # ctrl query times
+        controls = self.interp_func(tq, self.tk, knots)  # (num_rollouts, H, nu)
 
         # Apply the control sequences, parallelized over both rollouts and
         # domain randomizations.
@@ -282,8 +282,7 @@ class SamplingBasedController(ABC):
             The updated policy parameters.
         """
 
-    @abstractmethod
-    def get_action(self, params: Any, t: float) -> jax.Array:
+    def get_action(self, params: SamplingParams, t: float) -> jax.Array:
         """Get the control action at a given point along the trajectory.
 
         Args:
@@ -293,3 +292,7 @@ class SamplingBasedController(ABC):
         Returns:
             The control action u(t).
         """
+        knots = params.mean[None, ...]  # (1, num_knots, nu)
+        tq = jnp.array([t])  # query time
+        u = self.interp_func(tq, self.tk, knots)[0, 0]  # (nu,)
+        return u
