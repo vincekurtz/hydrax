@@ -5,12 +5,13 @@ from hydrax.alg_base import Trajectory
 
 def test_traj() -> None:
     """Make sure we can define a Trajectory object."""
-    batch, horizon = 5, 10
+    batch, horizon, num_knots = 5, 10, 3
     U = jnp.zeros((batch, horizon, 3))
+    K = jnp.zeros((batch, num_knots, 3))
     J = jnp.zeros((batch, horizon + 1))
     P = jnp.zeros((batch, horizon + 1, 0, 3))
 
-    traj = Trajectory(controls=U, costs=J, trace_sites=P)
+    traj = Trajectory(controls=U, knots=K, costs=J, trace_sites=P)
     assert len(traj) == horizon
 
 
