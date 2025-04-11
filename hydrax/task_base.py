@@ -22,7 +22,7 @@ class Task(ABC):
     def __init__(
         self,
         mj_model: mujoco.MjModel,
-        planning_horizon: int,
+        T: float,
         sim_steps_per_control_step: int,
         trace_sites: Sequence[str] = [],
     ):
@@ -30,7 +30,7 @@ class Task(ABC):
 
         Args:
             mj_model: The MuJoCo model to use for simulation.
-            planning_horizon: The number of control steps (T) to plan over.
+            T: The time horizon for the rollout in seconds.
             sim_steps_per_control_step: The number of simulation steps to take
                                         for each control step.
             trace_sites: A list of site names to visualize with traces.
@@ -41,7 +41,7 @@ class Task(ABC):
         assert isinstance(mj_model, mujoco.MjModel)
         self.mj_model = mj_model
         self.model = mjx.put_model(mj_model)
-        self.planning_horizon = planning_horizon
+        self.T = T
         self.sim_steps_per_control_step = sim_steps_per_control_step
 
         # Set actuator limits
@@ -63,6 +63,11 @@ class Task(ABC):
         self.trace_site_ids = jnp.array(
             [mj_model.site(name).id for name in trace_sites]
         )
+
+    @property
+    def H(self) -> int:
+        """The number of control steps in the planning horizon."""
+        return int(round(self.T / self.dt))
 
     @abstractmethod
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:

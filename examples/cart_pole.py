@@ -12,7 +12,13 @@ Run an interactive simulation of a cart-pole swingup
 task = CartPole()
 
 # Set up the controller
-ctrl = PredictiveSampling(task, num_samples=128, noise_level=0.3)
+ctrl = PredictiveSampling(
+    task,
+    num_samples=128,
+    noise_level=0.3,
+    spline_type="zero",
+    num_knots=11,
+)
 
 # Define the model used for simulation
 mj_model = task.mj_model

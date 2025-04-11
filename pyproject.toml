@@ -52,7 +52,6 @@ select = [
 ]
 ignore = [
     "ANN003",  # missing type annotation for **kwargs
-    "ANN101",  # missing type annotation for `self` in method
     "ANN202",  # missing return type annotation for private function
     "ANN204",  # missing return type annotation for `__init__`
     "ANN401",  # dynamically typed expressions (typing.Any) are disallowed
@@ -63,6 +62,8 @@ ignore = [
     "D212",  # multi-line docstring summary at first line
     "D213",  # multi-line docstring summary at second line
     "E731",  # assigning to a `lambda` expression
+    "N802",  # function name `H` should be lowercase
+    "N803",  # argument name should be lowercase
     "N806",  # only lowercase variables in functions
     "PLR0913",  # too many arguments
     "PLR2004",  # magic value used in comparison

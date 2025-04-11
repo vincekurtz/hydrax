@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, Tuple
+from typing import Any, Literal, Tuple
 
 import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
+from interpax import interp1d
+from jax import vmap
 from mujoco import mjx
 
 from hydrax.risk import AverageCost, RiskStrategy
@@ -16,18 +18,33 @@ class Trajectory:
     """Data class for storing rollout data.
 
     Attributes:
-        controls: Control actions for each time step (size T).
-        costs: Costs associated with each time step (size T+1).
-        trace_sites: Positions of trace sites at each time step (size T+1).
+        controls: Control actions for each time step (size H).
+        knots: Control spline knots (size num_knots).
+        costs: Costs associated with each time step (size H+1).
+        trace_sites: Positions of trace sites at each time step (size H+1).
     """
 
     controls: jax.Array
+    knots: jax.Array
     costs: jax.Array
     trace_sites: jax.Array
 
     def __len__(self):
         """Return the number of time steps in the trajectory (T)."""
         return self.costs.shape[-1] - 1
+
+
+@dataclass
+class SamplingParams:
+    """Parameters for sampling-based control algorithms.
+
+    Attributes:
+        mean: The mean of the control spline knot distribution, μ = [u₀, ...].
+        rng: The pseudo-random number generator key.
+    """
+
+    mean: jax.Array
+    rng: jax.Array
 
 
 class SamplingBasedController(ABC):
@@ -39,7 +56,9 @@ class SamplingBasedController(ABC):
         num_randomizations: int,
         risk_strategy: RiskStrategy,
         seed: int,
-    ):
+        spline_type: Literal["zero", "linear", "cubic"] = "zero",
+        num_knots: int = 4,
+    ) -> None:
         """Initialize the MPC controller.
 
         Args:
@@ -47,6 +66,9 @@ class SamplingBasedController(ABC):
             num_randomizations: The number of domain randomizations to use.
             risk_strategy: How to combining costs from different randomizations.
             seed: The random seed for domain randomization.
+            spline_type: The type of spline used for control interpolation.
+                         Defaults to "zero" (zero-order hold).
+            num_knots: The number of knots in the control spline.
         """
         self.task = task
         self.num_randomizations = max(num_randomizations, 1)
@@ -55,6 +77,32 @@ class SamplingBasedController(ABC):
         if risk_strategy is None:
             risk_strategy = AverageCost()
         self.risk_strategy = risk_strategy
+
+        # Spline setup for control interpolation
+        self.T = task.T  # time horizon for the rollout in seconds
+        self.spline_type = spline_type
+        self.num_knots = num_knots
+
+        if spline_type in ["linear", "cubic"]:
+            method = "linear" if spline_type == "linear" else "cubic"
+            self.interp_func = vmap(
+                lambda tq, tk, knots: interp1d(tq, tk, knots, method=method),
+                in_axes=(None, None, 0),
+            )  # times are not batched, but knots are
+        elif spline_type == "zero":
+            # for a zero-order spline, take the "next" knot as the control
+            # ex: tq = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+            #     tk = [0.0, 0.25, 0.5]
+            #     inds = [0, 0, 0, 1, 1, 2]  # searchsorted trick does this
+            #     interp_func(tq, tk, knots) = knots[:, inds]
+            self.interp_func = vmap(
+                lambda tq, tk, knots: knots[
+                    jnp.searchsorted(tk, tq, side="right") - 1
+                ],
+                in_axes=(None, None, 0),
+            )
+        else:
+            raise ValueError(f"Invalid spline type: {spline_type}")
 
         # Use a single model (no domain randomization) by default
         self.model = task.model
@@ -85,14 +133,22 @@ class SamplingBasedController(ABC):
             Updated policy parameters
             Rollouts used to update the parameters
         """
-        # Sample random control sequences
-        controls, params = self.sample_controls(params)
-        controls = jnp.clip(controls, self.task.u_min, self.task.u_max)
+        # Sample random control sequences from spline knots
+        knots, params = self.sample_controls(params)
+        knots = jnp.clip(
+            knots, self.task.u_min, self.task.u_max
+        )  # (num_rollouts, num_knots, nu)
+        dt = self.task.dt
+        tq = jnp.linspace(0.0, self.T - dt, self.task.H)  # ctrl query times
+        tk = jnp.linspace(0.0, self.T, self.num_knots)  # knot times
+        controls = self.interp_func(tq, tk, knots)  # (num_rollouts, H, nu)
 
         # Roll out the control sequences, applying domain randomizations and
         # combining costs using self.risk_strategy.
         rng, dr_rng = jax.random.split(params.rng)
-        rollouts = self.rollout_with_randomizations(state, controls, dr_rng)
+        rollouts = self.rollout_with_randomizations(
+            state, controls, knots, dr_rng
+        )
         params = params.replace(rng=rng)
 
         # Update the policy parameters based on the combined costs
@@ -103,13 +159,15 @@ class SamplingBasedController(ABC):
         self,
         state: mjx.Data,
         controls: jax.Array,
+        knots: jax.Array,
         rng: jax.Array,
     ) -> Trajectory:
         """Compute rollout costs, applying domain randomizations.
 
         Args:
             state: The initial state x₀.
-            controls: The control sequences, size (num rollouts, horizon - 1).
+            controls: The control sequences, (num rollouts, H, nu).
+            knots: The control spline knots, (num rollouts, num_knots, nu).
             rng: The random number generator key for randomizing initial states.
 
         Returns:
@@ -132,28 +190,34 @@ class SamplingBasedController(ABC):
         # Apply the control sequences, parallelized over both rollouts and
         # domain randomizations.
         _, rollouts = jax.vmap(
-            self.eval_rollouts, in_axes=(self.randomized_axes, 0, None)
-        )(self.model, states, controls)
+            self.eval_rollouts, in_axes=(self.randomized_axes, 0, None, None)
+        )(self.model, states, controls, knots)
 
         # Combine the costs from different domain randomizations using the
         # specified risk strategy.
         costs = self.risk_strategy.combine_costs(rollouts.costs)
         controls = rollouts.controls[0]  # identical over randomizations
+        knots = rollouts.knots[0]  # identical over randomizations
         trace_sites = rollouts.trace_sites[0]  # visualization only, take 1st
         return rollouts.replace(
-            costs=costs, controls=controls, trace_sites=trace_sites
+            costs=costs, controls=controls, knots=knots, trace_sites=trace_sites
         )
 
-    @partial(jax.vmap, in_axes=(None, None, None, 0))
+    @partial(jax.vmap, in_axes=(None, None, None, 0, 0))
     def eval_rollouts(
-        self, model: mjx.Model, state: mjx.Data, controls: jax.Array
+        self,
+        model: mjx.Model,
+        state: mjx.Data,
+        controls: jax.Array,
+        knots: jax.Array,
     ) -> Tuple[mjx.Data, Trajectory]:
         """Rollout control sequences (in parallel) and compute the costs.
 
         Args:
             model: The mujoco dynamics model to use.
             state: The initial state x₀.
-            controls: The control sequences, size (num rollouts, horizon - 1).
+            controls: The control sequences, (num rollouts, H, nu).
+            knots: The control spline knots, (num rollouts, num_knots, nu).
 
         Returns:
             The states (stacked) experienced during the rollouts.
@@ -189,31 +253,35 @@ class SamplingBasedController(ABC):
 
         return states, Trajectory(
             controls=controls,
+            knots=knots,
             costs=costs,
             trace_sites=trace_sites,
         )
 
-    @abstractmethod
-    def init_params(self) -> Any:
+    def init_params(self, seed: int = 0) -> Any:
         """Initialize the policy parameters, U = [u₀, u₁, ... ] ~ π(params).
+
+        Args:
+            seed: The random seed for initializing the policy parameters.
 
         Returns:
             The initial policy parameters.
         """
-        pass
+        rng = jax.random.key(seed)
+        mean = jnp.zeros((self.num_knots, self.task.model.nu))
+        return SamplingParams(mean=mean, rng=rng)
 
     @abstractmethod
     def sample_controls(self, params: Any) -> Tuple[jax.Array, Any]:
-        """Sample a set of control sequences U ~ π(params).
+        """Sample a set of control spline knots U ~ π(params).
 
         Args:
             params: Parameters of the policy distribution (e.g., mean, std).
 
         Returns:
-            A control sequences U, size (num rollouts, horizon - 1).
+            Control spline knots U, size (num rollouts, num_knots).
             Updated parameters (e.g., with a new PRNG key).
         """
-        pass
 
     @abstractmethod
     def update_params(self, params: Any, rollouts: Trajectory) -> Any:
@@ -226,7 +294,6 @@ class SamplingBasedController(ABC):
         Returns:
             The updated policy parameters.
         """
-        pass
 
     @abstractmethod
     def get_action(self, params: Any, t: float) -> jax.Array:
@@ -239,4 +306,3 @@ class SamplingBasedController(ABC):
         Returns:
             The control action u(t).
         """
-        pass
