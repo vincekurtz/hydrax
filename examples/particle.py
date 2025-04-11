@@ -44,11 +44,20 @@ if args.algorithm == "ps" or args.algorithm is None:
         noise_level=0.1,
         num_randomizations=10,
         risk_strategy=WorstCase(),
+        T=0.25,
+        dt=0.05,
     )
 
 elif args.algorithm == "mppi":
     print("Running MPPI")
-    ctrl = MPPI(task, num_samples=16, noise_level=0.3, temperature=0.01)
+    ctrl = MPPI(
+        task,
+        num_samples=16,
+        noise_level=0.3,
+        temperature=0.01,
+        T=0.25,
+        dt=0.05,
+    )
 
 elif args.algorithm == "cmaes":
     print("Running CMA-ES")
