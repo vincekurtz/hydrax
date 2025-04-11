@@ -12,7 +12,7 @@ Run an interactive simulation of the pendulum swingup task.
 """
 
 # Define the task (cost and dynamics)
-task = Pendulum(planning_horizon=10, sim_steps_per_control_step=5)
+task = Pendulum()
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -28,10 +28,27 @@ args = parser.parse_args()
 # Set the controller based on command-line arguments
 if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
-    ctrl = PredictiveSampling(task, num_samples=32, noise_level=0.1)
+    ctrl = PredictiveSampling(
+        task,
+        num_samples=32,
+        noise_level=0.1,
+        T=1.0,
+        dt=0.1,
+        spline_type="zero",
+        num_knots=11,
+    )
 elif args.algorithm == "mppi":
     print("Running MPPI")
-    ctrl = MPPI(task, num_samples=32, noise_level=0.1, temperature=0.1)
+    ctrl = MPPI(
+        task,
+        num_samples=32,
+        noise_level=0.2,
+        temperature=0.1,
+        T=1.0,
+        dt=0.1,
+        spline_type="zero",
+        num_knots=11,
+    )
 else:
     parser.error("Invalid algorithm")
 
