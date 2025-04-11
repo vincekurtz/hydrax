@@ -34,7 +34,14 @@ args = parser.parse_args()
 if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
     ctrl = PredictiveSampling(
-        task, num_samples=32, noise_level=0.2, num_randomizations=32
+        task,
+        num_samples=32,
+        noise_level=0.2,
+        num_randomizations=32,
+        T=0.12,
+        dt=0.04,
+        spline_type="zero",
+        num_knots=4,
     )
 elif args.algorithm == "mppi":
     print("Running MPPI")
@@ -44,6 +51,10 @@ elif args.algorithm == "mppi":
         noise_level=0.2,
         temperature=0.001,
         num_randomizations=8,
+        T=0.12,
+        dt=0.04,
+        spline_type="zero",
+        num_knots=4,
     )
 elif args.algorithm == "cem":
     print("Running CEM")
@@ -54,6 +65,10 @@ elif args.algorithm == "cem":
         sigma_start=0.5,
         sigma_min=0.5,
         num_randomizations=8,
+        T=0.12,
+        dt=0.04,
+        spline_type="zero",
+        num_knots=4,
     )
 elif args.algorithm == "cmaes":
     print("Running CMA-ES")
@@ -63,6 +78,10 @@ elif args.algorithm == "cmaes":
         num_samples=128,
         elite_ratio=0.5,
         num_randomizations=8,
+        T=0.12,
+        dt=0.04,
+        spline_type="zero",
+        num_knots=4,
     )
 else:
     parser.error("Invalid algorithm")
