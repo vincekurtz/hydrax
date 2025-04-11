@@ -36,11 +36,14 @@ if __name__ == "__main__":
         noise_level=0.3,
         temperature=0.1,
         num_randomizations=4,
+        T=0.6,
+        dt=0.1,
+        spline_type="zero",
+        num_knots=4,
     )
 
     # Define the model used for simulation (stiffer contact parameters)
     mj_model = task.mj_model
-    mj_model.opt.timestep = 0.01
     mj_model.opt.o_solimp = [0.9, 0.95, 0.001, 0.5, 2]
     mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 
