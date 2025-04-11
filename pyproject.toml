@@ -13,17 +13,22 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python",
 ]
+# TODO: evosax v0.2.0 introduced many breaking changes in the API that cause test failures
 dependencies = [
-    "jax[cuda12]==0.4.35",
-    "flax==0.10.0",
-    "pytest==8.3.3",
-    "ruff==0.7.1",
-    "pre-commit==4.0.1",
-    "matplotlib==3.9.2",
-    "mujoco==3.2.4",
-    "mujoco-mjx==3.2.4",
-    "evosax==0.1.6",
-    "huggingface_hub==0.29.3",
+    "evosax<0.2.0",
+    "flax>=0.10.0",
+    "huggingface_hub>=0.29.3",
+    "jax[cuda12]>=0.4.35",
+    "mujoco>=3.2.4",
+    "mujoco-mjx>=3.2.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "matplotlib>=3.9.2",
+    "pre-commit>=4.0.1",
+    "pytest>=8.3.3",
+    "ruff>=0.7.1",
 ]
 
 [tool.ruff]
@@ -64,7 +69,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ["hydra"]
+known-first-party = ["hydrax"]
 split-on-trailing-comma = false
 
 [tool.ruff.format]
