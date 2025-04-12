@@ -17,10 +17,10 @@ class Trajectory:
     """Data class for storing rollout data.
 
     Attributes:
-        controls: Control actions for each time step (size H).
-        knots: Control spline knots (size num_knots).
-        costs: Costs associated with each time step (size H+1).
-        trace_sites: Positions of trace sites at each time step (size H+1).
+        controls: Control actions of shape (num_rollouts, H, nu).
+        knots: Control spline knots of shape (num_rollouts, num_knots, nu).
+        costs: Costs of shape (num_rollouts, H+1).
+        trace_sites: Positions of trace sites of shape (num_rollouts, H+1, 3).
     """
 
     controls: jax.Array
