@@ -93,7 +93,9 @@ class Evosax(SamplingBasedController):
         _params = super().init_params(seed)
         rng, init_rng = jax.random.split(_params.rng)
         opt_state = self.strategy.initialize(init_rng, self.es_params)
-        return EvosaxParams(mean=_params.mean, opt_state=opt_state, rng=rng)
+        return EvosaxParams(
+            tk=_params.tk, mean=_params.mean, opt_state=opt_state, rng=rng
+        )
 
     def sample_knots(
         self, params: EvosaxParams

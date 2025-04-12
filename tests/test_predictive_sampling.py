@@ -27,8 +27,9 @@ def test_predictive_sampling() -> None:
 
     # Sample control sequences from the policy
     knots, new_params = opt.sample_knots(params)
+    tk = jnp.linspace(0.0, opt.T, opt.num_knots)  # knot times
     tq = jnp.linspace(0.0, opt.T - opt.dt, opt.H)  # ctrl query times
-    controls = opt.interp_func(tq, opt.tk, knots)
+    controls = opt.interp_func(tq, tk, knots)
     assert controls.shape == (opt.num_samples, opt.H, 1)
     assert knots.shape == (opt.num_samples, opt.num_knots, 1)
     assert new_params.rng != params.rng

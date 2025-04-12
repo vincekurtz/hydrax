@@ -79,12 +79,16 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     )
     policy_params = controller.init_params()
     jit_optimize = jax.jit(controller.optimize, donate_argnums=(1,))
+    jit_get_action = jax.jit(controller.get_action)
 
     # Warm-up the controller
     print("Jitting the controller...")
     st = time.time()
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+
+    u = jit_get_action(policy_params, jnp.zeros(1))
+    u = jit_get_action(policy_params, jnp.zeros(1))
     print(f"Time to jit: {time.time() - st:.3f} seconds")
     num_traces = min(rollouts.controls.shape[1], max_traces)
 
@@ -178,8 +182,9 @@ def run_interactive(  # noqa: PLR0912, PLR0915
 
             # Step the simulation
             for i in range(sim_steps_per_replan):
-                t = i * mj_model.opt.timestep
-                u = controller.get_action(policy_params, t)
+                _t = i * mj_model.opt.timestep + mj_data.time
+                t = jnp.array([_t])  # (1,)
+                u = jit_get_action(policy_params, t)
                 mj_data.ctrl[:] = np.array(u)
                 mujoco.mj_step(mj_model, mj_data)
                 viewer.sync()

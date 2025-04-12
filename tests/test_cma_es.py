@@ -30,8 +30,9 @@ def test_cmaes() -> None:
     knots, params = ctrl.sample_knots(params)
     assert knots.shape == (32, ctrl.num_knots, 1)
 
+    tk = jnp.linspace(0.0, ctrl.T, ctrl.num_knots)  # knot times
     tq = jnp.linspace(0.0, ctrl.T - ctrl.dt, ctrl.H)  # ctrl query times
-    controls = ctrl.interp_func(tq, ctrl.tk, knots)
+    controls = ctrl.interp_func(tq, tk, knots)
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
@@ -72,8 +73,9 @@ def test_open_loop() -> None:
     # Pick the best rollout
     best_cost = params.opt_state.best_fitness
     best_knots = params.mean[None]
+    tk = jnp.linspace(0.0, opt.T, opt.num_knots)  # knot times
     tq = jnp.linspace(0.0, opt.T - opt.dt, opt.H)  # ctrl query times
-    controls = opt.interp_func(tq, opt.tk, best_knots)
+    controls = opt.interp_func(tq, tk, best_knots)
     states, final_rollout = jax.jit(opt.eval_rollouts)(
         task.model, state, controls, best_knots
     )

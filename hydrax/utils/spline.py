@@ -27,13 +27,13 @@ def interp_zero(tq: jax.Array, tk: jax.Array, knots: jax.Array) -> jax.Array:
 @partial(vmap, in_axes=(None, None, 0))
 def interp_linear(tq: jax.Array, tk: jax.Array, knots: jax.Array) -> jax.Array:
     """Linear spline interpolation."""
-    return interp1d(tq, tk, knots, method="linear")
+    return interp1d(tq, tk, knots, method="linear", extrap=True)
 
 
 @partial(vmap, in_axes=(None, None, 0))
 def interp_cubic(tq: jax.Array, tk: jax.Array, knots: jax.Array) -> jax.Array:
     """Cubic spline interpolation."""
-    return interp1d(tq, tk, knots, method="cubic2")
+    return interp1d(tq, tk, knots, method="cubic2", extrap=True)
 
 
 def get_interp_func(method: InterpMethodType) -> InterpFuncType:

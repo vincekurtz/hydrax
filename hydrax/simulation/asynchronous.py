@@ -134,12 +134,14 @@ def run_controller(
     # Signal that we're ready to start
     ready.set()
 
+    start_time = time.time()
     while not finished.is_set():
-        st = time.time()
+        curr_time = time.time()
 
         # Set the start state for the controller, reading the lastest state info
         # from shared memory
         mjx_data = mjx_data.replace(
+            time=jnp.array(curr_time - start_time, dtype=jnp.float32),
             qpos=jnp.array(shm_data.qpos[:]),
             qvel=jnp.array(shm_data.qvel[:]),
         )
@@ -156,7 +158,7 @@ def run_controller(
         # TODO: send the full parameters rather than assuming zero-order
         # hold and a sufficiently high control rate
         shm_data.ctrl[:] = np.array(
-            get_action(policy_params, 0.0), dtype=np.float32
+            get_action(policy_params, mjx_data.time), dtype=np.float32
         )
 
         # Print the current planning frequency

@@ -38,10 +38,12 @@ class SamplingParams:
     """Parameters for sampling-based control algorithms.
 
     Attributes:
+        tk: The knot times of the control spline.
         mean: The mean of the control spline knot distribution, μ = [u₀, ...].
         rng: The pseudo-random number generator key.
     """
 
+    tk: jax.Array
     mean: jax.Array
     rng: jax.Array
 
@@ -92,7 +94,6 @@ class SamplingBasedController(ABC):
         # Spline setup for control interpolation
         self.spline_type = spline_type
         self.num_knots = num_knots
-        self.tk = jnp.linspace(0.0, self.T, self.num_knots)  # knot times
         self.interp_func = get_interp_func(spline_type)
 
         # Use a single model (no domain randomization) by default
@@ -124,6 +125,13 @@ class SamplingBasedController(ABC):
             Updated policy parameters
             Rollouts used to update the parameters
         """
+        # Warm-start spline by advancing knot times by sim dt, then recomputing
+        # the mean knots by evaluating the old spline at those times
+        tk = params.tk
+        new_tk = jnp.linspace(0.0, self.T, self.num_knots) + state.time
+        new_mean = self.interp_func(new_tk, tk, params.mean[None, ...])[0]
+        params = params.replace(tk=new_tk, mean=new_mean)
+
         # Sample random control sequences from spline knots
         knots, params = self.sample_knots(params)
         knots = jnp.clip(
@@ -133,7 +141,9 @@ class SamplingBasedController(ABC):
         # Roll out the control sequences, applying domain randomizations and
         # combining costs using self.risk_strategy.
         rng, dr_rng = jax.random.split(params.rng)
-        rollouts = self.rollout_with_randomizations(state, knots, dr_rng)
+        rollouts = self.rollout_with_randomizations(
+            state, new_tk, knots, dr_rng
+        )
         params = params.replace(rng=rng)
 
         # Update the policy parameters based on the combined costs
@@ -143,6 +153,7 @@ class SamplingBasedController(ABC):
     def rollout_with_randomizations(
         self,
         state: mjx.Data,
+        tk: jax.Array,
         knots: jax.Array,
         rng: jax.Array,
     ) -> Trajectory:
@@ -150,6 +161,7 @@ class SamplingBasedController(ABC):
 
         Args:
             state: The initial state x₀.
+            tk: The knot times of the control spline, (num_knots,).
             knots: The control spline knots, (num rollouts, num_knots, nu).
             rng: The random number generator key for randomizing initial states.
 
@@ -171,8 +183,8 @@ class SamplingBasedController(ABC):
             states = states.tree_replace(randomizations)
 
         # compute the control sequence from the knots
-        tq = jnp.linspace(0.0, self.T - self.dt, self.H)  # ctrl query times
-        controls = self.interp_func(tq, self.tk, knots)  # (num_rollouts, H, nu)
+        tq = jnp.linspace(tk[0], tk[-1], self.H)
+        controls = self.interp_func(tq, tk, knots)  # (num_rollouts, H, nu)
 
         # Apply the control sequences, parallelized over both rollouts and
         # domain randomizations.
@@ -256,7 +268,8 @@ class SamplingBasedController(ABC):
         """
         rng = jax.random.key(seed)
         mean = jnp.zeros((self.num_knots, self.task.model.nu))
-        return SamplingParams(mean=mean, rng=rng)
+        tk = jnp.linspace(0.0, self.T, self.num_knots)
+        return SamplingParams(tk=tk, mean=mean, rng=rng)
 
     @abstractmethod
     def sample_knots(self, params: Any) -> Tuple[jax.Array, Any]:
@@ -282,17 +295,17 @@ class SamplingBasedController(ABC):
             The updated policy parameters.
         """
 
-    def get_action(self, params: SamplingParams, t: float) -> jax.Array:
+    def get_action(self, params: SamplingParams, t: jax.Array) -> jax.Array:
         """Get the control action at a given point along the trajectory.
 
         Args:
             params: The policy parameters, U ~ π(params).
-            t: The time (in seconds) from the start of the trajectory.
+            t: The time from the start of the trajectory of shape (1,).
 
         Returns:
             The control action u(t).
         """
         knots = params.mean[None, ...]  # (1, num_knots, nu)
-        tq = jnp.array([t])  # query time
-        u = self.interp_func(tq, self.tk, knots)[0, 0]  # (nu,)
+        tk = params.tk
+        u = self.interp_func(t, tk, knots)[0, 0]  # (nu,)
         return u

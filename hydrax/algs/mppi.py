@@ -75,7 +75,7 @@ class MPPI(SamplingBasedController):
     def init_params(self, seed: int = 0) -> MPPIParams:
         """Initialize the policy parameters."""
         _params = super().init_params(seed)
-        return MPPIParams(mean=_params.mean, rng=_params.rng)
+        return MPPIParams(tk=_params.tk, mean=_params.mean, rng=_params.rng)
 
     def sample_knots(self, params: MPPIParams) -> Tuple[jax.Array, MPPIParams]:
         """Sample a control sequence."""

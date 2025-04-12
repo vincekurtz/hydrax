@@ -34,8 +34,9 @@ def test_open_loop() -> None:
 
     # Roll out the solution, check that it's good enough
     knots = params.mean[None]
+    tk = jnp.linspace(0.0, opt.T, opt.num_knots)  # knot times
     tq = jnp.linspace(0.0, opt.T - opt.dt, opt.H)  # ctrl query times
-    controls = opt.interp_func(tq, opt.tk, knots)
+    controls = opt.interp_func(tq, tk, knots)
     states, final_rollout = jax.jit(opt.eval_rollouts)(
         task.model, state, controls, knots
     )
