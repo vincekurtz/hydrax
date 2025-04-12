@@ -58,6 +58,7 @@ class CEM(SamplingBasedController):
         self.sigma_min = sigma_min
         self.sigma_start = sigma_start
         self.num_elites = num_elites
+        self.explore_fraction = explore_fraction
         self.num_explore = int(explore_fraction * num_samples)
 
     def init_params(self, seed: int = 0) -> CEMParams:
@@ -71,38 +72,35 @@ class CEM(SamplingBasedController):
         """Sample a control sequence."""
         rng, sample_rng, explore_rng = jax.random.split(params.rng, 3)
 
+        # Pre-compute shapes for both main and exploration samples
+        main_shape = (
+            self.num_samples - self.num_explore,
+            self.task.planning_horizon,
+            self.task.model.nu,
+        )
+        explore_shape = (
+            self.num_explore,
+            self.task.planning_horizon,
+            self.task.model.nu,
+        )
+
         # Sample main trajectories with current covariance
-        main_samples = self.num_samples - self.num_explore
-        if main_samples > 0:
-            noise = jax.random.normal(
-                sample_rng,
-                (main_samples, self.task.planning_horizon, self.task.model.nu),
-            )
-            main_controls = params.mean + noise * params.cov
-        else:
-            main_controls = jnp.empty(
-                (0, self.task.planning_horizon, self.task.model.nu)
-            )
+        main_controls = (
+            params.mean + params.cov * jax.random.normal(sample_rng, main_shape)
+            if main_shape[0] > 0
+            else jnp.empty(main_shape)
+        )
 
         # Sample exploration trajectories with initial covariance
-        if self.num_explore > 0:
-            explore_noise = jax.random.normal(
-                explore_rng,
-                (
-                    self.num_explore,
-                    self.task.planning_horizon,
-                    self.task.model.nu,
-                ),
-            )
-            explore_controls = params.mean + explore_noise * self.sigma_start
-        else:
-            explore_controls = jnp.empty(
-                (0, self.task.planning_horizon, self.task.model.nu)
-            )
+        explore_controls = (
+            params.mean
+            + self.sigma_start * jax.random.normal(explore_rng, explore_shape)
+            if explore_shape[0] > 0
+            else jnp.empty(explore_shape)
+        )
 
         # Combine both sets of controls
         controls = jnp.concatenate([main_controls, explore_controls])
-
         return controls, params.replace(rng=rng)
 
     def update_params(
