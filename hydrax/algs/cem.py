@@ -35,6 +35,7 @@ class CEM(SamplingBasedController):
         sigma_start: float,
         sigma_min: float,
         num_randomizations: int = 1,
+        explore_fraction: float = 0.0,
         risk_strategy: RiskStrategy = None,
         seed: int = 0,
     ):
@@ -47,6 +48,7 @@ class CEM(SamplingBasedController):
             sigma_start: The initial standard deviation for the controls.
             sigma_min: The minimum standard deviation for the controls.
             num_randomizations: The number of domain randomizations to use.
+            explore_fraction: Fraction of samples to keep at initial exploration level.
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
@@ -56,6 +58,7 @@ class CEM(SamplingBasedController):
         self.sigma_min = sigma_min
         self.sigma_start = sigma_start
         self.num_elites = num_elites
+        self.num_explore = int(explore_fraction * num_samples)
 
     def init_params(self, seed: int = 0) -> CEMParams:
         """Initialize the policy parameters."""
@@ -66,16 +69,40 @@ class CEM(SamplingBasedController):
 
     def sample_controls(self, params: CEMParams) -> Tuple[jax.Array, CEMParams]:
         """Sample a control sequence."""
-        rng, sample_rng = jax.random.split(params.rng)
-        noise = jax.random.normal(
-            sample_rng,
-            (
-                self.num_samples,
-                self.task.planning_horizon,
-                self.task.model.nu,
-            ),
-        )
-        controls = params.mean + params.cov * noise
+        rng, sample_rng, explore_rng = jax.random.split(params.rng, 3)
+
+        # Sample main trajectories with current covariance
+        main_samples = self.num_samples - self.num_explore
+        if main_samples > 0:
+            noise = jax.random.normal(
+                sample_rng,
+                (main_samples, self.task.planning_horizon, self.task.model.nu),
+            )
+            main_controls = params.mean + noise * params.cov
+        else:
+            main_controls = jnp.empty(
+                (0, self.task.planning_horizon, self.task.model.nu)
+            )
+
+        # Sample exploration trajectories with initial covariance
+        if self.num_explore > 0:
+            explore_noise = jax.random.normal(
+                explore_rng,
+                (
+                    self.num_explore,
+                    self.task.planning_horizon,
+                    self.task.model.nu,
+                ),
+            )
+            explore_controls = params.mean + explore_noise * self.sigma_start
+        else:
+            explore_controls = jnp.empty(
+                (0, self.task.planning_horizon, self.task.model.nu)
+            )
+
+        # Combine both sets of controls
+        controls = jnp.concatenate([main_controls, explore_controls])
+
         return controls, params.replace(rng=rng)
 
     def update_params(
