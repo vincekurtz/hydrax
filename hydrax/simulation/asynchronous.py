@@ -155,8 +155,6 @@ def run_controller(
         policy_params = jit_optimize(mjx_data, policy_params)
 
         # Send the action to the simulator.
-        # TODO: send the full parameters rather than assuming zero-order
-        # hold and a sufficiently high control rate
         shm_data.ctrl[:] = np.array(
             get_action(policy_params, mjx_data.time), dtype=np.float32
         )
