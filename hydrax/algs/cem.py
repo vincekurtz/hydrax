@@ -52,7 +52,15 @@ class CEM(SamplingBasedController):
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
+
+        Raises:
+            ValueError: If explore_fraction is not between 0 and 1.
         """
+        if not 0 <= explore_fraction <= 1:
+            raise ValueError(
+                f"explore_fraction must be between 0 and 1, got {explore_fraction}"
+            )
+
         super().__init__(task, num_randomizations, risk_strategy, seed)
         self.num_samples = num_samples
         self.sigma_min = sigma_min
