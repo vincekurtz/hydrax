@@ -17,10 +17,9 @@ ctrl = PredictiveSampling(
     task,
     num_samples=1024,
     noise_level=0.3,
-    T=0.8,
-    dt=0.08,
-    spline_type="zero",
-    num_knots=11,
+    plan_horizon=1.0,
+    spline_type="cubic",
+    num_knots=4,
 )
 
 # Define the model used for simulation
@@ -32,7 +31,7 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=50,
+    frequency=20,
     fixed_camera_id=0,
     show_traces=True,
     max_traces=1,

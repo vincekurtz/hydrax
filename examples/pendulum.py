@@ -32,8 +32,7 @@ if args.algorithm == "ps" or args.algorithm is None:
         task,
         num_samples=32,
         noise_level=0.1,
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
     )
@@ -44,8 +43,7 @@ elif args.algorithm == "mppi":
         num_samples=32,
         noise_level=0.2,
         temperature=0.1,
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
     )

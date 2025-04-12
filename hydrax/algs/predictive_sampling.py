@@ -28,8 +28,7 @@ class PredictiveSampling(SamplingBasedController):
         num_randomizations: int = 1,
         risk_strategy: RiskStrategy = None,
         seed: int = 0,
-        T: float = 1.0,
-        dt: float = 0.01,
+        plan_horizon: float = 1.0,
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
         num_knots: int = 4,
     ) -> None:
@@ -43,8 +42,7 @@ class PredictiveSampling(SamplingBasedController):
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
-            T: The time horizon for the rollout in seconds.
-            dt: The time step for the controller in seconds.
+            plan_horizon: The time horizon for the rollout in seconds.
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
@@ -54,8 +52,7 @@ class PredictiveSampling(SamplingBasedController):
             num_randomizations=num_randomizations,
             risk_strategy=risk_strategy,
             seed=seed,
-            T=T,
-            dt=dt,
+            plan_horizon=plan_horizon,
             spline_type=spline_type,
             num_knots=num_knots,
         )

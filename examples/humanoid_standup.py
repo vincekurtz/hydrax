@@ -36,8 +36,7 @@ if __name__ == "__main__":
         noise_level=0.3,
         temperature=0.1,
         num_randomizations=4,
-        T=0.6,
-        dt=0.1,
+        plan_horizon=0.6,
         spline_type="zero",
         num_knots=4,
     )

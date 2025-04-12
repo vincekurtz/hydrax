@@ -1,6 +1,6 @@
 <mujoco>
   <!-- Simulator options -->
-  <option timestep="0.002" iterations="1" ls_iterations="5" integrator="implicitfast"/>
+  <option timestep="0.01" iterations="1" ls_iterations="5" integrator="implicitfast"/>
 
   <!-- Defaults -->
   <default>

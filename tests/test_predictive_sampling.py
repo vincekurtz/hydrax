@@ -14,8 +14,7 @@ def test_predictive_sampling() -> None:
         task,
         num_samples=32,
         noise_level=0.1,
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
     )
@@ -27,10 +26,10 @@ def test_predictive_sampling() -> None:
 
     # Sample control sequences from the policy
     knots, new_params = opt.sample_knots(params)
-    tk = jnp.linspace(0.0, opt.T, opt.num_knots)  # knot times
-    tq = jnp.linspace(0.0, opt.T - opt.dt, opt.H)  # ctrl query times
+    tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
+    tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
     controls = opt.interp_func(tq, tk, knots)
-    assert controls.shape == (opt.num_samples, opt.H, 1)
+    assert controls.shape == (opt.num_samples, opt.ctrl_steps, 1)
     assert knots.shape == (opt.num_samples, opt.num_knots, 1)
     assert new_params.rng != params.rng
 
@@ -40,11 +39,11 @@ def test_predictive_sampling() -> None:
 
     assert rollouts.costs.shape == (
         opt.num_samples,
-        opt.H + 1,
+        opt.ctrl_steps + 1,
     )
     assert rollouts.controls.shape == (
         opt.num_samples,
-        opt.H,
+        opt.ctrl_steps,
         1,
     )
     assert rollouts.knots.shape == (
@@ -54,7 +53,7 @@ def test_predictive_sampling() -> None:
     )
     assert rollouts.trace_sites.shape == (
         opt.num_samples,
-        opt.H + 1,
+        opt.ctrl_steps + 1,
         len(task.trace_site_ids),
         3,
     )
@@ -73,8 +72,7 @@ def test_open_loop() -> None:
         task,
         num_samples=32,
         noise_level=0.1,
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
     )
@@ -102,7 +100,7 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(opt.H) * task.dt
+        times = jnp.arange(opt.ctrl_steps) * task.dt
 
         ax[0].plot(times, states.qpos[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")

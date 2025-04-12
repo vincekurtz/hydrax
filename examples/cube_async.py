@@ -21,8 +21,7 @@ if __name__ == "__main__":
         num_samples=32,
         noise_level=0.2,
         num_randomizations=32,
-        T=0.12,
-        dt=0.04,
+        plan_horizon=0.12,
         spline_type="zero",
         num_knots=4,
     )

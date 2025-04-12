@@ -19,8 +19,7 @@ ctrl = PredictiveSampling(
     noise_level=0.05,
     num_randomizations=32,
     risk_strategy=ConditionalValueAtRisk(0.1),
-    T=0.8,
-    dt=0.4,
+    plan_horizon=0.8,
     spline_type="zero",
     num_knots=3,
 )

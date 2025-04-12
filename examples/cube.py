@@ -38,8 +38,7 @@ if args.algorithm == "ps" or args.algorithm is None:
         num_samples=32,
         noise_level=0.2,
         num_randomizations=32,
-        T=0.12,
-        dt=0.04,
+        plan_horizon=0.12,
         spline_type="zero",
         num_knots=4,
     )
@@ -51,8 +50,7 @@ elif args.algorithm == "mppi":
         noise_level=0.2,
         temperature=0.001,
         num_randomizations=8,
-        T=0.12,
-        dt=0.04,
+        plan_horizon=0.12,
         spline_type="zero",
         num_knots=4,
     )
@@ -65,8 +63,7 @@ elif args.algorithm == "cem":
         sigma_start=0.5,
         sigma_min=0.5,
         num_randomizations=8,
-        T=0.12,
-        dt=0.04,
+        plan_horizon=0.12,
         spline_type="zero",
         num_knots=4,
     )
@@ -78,8 +75,7 @@ elif args.algorithm == "cmaes":
         num_samples=128,
         elite_ratio=0.5,
         num_randomizations=8,
-        T=0.12,
-        dt=0.04,
+        plan_horizon=0.12,
         spline_type="zero",
         num_knots=4,
     )

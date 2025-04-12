@@ -44,8 +44,7 @@ if args.algorithm == "ps" or args.algorithm is None:
         noise_level=0.1,
         num_randomizations=10,
         risk_strategy=WorstCase(),
-        T=0.25,
-        dt=0.05,
+        plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
     )
@@ -57,8 +56,7 @@ elif args.algorithm == "mppi":
         num_samples=16,
         noise_level=0.3,
         temperature=0.01,
-        T=0.25,
-        dt=0.05,
+        plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
     )
@@ -70,8 +68,7 @@ elif args.algorithm == "cmaes":
         evosax.Sep_CMA_ES,
         num_samples=16,
         elite_ratio=0.5,
-        T=0.25,
-        dt=0.05,
+        plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
     )
@@ -82,8 +79,7 @@ elif args.algorithm == "samr":
         task,
         evosax.SAMR_GA,
         num_samples=16,
-        T=0.25,
-        dt=0.05,
+        plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
     )
@@ -94,8 +90,7 @@ elif args.algorithm == "de":
         task,
         evosax.DE,
         num_samples=16,
-        T=0.25,
-        dt=0.05,
+        plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
     )
@@ -106,8 +101,7 @@ elif args.algorithm == "gld":
         task,
         evosax.GLD,
         num_samples=16,
-        T=0.25,
-        dt=0.05,
+        plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
     )
@@ -123,8 +117,7 @@ elif args.algorithm == "rs":
         evosax.RandomSearch,
         num_samples=16,
         es_params=es_params,
-        T=0.25,
-        dt=0.05,
+        plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
     )

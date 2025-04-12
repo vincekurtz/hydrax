@@ -15,8 +15,7 @@ def test_cmaes() -> None:
         task,
         evosax.CMA_ES,
         num_samples=32,
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
     )
@@ -30,14 +29,14 @@ def test_cmaes() -> None:
     knots, params = ctrl.sample_knots(params)
     assert knots.shape == (32, ctrl.num_knots, 1)
 
-    tk = jnp.linspace(0.0, ctrl.T, ctrl.num_knots)  # knot times
-    tq = jnp.linspace(0.0, ctrl.T - ctrl.dt, ctrl.H)  # ctrl query times
+    tk = jnp.linspace(0.0, ctrl.plan_horizon, ctrl.num_knots)
+    tq = jnp.linspace(0.0, ctrl.plan_horizon - ctrl.dt, ctrl.ctrl_steps)
     controls = ctrl.interp_func(tq, tk, knots)
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
     _, rollouts = ctrl.eval_rollouts(task.model, state, controls, knots)
-    assert rollouts.costs.shape == (32, ctrl.H + 1)
+    assert rollouts.costs.shape == (32, ctrl.ctrl_steps + 1)
 
     # Update the policy parameters
     params = ctrl.update_params(params, rollouts)
@@ -55,8 +54,7 @@ def test_open_loop() -> None:
         evosax.CMA_ES,
         num_samples=32,
         elite_ratio=0.1,
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
     )
@@ -73,8 +71,8 @@ def test_open_loop() -> None:
     # Pick the best rollout
     best_cost = params.opt_state.best_fitness
     best_knots = params.mean[None]
-    tk = jnp.linspace(0.0, opt.T, opt.num_knots)  # knot times
-    tq = jnp.linspace(0.0, opt.T - opt.dt, opt.H)  # ctrl query times
+    tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
+    tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
     controls = opt.interp_func(tq, tk, best_knots)
     states, final_rollout = jax.jit(opt.eval_rollouts)(
         task.model, state, controls, best_knots
@@ -85,7 +83,7 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(opt.H) * task.dt
+        times = jnp.arange(opt.ctrl_steps) * task.dt
 
         ax[0].plot(times, states.qpos[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")

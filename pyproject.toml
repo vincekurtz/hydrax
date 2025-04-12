@@ -62,8 +62,6 @@ ignore = [
     "D212",  # multi-line docstring summary at first line
     "D213",  # multi-line docstring summary at second line
     "E731",  # assigning to a `lambda` expression
-    "N802",  # function name should be lowercase
-    "N803",  # argument name should be lowercase
     "N806",  # only lowercase variables in functions
     "PLR0913",  # too many arguments
     "PLR2004",  # magic value used in comparison

@@ -17,8 +17,7 @@ def test_open_loop() -> None:
         num_elites=4,
         sigma_start=1.0,
         sigma_min=0.1,
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
     )
@@ -34,8 +33,8 @@ def test_open_loop() -> None:
 
     # Roll out the solution, check that it's good enough
     knots = params.mean[None]
-    tk = jnp.linspace(0.0, opt.T, opt.num_knots)  # knot times
-    tq = jnp.linspace(0.0, opt.T - opt.dt, opt.H)  # ctrl query times
+    tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
+    tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
     controls = opt.interp_func(tq, tk, knots)
     states, final_rollout = jax.jit(opt.eval_rollouts)(
         task.model, state, controls, knots
@@ -50,7 +49,7 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(opt.H) * task.dt
+        times = jnp.arange(opt.ctrl_steps) * task.dt
 
         ax[0].plot(times, theta)
         ax[0].set_ylabel(r"$\theta$")

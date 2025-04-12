@@ -31,8 +31,7 @@ if args.algorithm == "ps" or args.algorithm is None:
         task,
         num_samples=128,
         noise_level=0.5,
-        T=0.6,
-        dt=0.15,
+        plan_horizon=0.6,
         spline_type="zero",
         num_knots=5,
     )

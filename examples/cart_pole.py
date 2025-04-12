@@ -33,8 +33,7 @@ if args.algorithm == "ps" or args.algorithm is None:
         num_samples=128,
         noise_level=0.3,
         spline_type="cubic",
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         num_knots=4,
     )
 elif args.algorithm == "mppi":
@@ -45,8 +44,7 @@ elif args.algorithm == "mppi":
         noise_level=0.3,
         temperature=0.1,
         spline_type="cubic",
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         num_knots=4,
     )
 elif args.algorithm == "cem":
@@ -58,8 +56,7 @@ elif args.algorithm == "cem":
         sigma_start=0.5,
         sigma_min=0.1,
         spline_type="cubic",
-        T=1.0,
-        dt=0.1,
+        plan_horizon=1.0,
         num_knots=4,
     )
 else:
@@ -74,7 +71,7 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=50,
+    frequency=10,
     fixed_camera_id=0,
     show_traces=True,
     max_traces=1,

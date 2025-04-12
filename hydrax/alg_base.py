@@ -57,8 +57,7 @@ class SamplingBasedController(ABC):
         num_randomizations: int,
         risk_strategy: RiskStrategy,
         seed: int,
-        T: float,
-        dt: float,
+        plan_horizon: float,
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
         num_knots: int = 4,
     ) -> None:
@@ -69,8 +68,7 @@ class SamplingBasedController(ABC):
             num_randomizations: The number of domain randomizations to use.
             risk_strategy: How to combining costs from different randomizations.
             seed: The random seed for domain randomization.
-            T: The time horizon for the rollout in seconds.
-            dt: The time step for the controller in seconds.
+            plan_horizon: The time horizon for the rollout in seconds.
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
@@ -84,12 +82,12 @@ class SamplingBasedController(ABC):
         self.risk_strategy = risk_strategy
 
         # time-related variables
-        self.T = T
-        self.dt = dt
-        self.H = int(round(self.T / self.dt))  # number of control steps
-
-        sim_dt = self.task.dt
-        self.sim_steps_per_control_step = int(round(self.dt / sim_dt))
+        # NOTE: we always interpret self.task.model as the controller's
+        # internal model, not the model used for simulation. dt is the
+        # time between spline queries.
+        self.plan_horizon = plan_horizon
+        self.dt = self.task.dt
+        self.ctrl_steps = int(round(self.plan_horizon / self.dt))
 
         # Spline setup for control interpolation
         self.spline_type = spline_type
@@ -128,7 +126,9 @@ class SamplingBasedController(ABC):
         # Warm-start spline by advancing knot times by sim dt, then recomputing
         # the mean knots by evaluating the old spline at those times
         tk = params.tk
-        new_tk = jnp.linspace(0.0, self.T, self.num_knots) + state.time
+        new_tk = (
+            jnp.linspace(0.0, self.plan_horizon, self.num_knots) + state.time
+        )
         new_mean = self.interp_func(new_tk, tk, params.mean[None, ...])[0]
         params = params.replace(tk=new_tk, mean=new_mean)
 
@@ -183,7 +183,7 @@ class SamplingBasedController(ABC):
             states = states.tree_replace(randomizations)
 
         # compute the control sequence from the knots
-        tq = jnp.linspace(tk[0], tk[-1], self.H)
+        tq = jnp.linspace(tk[0], tk[-1], self.ctrl_steps)
         controls = self.interp_func(tq, tk, knots)  # (num_rollouts, H, nu)
 
         # Apply the control sequences, parallelized over both rollouts and
@@ -227,18 +227,10 @@ class SamplingBasedController(ABC):
             x: mjx.Data, u: jax.Array
         ) -> Tuple[mjx.Data, Tuple[mjx.Data, jax.Array, jax.Array]]:
             """Compute the cost and observation, then advance the state."""
-            x = mjx.forward(model, x)  # compute site positions
+            x = x.replace(ctrl=u)
+            x = mjx.step(model, x)  # step model + compute site positions
             cost = self.dt * self.task.running_cost(x, u)
             sites = self.task.get_trace_sites(x)
-
-            # Advance the state for several steps, zero-order hold on control
-            x = jax.lax.fori_loop(
-                0,
-                self.sim_steps_per_control_step,
-                lambda _, x: mjx.step(model, x),
-                x.replace(ctrl=u),
-            )
-
             return x, (x, cost, sites)
 
         final_state, (states, costs, trace_sites) = jax.lax.scan(
@@ -268,7 +260,7 @@ class SamplingBasedController(ABC):
         """
         rng = jax.random.key(seed)
         mean = jnp.zeros((self.num_knots, self.task.model.nu))
-        tk = jnp.linspace(0.0, self.T, self.num_knots)
+        tk = jnp.linspace(0.0, self.plan_horizon, self.num_knots)
         return SamplingParams(tk=tk, mean=mean, rng=rng)
 
     @abstractmethod
