@@ -151,8 +151,8 @@ class MyControlAlgorithm(SamplingBasedController):
         ...
         return params
 
-    def sample_controls(self, params: Any) -> Tuple[jax.Array, Any]:
-        # Sample control sequences U from the policy. Return the samples
+    def sample_knots(self, params: Any) -> Tuple[jax.Array, Any]:
+        # Sample the spline knots U from the policy. Return the samples
         # and the (updated) parameters.
         ...
         return controls, params
@@ -171,7 +171,7 @@ rollout data in a [`Trajectory`](hydrax/alg_base.py) object.
 **Note**: because of
 [the way JAX handles randomness](https://jax.readthedocs.io/en/latest/random-numbers.html),
 we assume the PRNG key is stored as one of the parameters $\theta$. This is why
-`sample_controls` returns updated parameters along with the control samples
+`sample_knots` returns updated parameters along with the control samples
 $U^{(1:N)}$.
 
 For some examples, take a look at [`hydrax.algs`](hydrax/algs).
