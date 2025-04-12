@@ -135,7 +135,7 @@ distribution that the controls $U = [u_0, u_1, ...]$ are sampled from.
 
 To implement a new planning algorithm, you'll need to inherit from
 [`hydrax.alg_base.SamplingBasedController`](hydrax/alg_base.py) and implement
-the four methods shown below:
+the three methods shown below:
 
 ```python
 class MyControlAlgorithm(SamplingBasedController):
@@ -156,14 +156,9 @@ class MyControlAlgorithm(SamplingBasedController):
         # (costs, controls, observations, etc) stored in the rollouts.
         ...
         return new_params
-
-    def get_action(self, params: Any, t: float) -> Any:
-        # Return the control action applied t seconds into the trajectory.
-        ...
-        return u
 ```
 
-These four methods define a unique sampling-based MPC algorithm. Hydrax takes
+These three methods define a unique sampling-based MPC algorithm. Hydrax takes
 care of the rest, including parallelizing rollouts on GPU and collecting the
 rollout data in a [`Trajectory`](hydrax/alg_base.py) object.
 
