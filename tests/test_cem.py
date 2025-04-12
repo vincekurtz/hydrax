@@ -61,7 +61,7 @@ def test_open_loop() -> None:
         plt.show()
 
 
-def test__explore_fraction() -> None:
+def test_explore_fraction() -> None:
     """Unit test for sampling controls with different explore_fraction values.
 
     This test uses the Pendulum task as a dummy task to verify:
@@ -121,4 +121,4 @@ def test__explore_fraction() -> None:
 
 if __name__ == "__main__":
     test_open_loop()
-    test__explore_fraction()
+    test_explore_fraction()
