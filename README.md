@@ -25,6 +25,12 @@ Available methods:
 | [Cross Entropy Method](https://en.wikipedia.org/wiki/Cross-entropy_method) | Fit a Gaussian distribution to the `n` best "elite" rollouts. | [`hydrax.algs.CEM`](hydrax/algs/cem.py) |
 | [Evosax](https://github.com/RobertTLange/evosax/) | Any of the 30+ evolution strategies implemented in `evosax`. Includes CMA-ES, differential evolution, and many more. | [`hydrax.algs.Evosax`](hydrax/algs.evosax.py) |
 
+## News
+
+- April 11, 2024. Large changes to the core `hydrax` functionality + some breaking changes.
+    - Splines (and their knots) are now the default parameterization of the control signals and decision variables! Before, it was always assumed that every control step applied a zero-order hold. This is now a special case of the new spline parameterization.
+    - All "time-based" variables are now specified in the controller. Previously, variables like the planning horizon and number of sim steps per control step were specified in the task. Now, the main variables to specify are `T`, the length of the planning horizon in seconds, and `dt`, the control time step. Based on the timestep specified in the model XML, the planning horizon in number of steps as well as the number of sim steps per control step can be inferred, and none of these variables are stored in the task. **This is a breaking change!**
+
 ## Setup (conda)
 
 Set up a conda env with cuda support (first time only):

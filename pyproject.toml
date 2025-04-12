@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hydrax"
-version = "0.0.1"
+version = "0.0.2"
 description = "Sampling-based model predictive control on GPU with JAX/MJX"
 readme = "README.md"
 license = {text="MIT"}
