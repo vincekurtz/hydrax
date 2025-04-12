@@ -73,6 +73,6 @@ if __name__ == "__main__":
             ctrl,
             mj_model,
             mj_data,
-            frequency=50,
+            frequency=20,
             show_traces=False,
         )

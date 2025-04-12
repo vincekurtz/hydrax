@@ -37,6 +37,6 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=50,
+    frequency=20,
     show_traces=True,
 )

@@ -42,6 +42,7 @@ elif args.algorithm == "mppi":
         num_samples=128,
         noise_level=0.5,
         temperature=0.1,
+        plan_horizon=0.6,
         spline_type="zero",
         num_knots=5,
     )
@@ -59,7 +60,7 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=50,
+    frequency=20,
     fixed_camera_id=0,
     show_traces=True,
     max_traces=1,
