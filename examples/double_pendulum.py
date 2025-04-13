@@ -1,11 +1,8 @@
-import argparse
-
 import mujoco
-import numpy as np
 
-from hydrax.algs import MPPI, PredictiveSampling, CEM, Evosax
+from hydrax.algs import Evosax
 from hydrax.simulation.deterministic import run_interactive
-from hydrax.tasks.double_pendulum import DoublePendulum  # Import the new task
+from hydrax.tasks.double_pendulum import DoublePendulum
 import evosax
 
 """
