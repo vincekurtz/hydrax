@@ -49,8 +49,8 @@ class CEM(SamplingBasedController):
             num_elites: The number of elite samples to keep at each iteration.
             sigma_start: The initial standard deviation for the controls.
             sigma_min: The minimum standard deviation for the controls.
-            explore_fraction: Fraction of samples to keep at sigma_start.
             num_randomizations: The number of domain randomizations to use.
+            explore_fraction: Fraction of samples to keep at initial exploration level.
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
@@ -59,10 +59,6 @@ class CEM(SamplingBasedController):
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
         """
-        if not 0 <= explore_fraction <= 1:
-            raise ValueError(
-                f"explore_fraction must be between 0 and 1, got {explore_fraction}"
-            )
         super().__init__(
             task,
             num_randomizations=num_randomizations,
@@ -72,11 +68,22 @@ class CEM(SamplingBasedController):
             spline_type=spline_type,
             num_knots=num_knots,
         )
+
+        Raises:
+            ValueError: If explore_fraction is not between 0 and 1.
+        """
+        if not 0 <= explore_fraction <= 1:
+            raise ValueError(
+                f"explore_fraction must be between 0 and 1, got {explore_fraction}"
+            )
+
+        super().__init__(task, num_randomizations, risk_strategy, seed)
         self.num_samples = num_samples
         self.sigma_min = sigma_min
         self.sigma_start = sigma_start
         self.num_elites = num_elites
-        self.num_explore = int(self.num_samples * explore_fraction)
+        self.explore_fraction = explore_fraction
+        self.num_explore = int(explore_fraction * num_samples)
 
     def init_params(self, seed: int = 0) -> CEMParams:
         """Initialize the policy parameters."""
@@ -93,23 +100,23 @@ class CEM(SamplingBasedController):
         # Pre-compute shapes for both main and exploration samples
         main_shape = (
             self.num_samples - self.num_explore,
-            self.num_knots,
+            self.task.planning_horizon,
             self.task.model.nu,
         )
         explore_shape = (
             self.num_explore,
-            self.num_knots,
+            self.task.planning_horizon,
             self.task.model.nu,
         )
 
-        # Sample main knots with current covariance
+        # Sample main trajectories with current covariance
         main_controls = (
             params.mean + params.cov * jax.random.normal(sample_rng, main_shape)
             if main_shape[0] > 0
             else jnp.empty(main_shape)
         )
 
-        # Sample exploration knots with initial covariance
+        # Sample exploration trajectories with initial covariance
         explore_controls = (
             params.mean
             + self.sigma_start * jax.random.normal(explore_rng, explore_shape)

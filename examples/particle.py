@@ -71,9 +71,6 @@ elif args.algorithm == "cem":
         sigma_start=0.3,
         sigma_min=0.05,
         explore_fraction=0.5,
-        plan_horizon=0.25,
-        spline_type="zero",
-        num_knots=11,
     )
 
 elif args.algorithm == "cmaes":
