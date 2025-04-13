@@ -227,6 +227,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     # Preserve the last printout
     print("")
 
-    # Close the video writer if recording was enabled
+    # Close the video recorder if recording was enabled
     if record_video and recorder is not None:
         recorder.stop()
