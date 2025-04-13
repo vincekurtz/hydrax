@@ -94,12 +94,15 @@ def test_explore_fraction() -> None:
             sigma_start=sigma_start,
             sigma_min=sigma_min,
             explore_fraction=explore_fraction,
+            plan_horizon=1.0,
+            spline_type="zero",
+            num_knots=11,
         )
         params = opt.init_params(seed=42)
-        controls, new_params = opt.sample_controls(params)
+        controls, new_params = opt.sample_knots(params)
 
         # Check the overall shape of the controls array.
-        expected_shape = (num_samples, task.planning_horizon, task.model.nu)
+        expected_shape = (num_samples, opt.num_knots, task.model.nu)
         assert controls.shape == expected_shape, (
             f"Expected shape {expected_shape} but got {controls.shape} "
             f"for explore_fraction = {explore_fraction}"
@@ -114,10 +117,10 @@ def test_explore_fraction() -> None:
         explore_controls = controls[num_main:]
 
         # Verify that the main and exploration segments have the correct shapes.
-        expected_main_shape = (num_main, task.planning_horizon, task.model.nu)
+        expected_main_shape = (num_main, opt.num_knots, task.model.nu)
         expected_explore_shape = (
             num_explore,
-            task.planning_horizon,
+            opt.num_knots,
             task.model.nu,
         )
         assert main_controls.shape == expected_main_shape, (
