@@ -60,7 +60,7 @@ elif args.algorithm == "cem":
         num_knots=4,
     )
 else:
-    print("Other algorithms not implemented for this example!")
+    parser.error("Other algorithms not implemented for this example!")
 
 # Define the model used for simulation
 mj_model = task.mj_model
@@ -71,8 +71,8 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=10,
+    frequency=50,
     fixed_camera_id=0,
-    show_traces=True,
+    show_traces=False,
     max_traces=1,
 )

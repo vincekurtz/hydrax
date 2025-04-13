@@ -91,9 +91,9 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=20,
+    frequency=25,
     fixed_camera_id=None,
-    show_traces=True,
+    show_traces=False,
     max_traces=1,
     trace_color=[1.0, 1.0, 1.0, 1.0],
 )

@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import mujoco
 
 from hydrax.algs import PredictiveSampling
@@ -25,7 +23,7 @@ ctrl = PredictiveSampling(
 )
 
 # Define the model used for simulation
-mj_model = deepcopy(task.mj_model)
+mj_model = task.mj_model
 mj_model.opt.timestep = 0.001
 mj_model.opt.iterations = 100
 mj_model.opt.ls_iterations = 50
@@ -37,6 +35,6 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=20,
-    show_traces=True,
+    frequency=50,
+    show_traces=False,
 )

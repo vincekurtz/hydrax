@@ -39,4 +39,5 @@ if __name__ == "__main__":
         ctrl,
         mj_model,
         mj_data,
+        show_traces=False,
     )

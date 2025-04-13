@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
     # Define the model used for simulation (stiffer contact parameters)
     mj_model = task.mj_model
+    mj_model.opt.timestep = 0.01
     mj_model.opt.o_solimp = [0.9, 0.95, 0.001, 0.5, 2]
     mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 
@@ -73,6 +74,6 @@ if __name__ == "__main__":
             ctrl,
             mj_model,
             mj_data,
-            frequency=20,
+            frequency=50,
             show_traces=False,
         )

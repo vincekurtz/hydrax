@@ -14,9 +14,10 @@ class CEMParams(SamplingParams):
     """Policy parameters for the cross-entropy method.
 
     Attributes:
-        mean: The mean of the control distribution, μ = [u₀, u₁, ..., ].
-        cov: The (diagonal) covariance of the control distribution.
+        tk: The knot times of the control spline.
+        mean: The mean of the control spline knot distribution, μ = [u₀, ...].
         rng: The pseudo-random number generator key.
+        cov: The (diagonal) covariance of the control distribution.
     """
 
     cov: jax.Array

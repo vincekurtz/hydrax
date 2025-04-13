@@ -14,6 +14,11 @@ class MPPIParams(SamplingParams):
     """Policy parameters for model-predictive path integral control.
 
     Same as SamplingParams, but with a different name for clarity.
+
+    Attributes:
+        tk: The knot times of the control spline.
+        mean: The mean of the control spline knot distribution, μ = [u₀, ...].
+        rng: The pseudo-random number generator key.
     """
 
 

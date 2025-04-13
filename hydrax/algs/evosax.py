@@ -19,9 +19,10 @@ class EvosaxParams(SamplingParams):
     """Policy parameters for evosax optimizers.
 
     Attributes:
+        tk: The knot times of the control spline.
         mean: The mean of the control spline knot distribution, μ = [u₀, ...].
-        opt_state: The state of the evosax optimizer (covariance, etc.).
         rng: The pseudo-random number generator key.
+        opt_state: The state of the evosax optimizer (covariance, etc.).
     """
 
     opt_state: EvoState

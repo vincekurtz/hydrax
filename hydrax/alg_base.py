@@ -16,6 +16,9 @@ from hydrax.utils.spline import get_interp_func
 class Trajectory:
     """Data class for storing rollout data.
 
+    Throughout, H denotes the number of control steps (given by the times at
+    which the control spline is interpolated).
+
     Attributes:
         controls: Control actions of shape (num_rollouts, H, nu).
         knots: Control spline knots of shape (num_rollouts, num_knots, nu).
