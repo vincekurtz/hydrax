@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hydrax"
-version = "0.0.1"
+version = "0.0.2"
 description = "Sampling-based model predictive control on GPU with JAX/MJX"
 readme = "README.md"
 license = {text="MIT"}
@@ -18,6 +18,7 @@ dependencies = [
     "evosax<0.2.0",
     "flax>=0.10.0",
     "huggingface_hub>=0.29.3",
+    "interpax>=0.3.7",
     "jax[cuda12]>=0.4.35",
     "mujoco>=3.2.4",
     "mujoco-mjx>=3.2.4",
@@ -51,7 +52,6 @@ select = [
 ]
 ignore = [
     "ANN003",  # missing type annotation for **kwargs
-    "ANN101",  # missing type annotation for `self` in method
     "ANN202",  # missing return type annotation for private function
     "ANN204",  # missing return type annotation for `__init__`
     "ANN401",  # dynamically typed expressions (typing.Any) are disallowed
