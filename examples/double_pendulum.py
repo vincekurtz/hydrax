@@ -13,7 +13,6 @@ Run an interactive simulation of the double pendulum swingup task.
 """
 
 # Define the task (cost and dynamics)
-# Note: May need tuning of horizon, num_samples, noise_level, temperature
 task = DoublePendulum(planning_horizon=20, sim_steps_per_control_step=5)
 
 # Parse command-line arguments
@@ -30,7 +29,6 @@ subparsers.add_parser("samr", help="SAMR")
 args = parser.parse_args()
 
 # Set the controller based on command-line arguments
-# Parameters might need tuning for the harder double pendulum task
 if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
     # Increased samples might be needed
@@ -60,8 +58,6 @@ mj_model = task.mj_model
 
 # Set the initial state (two joints)
 mj_data = mujoco.MjData(mj_model)
-mj_data.qpos[:] = np.array([0.0, 0.0])  # Initial angles for both joints
-mj_data.qvel[:] = np.array([0.0, 0.0])  # Initial velocities for both joints
 
 # Run the interactive simulation
 run_interactive(
