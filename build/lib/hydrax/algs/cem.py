@@ -93,12 +93,12 @@ class CEM(SamplingBasedController):
         # Pre-compute shapes for both main and exploration samples
         main_shape = (
             self.num_samples - self.num_explore,
-            self.num_knots,
+            self.task.num_knots,
             self.task.model.nu,
         )
         explore_shape = (
             self.num_explore,
-            self.num_knots,
+            self.task.num_knots,
             self.task.model.nu,
         )
 
