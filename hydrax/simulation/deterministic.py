@@ -199,7 +199,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             for i in range(sim_steps_per_replan):
                 mj_data.ctrl[:] = np.array(us[i])
                 mujoco.mj_step(mj_model, mj_data)
-                controller.task.post_step(mj_model, mj_data)
                 viewer.sync()
 
             # Try to run in roughly realtime
