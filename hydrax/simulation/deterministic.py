@@ -56,9 +56,9 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     """
     # Report the planning horizon in seconds for debugging
     print(
-        f"Planning with {controller.task.planning_horizon} steps "
-        f"over a {controller.task.planning_horizon * controller.task.dt} "
-        f"second horizon."
+        f"Planning with {controller.ctrl_steps} steps "
+        f"over a {controller.plan_horizon} second horizon "
+        f"with {controller.num_knots} knots."
     )
 
     # Figure out how many sim steps to run before replanning
@@ -69,7 +69,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     actual_frequency = 1.0 / step_dt
     print(
         f"Planning at {actual_frequency} Hz, "
-        f"simulating at {1.0/mj_model.opt.timestep} Hz"
+        f"simulating at {1.0 / mj_model.opt.timestep} Hz"
     )
 
     # Initialize the controller
@@ -78,13 +78,20 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
     )
     policy_params = controller.init_params()
-    jit_optimize = jax.jit(controller.optimize, donate_argnums=(1,))
+    jit_optimize = jax.jit(controller.optimize)
+    jit_interp_func = jax.jit(controller.interp_func)
 
     # Warm-up the controller
     print("Jitting the controller...")
     st = time.time()
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
     policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+
+    tq = jnp.arange(0, sim_steps_per_replan) * mj_model.opt.timestep
+    tk = policy_params.tk
+    knots = policy_params.mean[None, ...]
+    _ = jit_interp_func(tq, tk, knots)
+    _ = jit_interp_func(tq, tk, knots)
     print(f"Time to jit: {time.time() - st:.3f} seconds")
     num_traces = min(rollouts.controls.shape[1], max_traces)
 
@@ -111,7 +118,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         if show_traces:
             num_trace_sites = len(controller.task.trace_site_ids)
             for i in range(
-                num_trace_sites * num_traces * controller.task.planning_horizon
+                num_trace_sites * num_traces * controller.ctrl_steps
             ):
                 mujoco.mjv_initGeom(
                     viewer.user_scn.geoms[i],
@@ -151,7 +158,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 ii = 0
                 for k in range(num_trace_sites):
                     for i in range(num_traces):
-                        for j in range(controller.task.planning_horizon):
+                        for j in range(controller.ctrl_steps):
                             mujoco.mjv_connector(
                                 viewer.user_scn.geoms[ii],
                                 mujoco.mjtGeom.mjGEOM_LINE,
@@ -178,11 +185,19 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                     viewer.user_scn,
                 )
 
-            # Step the simulation
+            # query the control spline at the sim frequency
+            # (we assume the sim freq is the same as the low-level ctrl freq)
+            sim_dt = mj_model.opt.timestep
+            t_curr = mj_data.time
+
+            tq = jnp.arange(0, sim_steps_per_replan) * sim_dt + t_curr
+            tk = policy_params.tk
+            knots = policy_params.mean[None, ...]
+            us = np.asarray(jit_interp_func(tq, tk, knots))[0]  # (ss, nu)
+
+            # simulate the system between spline replanning steps
             for i in range(sim_steps_per_replan):
-                t = i * mj_model.opt.timestep
-                u = controller.get_action(policy_params, t)
-                mj_data.ctrl[:] = np.array(u)
+                mj_data.ctrl[:] = np.array(us[i])
                 mujoco.mj_step(mj_model, mj_data)
                 viewer.sync()
 

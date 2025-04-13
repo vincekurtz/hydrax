@@ -22,17 +22,12 @@ class Task(ABC):
     def __init__(
         self,
         mj_model: mujoco.MjModel,
-        planning_horizon: int,
-        sim_steps_per_control_step: int,
-        trace_sites: Sequence[str] = [],
-    ):
+        trace_sites: Sequence[str] | None = None,
+    ) -> None:
         """Set the model and simulation parameters.
 
         Args:
             mj_model: The MuJoCo model to use for simulation.
-            planning_horizon: The number of control steps (T) to plan over.
-            sim_steps_per_control_step: The number of simulation steps to take
-                                        for each control step.
             trace_sites: A list of site names to visualize with traces.
 
         Note: many other simulator parameters, e.g., simulator time step,
@@ -41,8 +36,6 @@ class Task(ABC):
         assert isinstance(mj_model, mujoco.MjModel)
         self.mj_model = mj_model
         self.model = mjx.put_model(mj_model)
-        self.planning_horizon = planning_horizon
-        self.sim_steps_per_control_step = sim_steps_per_control_step
 
         # Set actuator limits
         self.u_min = jnp.where(
@@ -56,10 +49,11 @@ class Task(ABC):
             jnp.inf,
         )
 
-        # Timestep for each control step
-        self.dt = mj_model.opt.timestep * sim_steps_per_control_step
+        # Simulation timestep
+        self.dt = mj_model.opt.timestep
 
         # Get site IDs for points we want to trace
+        trace_sites = trace_sites or []
         self.trace_site_ids = jnp.array(
             [mj_model.site(name).id for name in trace_sites]
         )

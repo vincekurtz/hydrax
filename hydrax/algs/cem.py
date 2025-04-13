@@ -1,27 +1,26 @@
-from typing import Tuple
+from typing import Literal, Tuple
 
 import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
 
-from hydrax.alg_base import SamplingBasedController, Trajectory
+from hydrax.alg_base import SamplingBasedController, SamplingParams, Trajectory
 from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
 
 
 @dataclass
-class CEMParams:
+class CEMParams(SamplingParams):
     """Policy parameters for the cross-entropy method.
 
     Attributes:
-        mean: The mean of the control distribution, μ = [u₀, u₁, ..., ].
-        cov: The (diagonal) covariance of the control distribution.
+        tk: The knot times of the control spline.
+        mean: The mean of the control spline knot distribution, μ = [u₀, ...].
         rng: The pseudo-random number generator key.
+        cov: The (diagonal) covariance of the control distribution.
     """
 
-    mean: jax.Array
     cov: jax.Array
-    rng: jax.Array
 
 
 class CEM(SamplingBasedController):
@@ -38,7 +37,10 @@ class CEM(SamplingBasedController):
         explore_fraction: float = 0.0,
         risk_strategy: RiskStrategy = None,
         seed: int = 0,
-    ):
+        plan_horizon: float = 1.0,
+        spline_type: Literal["zero", "linear", "cubic"] = "zero",
+        num_knots: int = 4,
+    ) -> None:
         """Initialize the controller.
 
         Args:
@@ -52,6 +54,20 @@ class CEM(SamplingBasedController):
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
+            plan_horizon: The time horizon for the rollout in seconds.
+            spline_type: The type of spline used for control interpolation.
+                         Defaults to "zero" (zero-order hold).
+            num_knots: The number of knots in the control spline.
+        """
+        super().__init__(
+            task,
+            num_randomizations=num_randomizations,
+            risk_strategy=risk_strategy,
+            seed=seed,
+            plan_horizon=plan_horizon,
+            spline_type=spline_type,
+            num_knots=num_knots,
+        )
 
         Raises:
             ValueError: If explore_fraction is not between 0 and 1.
@@ -71,12 +87,13 @@ class CEM(SamplingBasedController):
 
     def init_params(self, seed: int = 0) -> CEMParams:
         """Initialize the policy parameters."""
-        rng = jax.random.key(seed)
-        mean = jnp.zeros((self.task.planning_horizon, self.task.model.nu))
-        cov = jnp.full_like(mean, self.sigma_start)
-        return CEMParams(mean=mean, cov=cov, rng=rng)
+        _params = super().init_params(seed)
+        cov = jnp.full_like(_params.mean, self.sigma_start)
+        return CEMParams(
+            tk=_params.tk, mean=_params.mean, cov=cov, rng=_params.rng
+        )
 
-    def sample_controls(self, params: CEMParams) -> Tuple[jax.Array, CEMParams]:
+    def sample_knots(self, params: CEMParams) -> Tuple[jax.Array, CEMParams]:
         """Sample a control sequence."""
         rng, sample_rng, explore_rng = jax.random.split(params.rng, 3)
 
@@ -122,15 +139,8 @@ class CEM(SamplingBasedController):
         elites = indices[: self.num_elites]
 
         # The new proposal distribution is a Gaussian fit to the elites.
-        mean = jnp.mean(rollouts.controls[elites], axis=0)
+        mean = jnp.mean(rollouts.knots[elites], axis=0)
         cov = jnp.maximum(
-            jnp.std(rollouts.controls[elites], axis=0), self.sigma_min
+            jnp.std(rollouts.knots[elites], axis=0), self.sigma_min
         )
-
         return params.replace(mean=mean, cov=cov)
-
-    def get_action(self, params: CEMParams, t: float) -> jax.Array:
-        """Get the control action for the current time step, zero order hold."""
-        idx_float = t / self.task.dt  # zero order hold
-        idx = jnp.floor(idx_float).astype(jnp.int32)
-        return params.mean[idx]

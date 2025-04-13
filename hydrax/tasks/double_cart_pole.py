@@ -10,21 +10,12 @@ from hydrax.task_base import Task
 class DoubleCartPole(Task):
     """A swing-up task for a double pendulum on a cart."""
 
-    def __init__(
-        self, planning_horizon: int = 10, sim_steps_per_control_step: int = 8
-    ):
+    def __init__(self) -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/double_cart_pole/scene.xml"
         )
-
-        super().__init__(
-            mj_model,
-            planning_horizon=planning_horizon,
-            sim_steps_per_control_step=sim_steps_per_control_step,
-            trace_sites=["tip"],
-        )
-
+        super().__init__(mj_model, trace_sites=["tip"])
         self.tip_id = mj_model.site("tip").id
 
     def _distance_to_upright(self, state: mjx.Data) -> jax.Array:

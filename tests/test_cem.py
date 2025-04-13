@@ -12,7 +12,14 @@ def test_open_loop() -> None:
     # Task and optimizer setup
     task = Pendulum()
     opt = CEM(
-        task, num_samples=32, num_elites=4, sigma_start=1.0, sigma_min=0.1
+        task,
+        num_samples=32,
+        num_elites=4,
+        sigma_start=1.0,
+        sigma_min=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
     )
     jit_opt = jax.jit(opt.optimize)
 
@@ -22,11 +29,15 @@ def test_open_loop() -> None:
 
     for _ in range(100):
         # Do an optimization step
-        params, _ = jit_opt(state, params)
+        params, rollouts = jit_opt(state, params)
 
     # Roll out the solution, check that it's good enough
+    knots = params.mean[None]
+    tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
+    tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
+    controls = opt.interp_func(tq, tk, knots)
     states, final_rollout = jax.jit(opt.eval_rollouts)(
-        task.model, state, params.mean[None]
+        task.model, state, controls, knots
     )
     theta = states.qpos[0, :, 0]
     theta_dot = states.qvel[0, :, 0]
@@ -38,7 +49,7 @@ def test_open_loop() -> None:
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon) * task.dt
+        times = jnp.arange(opt.ctrl_steps) * task.dt
 
         ax[0].plot(times, theta)
         ax[0].set_ylabel(r"$\theta$")

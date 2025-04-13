@@ -11,26 +11,37 @@ from hydrax.tasks.pendulum import Pendulum
 def test_cmaes() -> None:
     """Test the CMAES algorithm."""
     task = Pendulum()
-    ctrl = Evosax(task, evosax.CMA_ES, num_samples=32)
+    ctrl = Evosax(
+        task,
+        evosax.CMA_ES,
+        num_samples=32,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
 
     # Initialize the policy parameters
     params = ctrl.init_params()
-    assert params.opt_state.C.shape == (20, 20)
+    assert params.opt_state.C.shape == (ctrl.num_knots, ctrl.num_knots)
     assert params.opt_state.weights.shape == (32,)
 
     # Sample control sequences from the policy
-    controls, params = ctrl.sample_controls(params)
-    assert controls.shape == (32, 20, 1)
+    knots, params = ctrl.sample_knots(params)
+    assert knots.shape == (32, ctrl.num_knots, 1)
+
+    tk = jnp.linspace(0.0, ctrl.plan_horizon, ctrl.num_knots)
+    tq = jnp.linspace(0.0, ctrl.plan_horizon - ctrl.dt, ctrl.ctrl_steps)
+    controls = ctrl.interp_func(tq, tk, knots)
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
-    _, rollouts = ctrl.eval_rollouts(task.model, state, controls)
-    assert rollouts.costs.shape == (32, 21)
+    _, rollouts = ctrl.eval_rollouts(task.model, state, controls, knots)
+    assert rollouts.costs.shape == (32, ctrl.ctrl_steps + 1)
 
     # Update the policy parameters
     params = ctrl.update_params(params, rollouts)
-    assert params.controls.shape == (20, 1)
-    assert jnp.all(params.controls != jnp.zeros((20, 1)))
+    assert params.mean.shape == (ctrl.num_knots, 1)
+    assert jnp.all(params.mean != jnp.zeros((ctrl.num_knots, 1)))
     assert params.opt_state.best_fitness > 0.0
 
 
@@ -38,7 +49,15 @@ def test_open_loop() -> None:
     """Use CMA-ES for open-loop optimization."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = Evosax(task, evosax.CMA_ES, num_samples=32, elite_ratio=0.1)
+    opt = Evosax(
+        task,
+        evosax.CMA_ES,
+        num_samples=32,
+        elite_ratio=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
     jit_opt = jax.jit(opt.optimize)
 
     # Initialize the system state and policy parameters
@@ -47,21 +66,27 @@ def test_open_loop() -> None:
 
     for _ in range(100):
         # Do an optimization step
-        params, _ = jit_opt(state, params)
+        params, final_rollout = jit_opt(state, params)
 
-    # Pick the best rollout
+    # Test consistency of best rollout identification
     best_cost = params.opt_state.best_fitness
-    best_ctrl = params.controls
-    states, final_rollout = jax.jit(opt.eval_rollouts)(
-        task.model, state, best_ctrl[None]
-    )
+    final_costs = jnp.sum(final_rollout.costs, axis=-1)
+    best_idx = jnp.argmin(final_costs)
+    assert jnp.allclose(best_cost, final_costs[best_idx])
 
-    assert jnp.allclose(best_cost, jnp.sum(final_rollout.costs[0]))
+    # rollout the best control sequence and update it once more
+    best_knots = params.mean[None]
+    tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
+    tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
+    controls = opt.interp_func(tq, tk, best_knots)
+    states, final_rollout = jax.jit(opt.eval_rollouts)(
+        task.model, state, controls, best_knots
+    )
 
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon) * task.dt
+        times = jnp.arange(opt.ctrl_steps) * task.dt
 
         ax[0].plot(times, states.qpos[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")
