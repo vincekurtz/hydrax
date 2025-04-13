@@ -292,7 +292,9 @@ class SamplingBasedController(ABC):
 
         Args:
             params: The policy parameters, U ~ π(params).
-            t: The time from the start of the trajectory of shape (1,).
+            t: The current time at which to query the spline. Spline times are
+                continually evolving as the simulation progresses, so this
+                number should roughly track mj_data.time.
 
         Returns:
             The control action u(t).
