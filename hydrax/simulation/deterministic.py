@@ -7,7 +7,6 @@ import jax
 import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
-import ffmpeg
 import subprocess
 import numpy as np
 from mujoco import mjx
@@ -109,7 +108,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
 
     # Initialize video recording if enabled
     renderer = None
-    ffmpeg_subprocess = None
+    process = None
     if record_video:
         renderer = mujoco.Renderer(mj_model, height=480, width=720)
         print("Recording scene...")
@@ -126,22 +125,35 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             + ".mp4"
         )
 
-        # Set up FFmpeg subprocess to stream the video recording
+        # Set up FFmpeg process with hardcoded command
         width, height = 720, 480
-        cmd = (
-            ffmpeg.input(
-                "pipe:",
-                format="rawvideo",
-                pix_fmt="rgb24",
-                s=f"{width}x{height}",
-                r=actual_frequency,
-            )
-            .output(video_path, crf=23, preset="medium")
-            .global_args("-loglevel", "error")
-            .overwrite_output()
-            .compile()
-        )
-        ffmpeg_subprocess = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        cmd = [
+            "ffmpeg",
+            "-y",  # Overwrite output file
+            "-f",
+            "rawvideo",  # Input format
+            "-vcodec",
+            "rawvideo",  # Input codec
+            "-s",
+            f"{width}x{height}",  # Size of one frame
+            "-pix_fmt",
+            "rgb24",  # Pixel format
+            "-r",
+            str(actual_frequency),  # Frames per second
+            "-i",
+            "-",  # Take input from pipe
+            "-an",  # No audio
+            "-vcodec",
+            "libx264",  # Output codec
+            "-crf",
+            "23",  # Constant quality factor
+            "-preset",
+            "medium",  # Encoding speed/compression trade-off
+            "-loglevel",
+            "error",  # Suppress output except errors
+            video_path,
+        ]
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
@@ -234,7 +246,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                     renderer.update_scene(mj_data, viewer.cam)
                     frame = renderer.render()
                     # Stream/write frame to FFmpeg process
-                    ffmpeg_subprocess.stdin.write(frame.tobytes())
+                    process.stdin.write(frame.tobytes())
 
             # Try to run in roughly realtime
             elapsed = time.time() - start_time
@@ -252,7 +264,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     print("")
 
     # Close the video writer if recording was enabled
-    if record_video and ffmpeg_subprocess is not None:
-        ffmpeg_subprocess.stdin.close()
-        ffmpeg_subprocess.wait()
+    if record_video and process is not None:
+        process.stdin.close()
+        process.wait()
         print(f"Video saved to {video_path}")
