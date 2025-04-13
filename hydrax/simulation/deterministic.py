@@ -12,7 +12,7 @@ from mujoco import mjx
 
 from hydrax.alg_base import SamplingBasedController
 from hydrax import ROOT
-from hydrax.utils.video import create_video_writer, add_frame, finalize_video
+from hydrax.utils.video import VideoRecorder
 
 """
 Tools for deterministic (synchronous) simulation, with the simulator and
@@ -107,23 +107,18 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         catmask = mujoco.mjtCatBit.mjCAT_DYNAMIC  # only show dynamic bodies
 
     # Initialize video recording if enabled
-    renderer = None
-    ffmpeg_process = None
-    video_path = None
+    recorder = None
     if record_video:
-        renderer = mujoco.Renderer(mj_model, height=480, width=720)
-
-        # Set up video recording
-        recordings_dir = os.path.join(ROOT, "recordings")
-        ffmpeg_process, video_path, _ = create_video_writer(
-            output_dir=recordings_dir,
+        recorder = VideoRecorder(
+            output_dir=os.path.join(ROOT, "recordings"),
             width=720,
             height=480,
             fps=actual_frequency,
             filename_prefix="simulation",
         )
-        if ffmpeg_process is None:
+        if not recorder.start():
             record_video = False
+        renderer = mujoco.Renderer(mj_model, height=480, width=720)
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
@@ -212,11 +207,11 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 viewer.sync()
 
                 # Capture frame if recording
-                if record_video and ffmpeg_process is not None:
+                if record_video and recorder.is_recording:
                     renderer.update_scene(mj_data, viewer.cam)
                     frame = renderer.render()
                     # Write frame to FFmpeg process
-                    add_frame(ffmpeg_process, frame.tobytes())
+                    recorder.add_frame(frame.tobytes())
 
             # Try to run in roughly realtime
             elapsed = time.time() - start_time
@@ -234,5 +229,5 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     print("")
 
     # Close the video writer if recording was enabled
-    if record_video and ffmpeg_process is not None:
-        finalize_video(ffmpeg_process, video_path)
+    if record_video and recorder is not None:
+        recorder.stop()
