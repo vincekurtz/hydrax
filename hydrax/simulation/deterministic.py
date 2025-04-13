@@ -252,7 +252,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 viewer.sync()
 
                 # Capture frame if recording
-                if record_video:
+                if record_video and process is not None:
                     renderer.update_scene(mj_data, viewer.cam)
                     frame = renderer.render()
                     # Stream/write frame to FFmpeg process
