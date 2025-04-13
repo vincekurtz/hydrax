@@ -15,43 +15,7 @@ Run an interactive simulation of the double pendulum swingup task.
 # Define the task (cost and dynamics)
 task = DoublePendulum(planning_horizon=20, sim_steps_per_control_step=5)
 
-# Parse command-line arguments
-parser = argparse.ArgumentParser(
-    description="Run an interactive simulation of the double pendulum swingup task."
-)
-subparsers = parser.add_subparsers(
-    dest="algorithm", help="Sampling algorithm (choose one)"
-)
-subparsers.add_parser("ps", help="Predictive Sampling")
-subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
-subparsers.add_parser("cem", help="Cross-Entropy Method")
-subparsers.add_parser("samr", help="SAMR")
-args = parser.parse_args()
-
-# Set the controller based on command-line arguments
-if args.algorithm == "ps" or args.algorithm is None:
-    print("Running predictive sampling")
-    # Increased samples might be needed
-    ctrl = PredictiveSampling(task, num_samples=64, noise_level=0.2)
-elif args.algorithm == "mppi":
-    print("Running MPPI")
-    # Increased samples and adjusted noise/temp might be needed
-    ctrl = MPPI(task, num_samples=1024, noise_level=0.3, temperature=0.1)
-elif args.algorithm == "cem":
-    print("Running CEM")
-    ctrl = CEM(
-        task,
-        num_samples=500,
-        num_elites=20,
-        sigma_start=0.4,
-        sigma_min=0.05,
-        explore_fraction=0.1,
-    )
-elif args.algorithm == "samr":
-    print("Running SAMR")
-    ctrl = Evosax(task, evosax.SAMR_GA, num_samples=1024)
-else:
-    parser.error("Invalid algorithm")
+ctrl = Evosax(task, evosax.SAMR_GA, num_samples=2000)
 
 # Define the model used for simulation
 mj_model = task.mj_model
@@ -67,5 +31,5 @@ run_interactive(
     frequency=50,
     fixed_camera_id=None,
     show_traces=True,
-    max_traces=2,  # Show traces for both tips
+    max_traces=2,
 )
