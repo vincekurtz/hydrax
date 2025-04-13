@@ -41,7 +41,6 @@ class VideoRecorder:
         self.ffmpeg_process = None
         self.video_path = None
         self.is_recording = False
-        self.metadata = {}
 
     def start(self) -> bool:
         """Start recording the video.
@@ -62,16 +61,6 @@ class VideoRecorder:
         self.video_path = os.path.join(
             self.output_dir, f"{self.filename_prefix}_{timestamp}.mp4"
         )
-
-        # Store metadata for reference
-        self.metadata = {
-            "width": self.width,
-            "height": self.height,
-            "fps": self.fps,
-            "crf": self.crf,
-            "preset": self.preset,
-            "path": self.video_path,
-        }
 
         # Check if FFmpeg is available
         try:
@@ -169,12 +158,3 @@ class VideoRecorder:
                 pass
             self.is_recording = False
             return False
-
-    def __enter__(self):
-        """Context manager entry."""
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
-        self.stop()
