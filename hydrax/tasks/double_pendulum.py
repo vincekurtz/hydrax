@@ -28,28 +28,23 @@ class DoublePendulum(Task):
         )
 
         self.tip_id = mj_model.site("tip").id
+        self.max_height = 1.1  # Desired height of tip
 
     def _height_cost(self, state: mjx.Data) -> jax.Array:
         """Cost based on the height of the tip."""
-        return jnp.square(state.site_xpos[self.tip_id, 2] - 1.1)
+        return jnp.square(state.site_xpos[self.tip_id, 2] - self.max_height)
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
-        height_cost = self._height_cost(state)
-        # Penalize velocity
-        vel_cost = 0.01 * (
-            jnp.square(state.qvel[0]) + jnp.square(state.qvel[1])
+        velocity_cost = jnp.square(state.qvel[0]) + jnp.square(state.qvel[1])
+        control_cost = jnp.sum(jnp.square(control))
+        return (
+            1e2 * self._height_cost(state)
+            + 1e-1 * velocity_cost
+            + 1e-2 * control_cost
         )
-        # Penalize control effort
-        control_cost = 0.001 * jnp.sum(jnp.square(control))
-        return 10 * height_cost + vel_cost + control_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        # Primarily care about final height and low velocity
-        height_cost = self._height_cost(state)
-        vel_cost = 0.01 * (
-            jnp.square(state.qvel[0]) + jnp.square(state.qvel[1])
-        )
-        # Higher weight on terminal height cost
-        return 100.0 * height_cost + vel_cost
+        vel_cost = jnp.square(state.qvel[0]) + jnp.square(state.qvel[1])
+        return 1e2 * self._height_cost(state) + 1e-1 * vel_cost

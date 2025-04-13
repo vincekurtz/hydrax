@@ -4,7 +4,6 @@
     <flag contact="disable"/>
   </option>
 
-
   <asset>
     <mesh name="base_link_mesh" file="base_link.STL" maxhullvert="20"/>
     <mesh name="link1_mesh" file="Link1.STL" maxhullvert="20"/>
@@ -20,7 +19,7 @@
         <inertial pos="0 0 -0.27401" mass="0.608" diaginertia="0.05472 0.05472 0.05472"/>
         <joint name="Joint1" type="hinge" pos="0 0 0" axis="1 0 0" damping="0.08089" frictionloss="0.09335"/>
         <geom type="mesh" mesh="link1_mesh" rgba="0.75294 0.75294 0.75294 1"/>
-        <body name="Link2" pos="0.0522 0 -0.3" euler="-3.1416 0 0">
+        <body name="Link2" pos="0.0522 0 -0.3">
             <inertial pos="0 0 0.16635" mass="0.6306" diaginertia="0.02522 0.02522 0.02522"/>
             <joint name="Joint2" type="hinge" pos="0 0 0" axis="1 0 0" damping="0.000" frictionloss="0.1865"/>
             <geom type="mesh" mesh="link2_mesh" rgba="0.75294 0.75294 0.75294 1"/>
