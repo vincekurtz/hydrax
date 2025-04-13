@@ -36,7 +36,7 @@ class DoublePendulum(Task):
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
-        velocity_cost = jnp.square(state.qvel[0]) + jnp.square(state.qvel[1])
+        velocity_cost = jnp.sum(jnp.square(state.qvel))
         control_cost = jnp.sum(jnp.square(control))
         return (
             1e2 * self._height_cost(state)
@@ -46,5 +46,5 @@ class DoublePendulum(Task):
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        vel_cost = jnp.square(state.qvel[0]) + jnp.square(state.qvel[1])
+        vel_cost = jnp.sum(jnp.square(state.qvel))
         return 1e2 * self._height_cost(state) + 1e-1 * vel_cost
