@@ -15,7 +15,9 @@ def test_double_pendulum() -> None:
     tip_pos = state.site_xpos[task.tip_id]
     assert tip_pos[0] != 0.0  # x position
     assert tip_pos[1] != 0.0  # y position
-    assert tip_pos[2] == task.max_height  # z position
+    # Allow for some z tolerance
+    assert tip_pos[2] > task.max_height - 1e-6
+    assert tip_pos[2] < task.max_height + 1e-6
 
     ell = task.running_cost(state, jnp.zeros(2))
     assert ell.shape == ()

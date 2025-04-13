@@ -28,7 +28,7 @@ class DoublePendulum(Task):
         )
 
         self.tip_id = mj_model.site("tip").id
-        self.max_height = 1.1  # Desired height of tip
+        self.max_height = 1.0  # Desired height of tip
 
     def _height_cost(self, state: mjx.Data) -> jax.Array:
         """Cost based on the height of the tip."""
