@@ -118,7 +118,8 @@ def run_controller(
     # Print out some planning horizon information
     print(
         f"Planning with {ctrl.ctrl_steps} steps "
-        f"over a {ctrl.plan_horizon} second horizon."
+        f"over a {ctrl.plan_horizon} second horizon "
+        f"with {ctrl.num_knots} knots."
     )
 
     # Jit the optimizer step, then signal that we're ready to go
