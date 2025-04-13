@@ -7,12 +7,12 @@ import jax
 import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
-import subprocess
 import numpy as np
 from mujoco import mjx
 
 from hydrax.alg_base import SamplingBasedController
 from hydrax import ROOT
+from hydrax.utils.video import create_video_writer, add_frame, finalize_video
 
 """
 Tools for deterministic (synchronous) simulation, with the simulator and
@@ -108,61 +108,21 @@ def run_interactive(  # noqa: PLR0912, PLR0915
 
     # Initialize video recording if enabled
     renderer = None
-    process = None
+    ffmpeg_process = None
+    video_path = None
     if record_video:
         renderer = mujoco.Renderer(mj_model, height=480, width=720)
-        print("Recording scene...")
 
-        # Set up video writer
+        # Set up video recording
         recordings_dir = os.path.join(ROOT, "recordings")
-        if not os.path.exists(recordings_dir):
-            os.makedirs(recordings_dir)
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        video_path = os.path.join(recordings_dir, f"simulation_{timestamp}.mp4")
-
-        # Check if FFmpeg is available
-        try:
-            # Test FFmpeg availability
-            subprocess.run(
-                ["ffmpeg", "-version"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-            )
-
-            # Set up FFmpeg process with cross-platform friendly settings
-            width, height = 720, 480
-            cmd = [
-                "ffmpeg",
-                "-y",  # Overwrite output file
-                "-f",
-                "rawvideo",  # Input format
-                "-vcodec",
-                "rawvideo",  # Input codec
-                "-s",
-                f"{width}x{height}",  # Size of one frame
-                "-pix_fmt",
-                "rgb24",  # Pixel format
-                "-r",
-                str(actual_frequency),  # Frames per second
-                "-i",
-                "-",  # Take input from pipe
-                "-an",  # No audio
-                "-vcodec",
-                "h264",  # More generic codec name
-                "-crf",
-                "23",  # Constant quality factor
-                "-preset",
-                "medium",  # Encoding speed/compression trade-off
-                "-loglevel",
-                "error",  # Suppress output except errors
-                video_path,
-            ]
-            process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-            print(f"Recording video to {video_path}")
-        except (subprocess.SubprocessError, FileNotFoundError):
-            print("Warning: FFmpeg not found. Video recording disabled.")
+        ffmpeg_process, video_path, _ = create_video_writer(
+            output_dir=recordings_dir,
+            width=720,
+            height=480,
+            fps=actual_frequency,
+            filename_prefix="simulation",
+        )
+        if ffmpeg_process is None:
             record_video = False
 
     # Start the simulation
@@ -252,11 +212,11 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 viewer.sync()
 
                 # Capture frame if recording
-                if record_video and process is not None:
+                if record_video and ffmpeg_process is not None:
                     renderer.update_scene(mj_data, viewer.cam)
                     frame = renderer.render()
-                    # Stream/write frame to FFmpeg process
-                    process.stdin.write(frame.tobytes())
+                    # Write frame to FFmpeg process
+                    add_frame(ffmpeg_process, frame.tobytes())
 
             # Try to run in roughly realtime
             elapsed = time.time() - start_time
@@ -274,7 +234,5 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     print("")
 
     # Close the video writer if recording was enabled
-    if record_video and process is not None:
-        process.stdin.close()
-        process.wait()
-        print(f"Video saved to {video_path}")
+    if record_video and ffmpeg_process is not None:
+        finalize_video(ffmpeg_process, video_path)
