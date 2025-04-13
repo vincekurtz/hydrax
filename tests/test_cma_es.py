@@ -66,10 +66,15 @@ def test_open_loop() -> None:
 
     for _ in range(100):
         # Do an optimization step
-        params, _ = jit_opt(state, params)
+        params, final_rollout = jit_opt(state, params)
 
-    # Pick the best rollout
+    # Test consistency of best rollout identification
     best_cost = params.opt_state.best_fitness
+    final_costs = jnp.sum(final_rollout.costs, axis=-1)
+    best_idx = jnp.argmin(final_costs)
+    assert jnp.allclose(best_cost, final_costs[best_idx])
+
+    # rollout the best control sequence and update it once more
     best_knots = params.mean[None]
     tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
     tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
@@ -77,8 +82,6 @@ def test_open_loop() -> None:
     states, final_rollout = jax.jit(opt.eval_rollouts)(
         task.model, state, controls, best_knots
     )
-
-    assert jnp.allclose(best_cost, jnp.sum(final_rollout.costs[0]))
 
     if __name__ == "__main__":
         # Plot the solution
