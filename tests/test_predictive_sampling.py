@@ -10,41 +10,57 @@ from hydrax.tasks.pendulum import Pendulum
 def test_predictive_sampling() -> None:
     """Test the PredictiveSampling algorithm."""
     task = Pendulum()
-    opt = PredictiveSampling(task, num_samples=32, noise_level=0.1)
+    opt = PredictiveSampling(
+        task,
+        num_samples=32,
+        noise_level=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
 
     # Initialize the policy parameters
     params = opt.init_params()
-    assert params.mean.shape == (task.planning_horizon, 1)
+    assert params.mean.shape == (opt.num_knots, 1)
     assert isinstance(params.rng, jax._src.prng.PRNGKeyArray)
 
     # Sample control sequences from the policy
-    controls, new_params = opt.sample_controls(params)
-    assert controls.shape == (opt.num_samples, task.planning_horizon, 1)
+    knots, new_params = opt.sample_knots(params)
+    tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
+    tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
+    controls = opt.interp_func(tq, tk, knots)
+    assert controls.shape == (opt.num_samples, opt.ctrl_steps, 1)
+    assert knots.shape == (opt.num_samples, opt.num_knots, 1)
     assert new_params.rng != params.rng
 
     # Roll out the control sequences
     state = mjx.make_data(task.model)
-    _, rollouts = opt.eval_rollouts(task.model, state, controls)
+    _, rollouts = opt.eval_rollouts(task.model, state, controls, knots)
 
     assert rollouts.costs.shape == (
         opt.num_samples,
-        task.planning_horizon + 1,
+        opt.ctrl_steps + 1,
     )
     assert rollouts.controls.shape == (
         opt.num_samples,
-        task.planning_horizon,
+        opt.ctrl_steps,
+        1,
+    )
+    assert rollouts.knots.shape == (
+        opt.num_samples,
+        opt.num_knots,
         1,
     )
     assert rollouts.trace_sites.shape == (
         opt.num_samples,
-        task.planning_horizon + 1,
+        opt.ctrl_steps + 1,
         len(task.trace_site_ids),
         3,
     )
 
     # Pick the best rollout
     updated_params = opt.update_params(new_params, rollouts)
-    assert updated_params.mean.shape == (task.planning_horizon, 1)
+    assert updated_params.mean.shape == (opt.num_knots, 1)
     assert jnp.all(updated_params.mean != new_params.mean)
 
 
@@ -52,7 +68,14 @@ def test_open_loop() -> None:
     """Use predictive sampling for open-loop optimization."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = PredictiveSampling(task, num_samples=32, noise_level=0.1)
+    opt = PredictiveSampling(
+        task,
+        num_samples=32,
+        noise_level=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
     jit_opt = jax.jit(opt.optimize)
 
     # Initialize the system state and policy parameters
@@ -67,14 +90,17 @@ def test_open_loop() -> None:
     total_costs = jnp.sum(rollouts.costs, axis=1)
     best_idx = jnp.argmin(total_costs)
     best_ctrl = rollouts.controls[best_idx]
+    best_knots = rollouts.knots[best_idx]
     assert total_costs[best_idx] <= 9.0
 
-    states, _ = jax.jit(opt.eval_rollouts)(task.model, state, best_ctrl[None])
+    states, _ = jax.jit(opt.eval_rollouts)(
+        task.model, state, best_ctrl[None], best_knots[None]
+    )
 
     if __name__ == "__main__":
         # Plot the solution
         _, ax = plt.subplots(3, 1, sharex=True)
-        times = jnp.arange(task.planning_horizon) * task.dt
+        times = jnp.arange(opt.ctrl_steps) * task.dt
 
         ax[0].plot(times, states.qpos[0, :, 0])
         ax[0].set_ylabel(r"$\theta$")
