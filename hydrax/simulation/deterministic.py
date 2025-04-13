@@ -114,46 +114,56 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         print("Recording scene...")
 
         # Set up video writer
-        recordings_dir = ROOT + "/recordings"
+        recordings_dir = os.path.join(ROOT, "recordings")
         if not os.path.exists(recordings_dir):
             os.makedirs(recordings_dir)
 
-        video_path = (
-            recordings_dir
-            + "/simulation_"
-            + datetime.now().strftime("%Y%m%d_%H%M%S")
-            + ".mp4"
-        )
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        video_path = os.path.join(recordings_dir, f"simulation_{timestamp}.mp4")
 
-        # Set up FFmpeg process with hardcoded command
-        width, height = 720, 480
-        cmd = [
-            "ffmpeg",
-            "-y",  # Overwrite output file
-            "-f",
-            "rawvideo",  # Input format
-            "-vcodec",
-            "rawvideo",  # Input codec
-            "-s",
-            f"{width}x{height}",  # Size of one frame
-            "-pix_fmt",
-            "rgb24",  # Pixel format
-            "-r",
-            str(actual_frequency),  # Frames per second
-            "-i",
-            "-",  # Take input from pipe
-            "-an",  # No audio
-            "-vcodec",
-            "libx264",  # Output codec
-            "-crf",
-            "23",  # Constant quality factor
-            "-preset",
-            "medium",  # Encoding speed/compression trade-off
-            "-loglevel",
-            "error",  # Suppress output except errors
-            video_path,
-        ]
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        # Check if FFmpeg is available
+        try:
+            # Test FFmpeg availability
+            subprocess.run(
+                ["ffmpeg", "-version"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+
+            # Set up FFmpeg process with cross-platform friendly settings
+            width, height = 720, 480
+            cmd = [
+                "ffmpeg",
+                "-y",  # Overwrite output file
+                "-f",
+                "rawvideo",  # Input format
+                "-vcodec",
+                "rawvideo",  # Input codec
+                "-s",
+                f"{width}x{height}",  # Size of one frame
+                "-pix_fmt",
+                "rgb24",  # Pixel format
+                "-r",
+                str(actual_frequency),  # Frames per second
+                "-i",
+                "-",  # Take input from pipe
+                "-an",  # No audio
+                "-vcodec",
+                "h264",  # More generic codec name
+                "-crf",
+                "23",  # Constant quality factor
+                "-preset",
+                "medium",  # Encoding speed/compression trade-off
+                "-loglevel",
+                "error",  # Suppress output except errors
+                video_path,
+            ]
+            process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            print(f"Recording video to {video_path}")
+        except (subprocess.SubprocessError, FileNotFoundError):
+            print("Warning: FFmpeg not found. Video recording disabled.")
+            record_video = False
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
