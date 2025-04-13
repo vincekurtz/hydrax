@@ -10,11 +10,7 @@ from hydrax.task_base import Task
 class DoublePendulum(Task):
     """A double inverted pendulum swingup task."""
 
-    def __init__(
-        self,
-        planning_horizon: int = 10,
-        sim_steps_per_control_step: int = 8,
-    ):
+    def __init__(self):
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/double_pendulum/scene.xml"
@@ -22,8 +18,6 @@ class DoublePendulum(Task):
 
         super().__init__(
             mj_model,
-            planning_horizon=planning_horizon,
-            sim_steps_per_control_step=sim_steps_per_control_step,
             trace_sites=["tip"],
         )
 

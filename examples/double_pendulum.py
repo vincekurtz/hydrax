@@ -10,14 +10,19 @@ Run an interactive simulation of the double pendulum swingup task.
 """
 
 # Define the task (cost and dynamics)
-task = DoublePendulum(planning_horizon=20, sim_steps_per_control_step=5)
+task = DoublePendulum()
 
-ctrl = Evosax(task, evosax.SAMR_GA, num_samples=2048)
+ctrl = Evosax(
+    task,
+    evosax.SAMR_GA,
+    num_samples=2048,
+    plan_horizon=1.0,
+    spline_type="zero",
+    num_knots=11,
+)
 
 # Define the model used for simulation
 mj_model = task.mj_model
-
-# Set the initial state (two joints)
 mj_data = mujoco.MjData(mj_model)
 
 # Run the interactive simulation
