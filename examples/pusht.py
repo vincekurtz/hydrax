@@ -13,7 +13,13 @@ task = PushT()
 
 # Set up the controller
 ctrl = PredictiveSampling(
-    task, num_samples=128, noise_level=0.4, num_randomizations=4
+    task,
+    num_samples=128,
+    noise_level=0.4,
+    num_randomizations=4,
+    plan_horizon=0.5,
+    spline_type="zero",
+    num_knots=6,
 )
 
 # Define the model used for simulation
@@ -30,5 +36,5 @@ run_interactive(
     mj_model,
     mj_data,
     frequency=50,
-    show_traces=True,
+    show_traces=False,
 )

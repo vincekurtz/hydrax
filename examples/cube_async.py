@@ -17,7 +17,13 @@ if __name__ == "__main__":
     # Define the task and controller
     task = CubeRotation()
     ctrl = PredictiveSampling(
-        task, num_samples=32, noise_level=0.2, num_randomizations=32
+        task,
+        num_samples=32,
+        noise_level=0.2,
+        num_randomizations=32,
+        plan_horizon=0.12,
+        spline_type="zero",
+        num_knots=4,
     )
 
     # Define the model used for simulation (with more realistic parameters)

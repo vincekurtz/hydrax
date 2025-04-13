@@ -33,7 +33,11 @@ def test_opt() -> None:
     """Test optimization with domain randomization for the particle."""
     task = Particle()
     ctrl = PredictiveSampling(
-        task, num_samples=10, noise_level=0.1, num_randomizations=3
+        task,
+        num_samples=10,
+        noise_level=0.1,
+        num_randomizations=3,
+        num_knots=7,
     )
     params = ctrl.init_params()
 
@@ -45,11 +49,12 @@ def test_opt() -> None:
     params, rollouts = ctrl.optimize(state, params)
 
     # Check the rollout shapes. Should be still be (samples, timestep, ...)
-    assert rollouts.costs.shape == (10, 6)
-    assert rollouts.controls.shape == (10, 5, 2)
+    assert rollouts.costs.shape == (10, ctrl.ctrl_steps + 1)
+    assert rollouts.controls.shape == (10, ctrl.ctrl_steps, 2)
+    assert rollouts.knots.shape == (10, ctrl.num_knots, 2)
 
     # Check the updated parameters
-    assert params.mean.shape == (5, 2)
+    assert params.mean.shape == (ctrl.num_knots, 2)
 
 
 if __name__ == "__main__":

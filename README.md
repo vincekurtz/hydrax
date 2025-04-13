@@ -25,6 +25,12 @@ Available methods:
 | [Cross Entropy Method](https://en.wikipedia.org/wiki/Cross-entropy_method) | Fit a Gaussian distribution to the `n` best "elite" rollouts. | [`hydrax.algs.CEM`](hydrax/algs/cem.py) |
 | [Evosax](https://github.com/RobertTLange/evosax/) | Any of the 30+ evolution strategies implemented in `evosax`. Includes CMA-ES, differential evolution, and many more. | [`hydrax.algs.Evosax`](hydrax/algs.evosax.py) |
 
+## News
+
+- April 13, 2024. Large changes to the core `hydrax` functionality + some breaking changes.
+    - Splines (and their knots) are now the default parameterization of the control signals and decision variables! Before, it was always assumed that every control step applied a zero-order hold. This is now a special case of the new spline parameterization.
+    - All "time-based" variables are now specified in the controller. Previously, variables like the planning horizon and number of sim steps per control step were specified in the task. Now, the main variables to specify are `plan_horizon` (the length of the planning horizon in seconds), `num_knots` (the number of spline knots to plan with), and `dt` (the planning time step (in the model XML)). **This is a breaking change!**
+
 ## Setup (conda)
 
 Set up a conda env with cuda support (first time only):
@@ -135,7 +141,7 @@ distribution that the controls $U = [u_0, u_1, ...]$ are sampled from.
 
 To implement a new planning algorithm, you'll need to inherit from
 [`hydrax.alg_base.SamplingBasedController`](hydrax/alg_base.py) and implement
-the four methods shown below:
+the three methods shown below:
 
 ```python
 class MyControlAlgorithm(SamplingBasedController):
@@ -145,8 +151,8 @@ class MyControlAlgorithm(SamplingBasedController):
         ...
         return params
 
-    def sample_controls(self, params: Any) -> Tuple[jax.Array, Any]:
-        # Sample control sequences U from the policy. Return the samples
+    def sample_knots(self, params: Any) -> Tuple[jax.Array, Any]:
+        # Sample the spline knots U from the policy. Return the samples
         # and the (updated) parameters.
         ...
         return controls, params
@@ -156,21 +162,16 @@ class MyControlAlgorithm(SamplingBasedController):
         # (costs, controls, observations, etc) stored in the rollouts.
         ...
         return new_params
-
-    def get_action(self, params: Any, t: float) -> Any:
-        # Return the control action applied t seconds into the trajectory.
-        ...
-        return u
 ```
 
-These four methods define a unique sampling-based MPC algorithm. Hydrax takes
+These three methods define a unique sampling-based MPC algorithm. Hydrax takes
 care of the rest, including parallelizing rollouts on GPU and collecting the
 rollout data in a [`Trajectory`](hydrax/alg_base.py) object.
 
 **Note**: because of
 [the way JAX handles randomness](https://jax.readthedocs.io/en/latest/random-numbers.html),
 we assume the PRNG key is stored as one of the parameters $\theta$. This is why
-`sample_controls` returns updated parameters along with the control samples
+`sample_knots` returns updated parameters along with the control samples
 $U^{(1:N)}$.
 
 For some examples, take a look at [`hydrax.algs`](hydrax/algs).
