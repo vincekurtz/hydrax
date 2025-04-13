@@ -7,7 +7,8 @@ import jax
 import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
-import mediapy
+import ffmpeg
+import subprocess
 import numpy as np
 from mujoco import mjx
 
@@ -107,11 +108,40 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         catmask = mujoco.mjtCatBit.mjCAT_DYNAMIC  # only show dynamic bodies
 
     # Initialize video recording if enabled
-    frames = []
     renderer = None
+    ffmpeg_subprocess = None
     if record_video:
         renderer = mujoco.Renderer(mj_model, height=480, width=720)
         print("Recording scene...")
+
+        # Set up video writer
+        recordings_dir = ROOT + "/recordings"
+        if not os.path.exists(recordings_dir):
+            os.makedirs(recordings_dir)
+
+        video_path = (
+            recordings_dir
+            + "/simulation_"
+            + datetime.now().strftime("%Y%m%d_%H%M%S")
+            + ".mp4"
+        )
+
+        # Set up FFmpeg subprocess to stream the video recording
+        width, height = 720, 480
+        cmd = (
+            ffmpeg.input(
+                "pipe:",
+                format="rawvideo",
+                pix_fmt="rgb24",
+                s=f"{width}x{height}",
+                r=actual_frequency,
+            )
+            .output(video_path, crf=23, preset="medium")
+            .global_args("-loglevel", "error")
+            .overwrite_output()
+            .compile()
+        )
+        ffmpeg_subprocess = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
@@ -202,7 +232,9 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 # Capture frame if recording
                 if record_video:
                     renderer.update_scene(mj_data, viewer.cam)
-                    frames.append(renderer.render().copy())
+                    frame = renderer.render()
+                    # Stream/write frame to FFmpeg process
+                    ffmpeg_subprocess.stdin.write(frame.tobytes())
 
             # Try to run in roughly realtime
             elapsed = time.time() - start_time
@@ -219,17 +251,8 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     # Preserve the last printout
     print("")
 
-    # Save the video if recording was enabled
-    if record_video and frames:
-        recordings_dir = ROOT + "/recordings"
-        if not os.path.exists(recordings_dir):
-            os.makedirs(recordings_dir)
-
-        video_path = (
-            recordings_dir
-            + "/simulation_"
-            + datetime.now().strftime("%Y%m%d_%H%M%S")
-            + ".mp4"
-        )
-        mediapy.write_video(video_path, frames, fps=actual_frequency)
+    # Close the video writer if recording was enabled
+    if record_video and ffmpeg_subprocess is not None:
+        ffmpeg_subprocess.stdin.close()
+        ffmpeg_subprocess.wait()
         print(f"Video saved to {video_path}")

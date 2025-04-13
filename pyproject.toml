@@ -21,7 +21,7 @@ dependencies = [
     "jax[cuda12]>=0.4.35",
     "mujoco>=3.2.4",
     "mujoco-mjx>=3.2.4",
-    "mediapy>=1.2.2",
+    "ffmpeg-python>=0.2.0",
 ]
 
 [project.optional-dependencies]
