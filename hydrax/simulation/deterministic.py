@@ -210,7 +210,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 if record_video and recorder.is_recording:
                     renderer.update_scene(mj_data, viewer.cam)
                     frame = renderer.render()
-                    # Write frame to FFmpeg process
                     recorder.add_frame(frame.tobytes())
 
             # Try to run in roughly realtime
