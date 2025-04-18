@@ -20,6 +20,7 @@ ctrl = PredictiveSampling(
     plan_horizon=0.5,
     spline_type="zero",
     num_knots=6,
+    iterations=3,
 )
 
 # Define the model used for simulation

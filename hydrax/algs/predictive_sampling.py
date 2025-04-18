@@ -36,6 +36,7 @@ class PredictiveSampling(SamplingBasedController):
         plan_horizon: float = 1.0,
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
         num_knots: int = 4,
+        iterations: int = 1,
     ) -> None:
         """Initialize the controller.
 
@@ -51,6 +52,7 @@ class PredictiveSampling(SamplingBasedController):
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
+            iterations: The number of optimization iterations to perform.
         """
         super().__init__(
             task,
@@ -60,6 +62,7 @@ class PredictiveSampling(SamplingBasedController):
             plan_horizon=plan_horizon,
             spline_type=spline_type,
             num_knots=num_knots,
+            iterations=iterations,
         )
         self.noise_level = noise_level
         self.num_samples = num_samples

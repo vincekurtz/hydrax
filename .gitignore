@@ -6,3 +6,5 @@ __pycache__
 *.pkl
 *.egg-info
 MUJOCO_LOG.TXT
+
+.idea
