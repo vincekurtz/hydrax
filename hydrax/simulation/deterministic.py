@@ -116,15 +116,21 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     # Initialize video recording if enabled
     recorder = None
     if record_video:
+        # Video dimensions
+        width, height = 720, 480
+        # Create the video recorder
         recorder = VideoRecorder(
             output_dir=os.path.join(ROOT, "recordings"),
-            width=720,
-            height=480,
+            width=width,
+            height=height,
             fps=actual_frequency,
         )
+        # Ensure model visual offscreen buffer is compatible with video recording
+        mj_model.vis.global_.offwidth = width
+        mj_model.vis.global_.offheight = height
         if not recorder.start():
             record_video = False
-        renderer = mujoco.Renderer(mj_model, height=480, width=720)
+        renderer = mujoco.Renderer(mj_model, height=height, width=width)
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
