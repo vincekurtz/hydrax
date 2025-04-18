@@ -136,5 +136,4 @@ run_interactive(
     frequency=50,
     show_traces=False,
     max_traces=5,
-    record_video=False,
 )
