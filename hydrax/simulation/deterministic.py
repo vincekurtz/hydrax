@@ -1,6 +1,5 @@
 import time
-from datetime import datetime
-from typing import Sequence, Optional
+from typing import Sequence
 import os
 
 import jax
