@@ -34,6 +34,7 @@ class CEM(SamplingBasedController):
         sigma_start: float,
         sigma_min: float,
         num_randomizations: int = 1,
+        explore_fraction: float = 0.0,
         risk_strategy: RiskStrategy = None,
         seed: int = 0,
         plan_horizon: float = 1.0,
@@ -48,6 +49,7 @@ class CEM(SamplingBasedController):
             num_elites: The number of elite samples to keep at each iteration.
             sigma_start: The initial standard deviation for the controls.
             sigma_min: The minimum standard deviation for the controls.
+            explore_fraction: Fraction of samples to keep at sigma_start.
             num_randomizations: The number of domain randomizations to use.
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
@@ -57,6 +59,10 @@ class CEM(SamplingBasedController):
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
         """
+        if not 0 <= explore_fraction <= 1:
+            raise ValueError(
+                f"explore_fraction must be between 0 and 1, got {explore_fraction}"
+            )
         super().__init__(
             task,
             num_randomizations=num_randomizations,
@@ -70,6 +76,7 @@ class CEM(SamplingBasedController):
         self.sigma_min = sigma_min
         self.sigma_start = sigma_start
         self.num_elites = num_elites
+        self.num_explore = int(self.num_samples * explore_fraction)
 
     def init_params(self, seed: int = 0) -> CEMParams:
         """Initialize the policy parameters."""
@@ -81,16 +88,37 @@ class CEM(SamplingBasedController):
 
     def sample_knots(self, params: CEMParams) -> Tuple[jax.Array, CEMParams]:
         """Sample a control sequence."""
-        rng, sample_rng = jax.random.split(params.rng)
-        noise = jax.random.normal(
-            sample_rng,
-            (
-                self.num_samples,
-                self.num_knots,
-                self.task.model.nu,
-            ),
+        rng, sample_rng, explore_rng = jax.random.split(params.rng, 3)
+
+        # Pre-compute shapes for both main and exploration samples
+        main_shape = (
+            self.num_samples - self.num_explore,
+            self.num_knots,
+            self.task.model.nu,
         )
-        controls = params.mean + params.cov * noise
+        explore_shape = (
+            self.num_explore,
+            self.num_knots,
+            self.task.model.nu,
+        )
+
+        # Sample main knots with current covariance
+        main_controls = (
+            params.mean + params.cov * jax.random.normal(sample_rng, main_shape)
+            if main_shape[0] > 0
+            else jnp.empty(main_shape)
+        )
+
+        # Sample exploration knots with initial covariance
+        explore_controls = (
+            params.mean
+            + self.sigma_start * jax.random.normal(explore_rng, explore_shape)
+            if explore_shape[0] > 0
+            else jnp.empty(explore_shape)
+        )
+
+        # Combine both sets of controls
+        controls = jnp.concatenate([main_controls, explore_controls])
         return controls, params.replace(rng=rng)
 
     def update_params(
