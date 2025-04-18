@@ -121,7 +121,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             width=720,
             height=480,
             fps=actual_frequency,
-            filename_prefix="simulation",
         )
         if not recorder.start():
             record_video = False

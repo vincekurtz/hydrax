@@ -15,9 +15,6 @@ class VideoRecorder:
         width: int = 720,
         height: int = 480,
         fps: float = 30.0,
-        filename_prefix: str = "video",
-        crf: int = 23,
-        preset: str = "medium",
     ):
         """Initialize the video recorder.
 
@@ -26,17 +23,11 @@ class VideoRecorder:
             width: Width of the video in pixels.
             height: Height of the video in pixels.
             fps: Frames per second.
-            filename_prefix: Prefix for the video filename.
-            crf: Constant Rate Factor for H.264 compression (lower is better quality).
-            preset: FFmpeg preset (slower presets give better compression).
         """
         self.output_dir = output_dir
         self.width = width
         self.height = height
         self.fps = fps
-        self.filename_prefix = filename_prefix
-        self.crf = crf
-        self.preset = preset
 
         self.ffmpeg_process = None
         self.video_path = None
@@ -59,7 +50,7 @@ class VideoRecorder:
         # Generate output path with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.video_path = os.path.join(
-            self.output_dir, f"{self.filename_prefix}_{timestamp}.mp4"
+            self.output_dir, f"simulation_{timestamp}.mp4"
         )
 
         # Check if FFmpeg is available
@@ -81,20 +72,28 @@ class VideoRecorder:
                 "-vcodec",
                 "rawvideo",  # Input codec
                 "-s",
-                f"{self.width}x{self.height}",  # Size of one frame
+                f"{self.width}x{self.height}",  # Frame dimensions
                 "-pix_fmt",
                 "rgb24",  # Pixel format
                 "-r",
-                str(self.fps),  # Frames per second
+                str(self.fps),  # FPS
                 "-i",
-                "-",  # Take input from pipe
+                "-",  # Input from pipe
                 "-an",  # No audio
                 "-vcodec",
-                "h264",  # Output codec
+                "h264",  # H.264 codec
                 "-crf",
-                str(self.crf),  # Constant quality factor
+                "1",  # Quality (1=highest)
                 "-preset",
-                self.preset,  # Encoding preset
+                "slow",  # Encoding speed/compression tradeoff
+                "-movflags",
+                "+faststart",  # Optimize for web playback
+                "-pix_fmt",
+                "yuv420p",  # Standard compatible format
+                "-profile:v",
+                "high",  # H.264 profile
+                "-tune",
+                "film",  # Encoding optimization
                 "-loglevel",
                 "error",  # Suppress output except errors
                 self.video_path,
