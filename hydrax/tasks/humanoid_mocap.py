@@ -24,7 +24,9 @@ class HumanoidMocap(Task):
         The list of available reference files can be found at
         https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.
         """
-        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
+        mj_model = mujoco.MjModel.from_xml_path(
+            ROOT + "/models/g1/scene_23dof.xml"
+        )
         super().__init__(
             mj_model,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
