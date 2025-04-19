@@ -37,7 +37,6 @@ class HumanoidMocap(Task):
             hf_hub_download(
                 repo_id="robfiras/loco-mujoco-datasets",
                 filename=reference_filename,
-                subfolder="Lafan1/mocap/UnitreeG1",
                 repo_type="dataset",
             )
         )
