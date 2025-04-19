@@ -14,15 +14,15 @@ from hydrax.task_base import Task
 class HumanoidMocap(Task):
     """The Unitree G1 humanoid tracks a reference from motion capture.
 
-    Retargeted motion capture data comes from the LAFAN1 dataset:
-    https://huggingface.co/datasets/unitreerobotics/LAFAN1_Retargeting_Dataset/.
+    Retargeted motion capture data comes from the LocoMuJoCo dataset:
+    https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.
     """
 
-    def __init__(self, reference_filename: str = "walk1_subject1.csv") -> None:
+    def __init__(self, reference_filename: str = "walk1_subject1.npz") -> None:
         """Load the MuJoCo model and set task parameters.
 
         The list of available reference files can be found at
-        https://huggingface.co/datasets/unitreerobotics/LAFAN1_Retargeting_Dataset/tree/main/g1.
+        https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.
         """
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
         super().__init__(
@@ -31,21 +31,16 @@ class HumanoidMocap(Task):
         )
 
         # Download the retargeted mocap reference
-        reference = np.loadtxt(
+        npz_file = np.load(
             hf_hub_download(
-                repo_id="unitreerobotics/LAFAN1_Retargeting_Dataset",
+                repo_id="robfiras/loco-mujoco-datasets",
                 filename=reference_filename,
-                subfolder="g1",
+                subfolder="Lafan1/mocap/UnitreeG1",
                 repo_type="dataset",
-            ),
-            delimiter=",",
+            )
         )
 
-        # Convert the dataset to mujoco format, with wxyz quaternion
-        pos = reference[:, :3]
-        xyzw = reference[:, 3:7]
-        wxyz = np.concatenate([xyzw[:, 3:], xyzw[:, :3]], axis=1)
-        reference = np.concatenate([pos, wxyz, reference[:, 7:]], axis=1)
+        reference = npz_file["qpos"]
         self.reference = jnp.array(reference)
 
         # Cost weights

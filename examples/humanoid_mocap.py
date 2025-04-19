@@ -17,8 +17,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--reference_filename",
     type=str,
-    default="walk1_subject1.csv",
-    help="Reference mocap file name, from https://huggingface.co/datasets/unitreerobotics/LAFAN1_Retargeting_Dataset/tree/main/g1.",
+    default="walk1_subject1.npz",
+    help="Reference mocap file name, from https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.",
 )
 parser.add_argument(
     "--show_reference",
