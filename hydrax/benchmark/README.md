@@ -9,19 +9,19 @@ Simple utility to benchmark Hydrax control algorithms across various tasks.
 Run the benchmark on all tasks with all controllers:
 
 ```bash
-python hydrax/benchmark/benchmark.py
+python hydrax/benchmark/run_benchmark.py
 ```
 
 ### Benchmark a Specific Task
 
 ```bash
-python hydrax/benchmark/benchmark.py --task Pendulum
+python hydrax/benchmark/run_benchmark.py --task Pendulum
 ```
 
 ### Customize Episodes and Steps
 
 ```bash
-python hydrax/benchmark/benchmark.py --task CartPole --episodes 5 --steps 1000
+python hydrax/benchmark/run_benchmark.py --task CartPole --episodes 5 --steps 1000
 ```
 
 ### Options
