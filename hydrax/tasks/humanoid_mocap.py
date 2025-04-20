@@ -18,7 +18,10 @@ class HumanoidMocap(Task):
     https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.
     """
 
-    def __init__(self, reference_filename: str = "walk1_subject1.npz") -> None:
+    def __init__(
+        self,
+        reference_filename: str = "Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
+    ) -> None:
         """Load the MuJoCo model and set task parameters.
 
         The list of available reference files can be found at
