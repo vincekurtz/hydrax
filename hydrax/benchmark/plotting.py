@@ -35,9 +35,9 @@ def plot_results(results_df: pd.DataFrame) -> None:
         annot=True,
         fmt=".5f",
         cmap="viridis",
-        cbar_kws={"label": "Average step time (s)"},
+        cbar_kws={"label": "Average plan time (s)"},
     )
-    plt.title("Average step time (seconds) per controller per task")
+    plt.title("Average plan time (seconds) per controller per task")
     plt.tight_layout()
     plt.savefig(RESULTS_DIR / "avg_plan_time_heatmap.png", dpi=300)
     plt.close()
@@ -113,7 +113,7 @@ def plot_results(results_df: pd.DataFrame) -> None:
         )
 
     plt.xscale("log")
-    plt.xlabel("Average step time (log scale)")
+    plt.xlabel("Average plan time (log scale)")
     plt.ylabel("Average cost")
     plt.title("Performance vs Runtime Trade-off")
     plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
@@ -153,8 +153,8 @@ def plot_results(results_df: pd.DataFrame) -> None:
             palette="rocket",
             legend=False,
         )
-        ax2.set_title(f"{task} - Average Step Time per Controller")
-        ax2.set_ylabel("Average Step Time (s)")
+        ax2.set_title(f"{task} - Average plan Time per Controller")
+        ax2.set_ylabel("Average plan Time (s)")
         ax2.set_xlabel("Controller")
         ax2.set_yscale("log")
 
