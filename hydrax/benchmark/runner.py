@@ -22,6 +22,9 @@ from controllers import get_default_controller_configs
 RESULTS_DIR = Path(ROOT) / "benchmark" / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
+NUM_EPISODES = 5
+TOTAL_STEPS = 500
+
 
 def run_benchmark_episode(
     controller: SamplingBasedController, task: Task, total_steps: int
@@ -88,11 +91,8 @@ def run_benchmark_episode(
         knots = policy_params.mean[None, ...]
         us = np.asarray(jit_interp_func(tq, tk, knots))[0]  # (ss, nu)
 
-        # Track the cost of this step (running cost)
-        cost_value = task.running_cost(mjx_data, us[0])
-        if hasattr(cost_value, "shape") and cost_value.shape:
-            cost_value = np.mean(cost_value)
-        results["costs"].append(float(cost_value))
+        # Track the running cost at this step
+        results["costs"].append(float(task.running_cost(mjx_data, us[0])))
 
         # Simulate the system for the replan period
         for i in range(sim_steps_per_replan):
@@ -195,7 +195,7 @@ def benchmark_controller_on_task(
 
 
 def run_full_benchmark(
-    num_episodes: int = 1, total_steps: int = 500
+    num_episodes: int = NUM_EPISODES, total_steps: int = TOTAL_STEPS
 ) -> pd.DataFrame:
     """Run the full benchmark of all controllers on all tasks.
 
@@ -261,17 +261,14 @@ def run_full_benchmark(
     ]
     results_df = pd.DataFrame(results_for_df)
 
-    # Save results to CSV
-    results_df.to_csv(RESULTS_DIR / "results.csv", index=False)
-
     # Return both DataFrame and full results for plotting
     return results_df, all_results
 
 
 def run_single_task_benchmark(
     task_name: str,
-    num_episodes: int = 1,
-    total_steps: int = 500,
+    num_episodes: int = NUM_EPISODES,
+    total_steps: int = TOTAL_STEPS,
 ) -> pd.DataFrame:
     """Run the benchmark for a single task with all controllers.
 
@@ -341,9 +338,6 @@ def run_single_task_benchmark(
         for result in all_results
     ]
     results_df = pd.DataFrame(results_for_df)
-
-    # Save results to CSV
-    results_df.to_csv(RESULTS_DIR / f"results_{task_name}.csv", index=False)
 
     # Return both DataFrame and full results for plotting
     return results_df, all_results

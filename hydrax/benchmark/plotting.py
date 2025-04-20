@@ -64,13 +64,12 @@ def plot_results(results_df: pd.DataFrame) -> None:
     avg_cost_pivot = results_df.pivot(
         index="task", columns="controller", values="avg_cost"
     )
-    # Use log scale for better visualization if costs vary widely
     sns.heatmap(
-        np.log1p(avg_cost_pivot),
-        annot=avg_cost_pivot,
+        avg_cost_pivot,
+        annot=True,
         fmt=".2f",
         cmap="rocket_r",
-        cbar_kws={"label": "Log(1+Average cost)"},
+        cbar_kws={"label": "Average cost"},
     )
     plt.title("Average cost per controller per task")
     plt.tight_layout()
@@ -83,11 +82,11 @@ def plot_results(results_df: pd.DataFrame) -> None:
         index="task", columns="controller", values="final_cost"
     )
     sns.heatmap(
-        np.log1p(final_cost_pivot),
-        annot=final_cost_pivot,
+        final_cost_pivot,
+        annot=True,
         fmt=".2f",
         cmap="rocket_r",
-        cbar_kws={"label": "Log(1+Final cost)"},
+        cbar_kws={"label": "Final cost"},
     )
     plt.title("Final cost per controller per task")
     plt.tight_layout()
@@ -114,9 +113,8 @@ def plot_results(results_df: pd.DataFrame) -> None:
         )
 
     plt.xscale("log")
-    plt.yscale("log")
     plt.xlabel("Average step time (log scale)")
-    plt.ylabel("Average cost (log scale)")
+    plt.ylabel("Average cost")
     plt.title("Performance vs Runtime Trade-off")
     plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.grid(True, which="both", ls="--", alpha=0.3)
@@ -144,7 +142,6 @@ def plot_results(results_df: pd.DataFrame) -> None:
         )
         ax1.set_title(f"{task} - Average Cost per Controller")
         ax1.set_ylabel("Average Cost")
-        ax1.set_yscale("log")
 
         # Plot runtime
         sns.barplot(
@@ -222,7 +219,6 @@ def plot_cost_over_time(results_list: List[Dict[str, Any]]) -> None:
         plt.title(f"{task_name} - Cost over Time")
         plt.xlabel("Simulation Time (s)")
         plt.ylabel("Cost")
-        plt.yscale("log")  # Log scale for costs that vary widely
         plt.grid(True, alpha=0.3)
         plt.legend()
         plt.tight_layout()
