@@ -4,42 +4,14 @@ from typing import Dict, List, Any
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+import matplotlib.cm as cm
 
 from hydrax import ROOT
 
 # Set up output directory
 RESULTS_DIR = Path(ROOT) / "benchmark" / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
-
-
-def create_summary_dataframe(
-    results_list: List[Dict[str, Any]],
-) -> pd.DataFrame:
-    """Create a summary DataFrame from the results list.
-
-    Args:
-        results_list: List of result dictionaries
-
-    Returns:
-        DataFrame with summary data
-    """
-    summary_data = []
-    for result in results_list:
-        if "controller" in result and "avg_cost" in result:
-            summary_data.append(
-                {
-                    "controller": result["controller"],
-                    "task": result["task"],
-                    "avg_cost": result["avg_cost"],
-                    "avg_plan_time": result["avg_plan_time"],
-                    "total_time": result["total_time"],
-                }
-            )
-
-    return pd.DataFrame(summary_data)
 
 
 def plot_results(results_list: List[Dict[str, Any]], task_name: str) -> None:
@@ -49,41 +21,40 @@ def plot_results(results_list: List[Dict[str, Any]], task_name: str) -> None:
         results_list: List of result dictionaries.
         task_name: Name of the task that was benchmarked.
     """
-    # Create summary DataFrame for bar plots
-    results_df = create_summary_dataframe(results_list)
+    # Extract data for plotting
+    controllers = []
+    avg_costs = []
+    avg_plan_times = []
 
-    # Set plot style
-    plt.style.use("seaborn-v0_8-whitegrid")
-    sns.set_context("talk")
+    # Sort results by average cost
+    results_sorted = sorted(
+        results_list, key=lambda x: x.get("avg_cost", float("inf"))
+    )
 
-    # Sort controllers by performance (avg_cost)
-    task_data = results_df.sort_values("avg_cost")
+    for result in results_sorted:
+        if "controller" in result and "avg_cost" in result:
+            controllers.append(result["controller"])
+            avg_costs.append(result["avg_cost"])
+            avg_plan_times.append(result["avg_plan_time"])
 
     # Performance comparison plot
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
 
+    # Set common style
+    plt.style.use("seaborn-v0_8-whitegrid")
+    plt.rcParams.update({"font.size": 12})
+
     # Plot avg cost
-    sns.barplot(
-        x="controller",
-        y="avg_cost",
-        hue="controller",
-        data=task_data,
-        ax=ax1,
-        palette="viridis",
-        legend=False,
-    )
+    colors = cm.viridis(np.linspace(0, 1, len(controllers)))
+    bars1 = ax1.bar(controllers, avg_costs, color=colors)
     ax1.set_title(f"{task_name} - Average Cost per Controller")
     ax1.set_ylabel("Average Cost")
 
     # Plot runtime
-    sns.barplot(
-        x="controller",
-        y="avg_plan_time",
-        hue="controller",
-        data=task_data,
-        ax=ax2,
-        palette="rocket",
-        legend=False,
+    bars2 = ax2.bar(
+        controllers,
+        avg_plan_times,
+        color=cm.plasma(np.linspace(0, 1, len(controllers))),
     )
     ax2.set_title(f"{task_name} - Average Plan Time per Controller")
     ax2.set_ylabel("Average Plan Time (s)")
@@ -94,18 +65,17 @@ def plot_results(results_list: List[Dict[str, Any]], task_name: str) -> None:
     plt.savefig(RESULTS_DIR / f"{task_name}_comparison.png", dpi=300)
     plt.close()
 
+    # Cost vs Performance scatter plot
     plt.figure(figsize=(10, 8))
 
     # Create scatter plot
-    plt.scatter(
-        results_df["avg_plan_time"], results_df["avg_cost"], s=100, alpha=0.7
-    )
+    plt.scatter(avg_plan_times, avg_costs, s=100, alpha=0.7)
 
     # Add controller name labels to each point
-    for _, row in results_df.iterrows():
+    for i, controller in enumerate(controllers):
         plt.annotate(
-            row["controller"],
-            (row["avg_plan_time"], row["avg_cost"]),
+            controller,
+            (avg_plan_times[i], avg_costs[i]),
             fontsize=10,
             xytext=(5, 5),
             textcoords="offset points",
@@ -117,7 +87,7 @@ def plot_results(results_list: List[Dict[str, Any]], task_name: str) -> None:
     plt.title(f"{task_name} - Cost vs Performance Trade-off")
 
     # Add grid and improve layout
-    plt.grid(True, which="both", ls="--", alpha=0.3)
+    plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
     # Save figure
@@ -138,7 +108,7 @@ def plot_cost_over_time(
 
     # Get a different color for each controller
     num_controllers = len(results_list)
-    colors = plt.cm.viridis(np.linspace(0, 1, num_controllers))
+    colors = cm.viridis(np.linspace(0, 1, num_controllers))
 
     # Plot cost trajectories for each controller
     for i, result in enumerate(results_list):

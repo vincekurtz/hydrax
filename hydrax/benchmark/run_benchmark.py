@@ -3,12 +3,11 @@
 
 import argparse
 import time
-import pandas as pd
 from pathlib import Path
 
 from hydrax import ROOT
 from runner import run_task_benchmark, get_all_tasks
-from plotting import plot_results, plot_cost_over_time, create_summary_dataframe
+from plotting import plot_results, plot_cost_over_time
 
 
 def main():
@@ -60,14 +59,27 @@ def main():
         f"Benchmark complete in {end_time - start_time:.2f} seconds! Results saved to {results_dir}"
     )
 
-    # Print summary table
-    summary_df = create_summary_dataframe(results)
-    if not summary_df.empty:
-        summary_df = summary_df[
-            ["controller", "avg_cost", "avg_plan_time"]
-        ].sort_values("avg_cost")
-        print("\nPerformance Summary:")
-        print(summary_df.to_string(index=False))
+    # Print summary table without pandas
+    print("\nPerformance Summary:")
+    print(
+        f"{'Controller':<20} {'Avg Cost':<15} {'Final Cost':<15} {'Avg Plan Time (s)':<20} "
+    )
+    print("-" * 75)
+
+    # Sort by average cost
+    sorted_results = sorted(
+        results, key=lambda x: x.get("avg_cost", float("inf"))
+    )
+
+    for result in sorted_results:
+        if "controller" in result and "avg_cost" in result:
+            controller = result["controller"]
+            avg_cost = result["avg_cost"]
+            final_cost = result["costs"][-1]
+            avg_plan_time = result["avg_plan_time"]
+            print(
+                f"{controller:<20} {avg_cost:<15.6f} {final_cost:<15.6f} {avg_plan_time:<20.6f} "
+            )
 
 
 if __name__ == "__main__":

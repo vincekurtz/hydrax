@@ -8,7 +8,6 @@ import jax.numpy as jnp
 import mujoco
 from mujoco import mjx
 import numpy as np
-import pandas as pd
 from pathlib import Path
 import os
 import inspect
