@@ -104,10 +104,7 @@ def run_benchmark_episode(
     final_mjx_data = mjx.put_data(mj_model, mj_data)
 
     # Record final cost
-    final_cost = task.terminal_cost(final_mjx_data)
-    if hasattr(final_cost, "shape") and final_cost.shape:
-        final_cost = np.mean(final_cost)
-    results["final_cost"] = float(final_cost)
+    results["final_cost"] = float(task.terminal_cost(final_mjx_data))
 
     return results
 
@@ -220,7 +217,7 @@ def get_all_tasks() -> Dict[str, Type[Task]]:
 
 def run_task_benchmark(
     task_name: str, num_episodes: int = 3, total_steps: int = 500
-) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
+) -> List[Dict[str, Any]]:
     """Run the benchmark for a single task with all controllers.
 
     Args:
@@ -229,7 +226,7 @@ def run_task_benchmark(
         total_steps: Number of steps per episode.
 
     Returns:
-        Tuple of (DataFrame with results, List of full result dictionaries)
+        List of result dictionaries with benchmark data
     """
     # Get task class
     all_tasks = get_all_tasks()
@@ -272,15 +269,4 @@ def run_task_benchmark(
                 }
             )
 
-    # Convert to DataFrame (excluding trajectories)
-    results_for_df = [
-        {
-            k: v
-            for k, v in result.items()
-            if k not in ["cost_trajectories", "time_trajectories"]
-        }
-        for result in all_results
-    ]
-    results_df = pd.DataFrame(results_for_df)
-
-    return results_df, all_results
+    return all_results

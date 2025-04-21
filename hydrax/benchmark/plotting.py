@@ -15,13 +15,40 @@ RESULTS_DIR = Path(ROOT) / "benchmark" / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
 
-def plot_results(results_df: pd.DataFrame, task_name: str) -> None:
+def results_to_dataframe(results_list: List[Dict[str, Any]]) -> pd.DataFrame:
+    """Convert results list to DataFrame for plotting.
+
+    Args:
+        results_list: List of result dictionaries
+
+    Returns:
+        DataFrame with extracted summary data
+    """
+    # Extract all fields except trajectories
+    results_for_df = []
+    for result in results_list:
+        # Make sure result is a dictionary before trying to access items
+        if isinstance(result, dict):
+            filtered_result = {
+                k: v
+                for k, v in result.items()
+                if k not in ["cost_trajectories", "time_trajectories"]
+            }
+            results_for_df.append(filtered_result)
+
+    return pd.DataFrame(results_for_df)
+
+
+def plot_results(results_list: List[Dict[str, Any]], task_name: str) -> None:
     """Create plots from the benchmark results for a specific task.
 
     Args:
-        results_df: DataFrame with benchmark results.
+        results_list: List of result dictionaries.
         task_name: Name of the task that was benchmarked.
     """
+    # Convert to DataFrame for plotting
+    results_df = results_to_dataframe(results_list)
+
     # Set plot style
     plt.style.use("seaborn-v0_8-whitegrid")
     sns.set_context("talk")
@@ -58,23 +85,42 @@ def plot_results(results_df: pd.DataFrame, task_name: str) -> None:
     ax2.set_title(f"{task_name} - Average Plan Time per Controller")
     ax2.set_ylabel("Average Plan Time (s)")
     ax2.set_xlabel("Controller")
-    ax2.set_yscale("log")
 
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(RESULTS_DIR / f"{task_name}_comparison.png", dpi=300)
     plt.close()
 
+    plt.figure(figsize=(10, 8))
 
-def plot_cost_over_time(
-    results_list: List[Dict[str, Any]], task_name: str
-) -> None:
-    """Create plot showing cost over time for the task.
+    # Create scatter plot
+    plt.scatter(
+        results_df["avg_plan_time"], results_df["avg_cost"], s=100, alpha=0.7
+    )
 
-    Args:
-        results_list: List of result dictionaries with cost trajectories.
-        task_name: Name of the task that was benchmarked.
-    """
+    # Add controller name labels to each point
+    for _, row in results_df.iterrows():
+        plt.annotate(
+            row["controller"],
+            (row["avg_plan_time"], row["avg_cost"]),
+            fontsize=10,
+            xytext=(5, 5),
+            textcoords="offset points",
+        )
+
+    # Add labels and title
+    plt.xlabel("Average Planning Time (s)")
+    plt.ylabel("Average Cost")
+    plt.title(f"{task_name} - Cost vs Performance Trade-off")
+
+    # Add grid and improve layout
+    plt.grid(True, which="both", ls="--", alpha=0.3)
+    plt.tight_layout()
+
+    # Save figure
+    plt.savefig(RESULTS_DIR / f"{task_name}_cost_vs_performance.png", dpi=300)
+    plt.close()
+
     plt.figure(figsize=(14, 8))
 
     # Plot cost trajectories for each controller
