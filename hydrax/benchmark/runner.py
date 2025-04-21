@@ -60,6 +60,7 @@ def run_benchmark(
         "plan_times": [],
         "costs": [],
         "timestamps": [],
+        "step_times": [],  # Track wall-clock time for each step
     }
 
     # Create MuJoCo model and data
@@ -79,10 +80,12 @@ def run_benchmark(
 
     # Record start time for total runtime calculation
     total_start_time = time.time()
+    sim_time = 0.0
 
     try:
         # Run the simulation
         for step in range(total_steps):
+            step_start_time = time.time()
             # Set the start state for the controller
             mjx_data = mjx_data.replace(
                 qpos=jnp.array(mj_data.qpos),
@@ -117,10 +120,19 @@ def run_benchmark(
                 mj_data.ctrl[:] = np.array(us[i])
                 mujoco.mj_step(mj_model, mj_data)
 
+            # Track simulation time and wall-clock time per step
+            step_sim_time = sim_steps_per_replan * mj_model.opt.timestep
+            sim_time += step_sim_time
+            step_wall_time = time.time() - step_start_time
+            results["step_times"].append(step_wall_time)
+
         # Calculate summary statistics
         results["avg_plan_time"] = np.mean(results["plan_times"])
         results["avg_cost"] = np.mean(results["costs"])
         results["total_time"] = time.time() - total_start_time
+        results["sim_time"] = sim_time
+        # Calculate real-time rate (simulation time / wall-clock time)
+        results["realtime_rate"] = sim_time / results["total_time"]
 
     except Exception as e:
         print(f"Error running benchmark for {controller_name}: {e}")
@@ -128,6 +140,7 @@ def run_benchmark(
         results["avg_plan_time"] = float("inf")
         results["avg_cost"] = float("inf")
         results["total_time"] = float("inf")
+        results["realtime_rate"] = 0.0
 
     return results
 

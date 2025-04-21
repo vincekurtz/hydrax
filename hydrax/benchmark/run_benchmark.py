@@ -62,9 +62,9 @@ def main():
     # Print summary table without pandas
     print("\nPerformance Summary:")
     print(
-        f"{'Controller':<20} {'Avg Cost':<15} {'Final Cost':<15} {'Avg Plan Time (s)':<20} "
+        f"{'Controller':<20} {'Avg Cost':<15} {'Final Cost':<15} {'Avg Plan Time (s)':<20} {'Realtime Rate':<15}"
     )
-    print("-" * 75)
+    print("-" * 90)
 
     # Sort by average cost
     sorted_results = sorted(
@@ -77,8 +77,9 @@ def main():
             avg_cost = result["avg_cost"]
             final_cost = result["costs"][-1]
             avg_plan_time = result["avg_plan_time"]
+            realtime_rate = result.get("realtime_rate", 0.0)
             print(
-                f"{controller:<20} {avg_cost:<15.6f} {final_cost:<15.6f} {avg_plan_time:<20.6f} "
+                f"{controller:<20} {avg_cost:<15.6f} {final_cost:<15.6f} {avg_plan_time:<20.6f} {realtime_rate:<15.2f}"
             )
 
 
