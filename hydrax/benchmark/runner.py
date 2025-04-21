@@ -1,7 +1,7 @@
-"""Benchmarking runner for controllers and tasks."""
+"""Benchmarking runner for controllers on a specific task."""
 
 import time
-from typing import Dict, Any, Type, List
+from typing import Dict, Any, List, Tuple, Type
 
 import jax
 import jax.numpy as jnp
@@ -10,20 +10,21 @@ from mujoco import mjx
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import os
+import inspect
+import importlib
 
+import hydrax.tasks as tasks
+from hydrax.task_base import Task
 from hydrax.alg_base import SamplingBasedController
 from hydrax.task_base import Task
 from hydrax import ROOT
 
-from tasks import get_all_tasks
 from controllers import get_default_controller_configs
 
 # Set up output directory
 RESULTS_DIR = Path(ROOT) / "benchmark" / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
-
-NUM_EPISODES = 5
-TOTAL_STEPS = 500
 
 
 def run_benchmark_episode(
@@ -115,8 +116,8 @@ def benchmark_controller_on_task(
     controller_name: str,
     controller_config: Dict[str, Any],
     task_name: str,
-    task_class: Type[Task],
-    num_episodes: int = 1,
+    task_class: Task,
+    num_episodes: int = 3,
     total_steps: int = 500,
 ) -> Dict[str, Any]:
     """Benchmark a controller on a task for multiple episodes.
@@ -194,82 +195,32 @@ def benchmark_controller_on_task(
     return results
 
 
-def run_full_benchmark(
-    num_episodes: int = NUM_EPISODES, total_steps: int = TOTAL_STEPS
-) -> pd.DataFrame:
-    """Run the full benchmark of all controllers on all tasks.
-
-    Args:
-        num_episodes: Number of episodes per benchmark.
-        total_steps: Number of steps per episode.
-
+def get_all_tasks() -> Dict[str, Type[Task]]:
+    """Dynamically find all task classes.
     Returns:
-        DataFrame with benchmark results.
+        Dictionary mapping task names to task classes.
     """
-    # Get all tasks
-    all_tasks = get_all_tasks()
-    print(f"Found {len(all_tasks)} tasks: {', '.join(all_tasks.keys())}")
-
-    # Get all controller configurations
-    controller_configs = get_default_controller_configs()
-    print(
-        f"Found {len(controller_configs)} controllers: {', '.join(controller_configs.keys())}"
-    )
-
-    # Store results
-    all_results = []
-
-    # Benchmark each controller on each task
-    for controller_name, config in controller_configs.items():
-        for task_name, task_class in all_tasks.items():
-            try:
-                result = benchmark_controller_on_task(
-                    controller_name,
-                    config,
-                    task_name,
-                    task_class,
-                    num_episodes,
-                    total_steps,
-                )
-                all_results.append(result)
-            except Exception as e:
-                print(
-                    f"Error benchmarking {controller_name} on {task_name}: {e}"
-                )
-                # Add failure result
-                all_results.append(
-                    {
-                        "controller": controller_name,
-                        "task": task_name,
-                        "total_time": float("inf"),
-                        "avg_plan_time": float("inf"),
-                        "avg_cost": float("inf"),
-                        "final_cost": float("inf"),
-                        "cost_trajectories": [],
-                        "time_trajectories": [],
-                    }
-                )
-
-    # Convert to DataFrame (excluding trajectories)
-    results_for_df = [
-        {
-            k: v
-            for k, v in result.items()
-            if k not in ["cost_trajectories", "time_trajectories"]
-        }
-        for result in all_results
-    ]
-    results_df = pd.DataFrame(results_for_df)
-
-    # Return both DataFrame and full results for plotting
-    return results_df, all_results
+    task_dict = {}
+    # Iterate through all modules in the tasks package
+    for file in os.listdir(os.path.dirname(tasks.__file__)):
+        if file.endswith(".py") and not file.startswith("__"):
+            module_name = file[:-3]
+            module = importlib.import_module(f"hydrax.tasks.{module_name}")
+            # Find classes in the module that are Tasks
+            for name, obj in inspect.getmembers(module):
+                if (
+                    inspect.isclass(obj)
+                    and issubclass(obj, Task)
+                    and obj != Task
+                    and name != "Task"
+                ):
+                    task_dict[name] = obj
+    return task_dict
 
 
-def run_single_task_benchmark(
-    task_name: str,
-    num_episodes: int = NUM_EPISODES,
-    total_steps: int = TOTAL_STEPS,
-) -> pd.DataFrame:
+def run_task_benchmark(
+    task_name: str, num_episodes: int = 3, total_steps: int = 500
+) -> Tuple[pd.DataFrame, List[Dict[str, Any]]]:
     """Run the benchmark for a single task with all controllers.
 
     Args:
@@ -278,23 +229,16 @@ def run_single_task_benchmark(
         total_steps: Number of steps per episode.
 
     Returns:
-        DataFrame with benchmark results.
+        Tuple of (DataFrame with results, List of full result dictionaries)
     """
-    # Get all tasks
+    # Get task class
     all_tasks = get_all_tasks()
-    if task_name not in all_tasks:
-        available_tasks = ", ".join(all_tasks.keys())
-        raise ValueError(
-            f"Task '{task_name}' not found. Available tasks: {available_tasks}"
-        )
-
-    print(f"Benchmarking task: {task_name}")
     task_class = all_tasks[task_name]
 
     # Get all controller configurations
     controller_configs = get_default_controller_configs()
     print(
-        f"Found {len(controller_configs)} controllers: {', '.join(controller_configs.keys())}"
+        f"Benchmarking {len(controller_configs)} controllers on task: {task_name}"
     )
 
     # Store results
@@ -339,5 +283,4 @@ def run_single_task_benchmark(
     ]
     results_df = pd.DataFrame(results_for_df)
 
-    # Return both DataFrame and full results for plotting
     return results_df, all_results
