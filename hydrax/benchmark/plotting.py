@@ -54,7 +54,7 @@ def plot_results(results_list: List[Dict[str, Any]], task_name: str) -> None:
     bars2 = ax2.bar(
         controllers,
         avg_plan_times,
-        color=cm.plasma(np.linspace(0, 1, len(controllers))),
+        color=cm.viridis(np.linspace(0, 1, len(controllers))),
     )
     ax2.set_title(f"{task_name} - Average Plan Time per Controller")
     ax2.set_ylabel("Average Plan Time (s)")
