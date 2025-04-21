@@ -8,7 +8,7 @@ from pathlib import Path
 
 from hydrax import ROOT
 from runner import run_task_benchmark, get_all_tasks
-from plotting import plot_results, plot_cost_over_time
+from plotting import plot_results, plot_cost_over_time, create_summary_dataframe
 
 
 def main():
@@ -32,13 +32,10 @@ def main():
         help=f"Task to benchmark. Available tasks: {available_tasks}",
     )
     parser.add_argument(
-        "--episodes",
+        "--steps",
         type=int,
-        default=3,
-        help="Number of episodes per benchmark",
-    )
-    parser.add_argument(
-        "--steps", type=int, default=500, help="Number of steps per episode"
+        default=500,
+        help="Number of steps to run each controller",
     )
     args = parser.parse_args()
 
@@ -51,35 +48,24 @@ def main():
         )
         return
 
-    # Run benchmark for the specified task - now returns a single list of results
-    all_results = run_task_benchmark(
-        args.task, num_episodes=args.episodes, total_steps=args.steps
-    )
+    # Run benchmark for the specified task
+    results = run_task_benchmark(args.task, total_steps=args.steps)
 
-    # Plot the results - both functions now accept the results list
-    plot_results(all_results, args.task)
-    plot_cost_over_time(all_results, args.task)
+    # Plot the results
+    plot_results(results, args.task)
+    plot_cost_over_time(results, args.task)
 
     end_time = time.time()
     print(
         f"Benchmark complete in {end_time - start_time:.2f} seconds! Results saved to {results_dir}"
     )
 
-    # Create DataFrame for printing summary table
-    summary_data = []
-    for result in all_results:
-        if isinstance(result, dict):
-            summary_data.append(
-                {
-                    "controller": result["controller"],
-                    "avg_cost": result["avg_cost"],
-                    "avg_plan_time": result["avg_plan_time"],
-                }
-            )
-
-    summary_df = pd.DataFrame(summary_data)
+    # Print summary table
+    summary_df = create_summary_dataframe(results)
     if not summary_df.empty:
-        summary_df = summary_df.sort_values("avg_cost")
+        summary_df = summary_df[
+            ["controller", "avg_cost", "avg_plan_time"]
+        ].sort_values("avg_cost")
         print("\nPerformance Summary:")
         print(summary_df.to_string(index=False))
 

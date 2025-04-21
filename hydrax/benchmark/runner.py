@@ -1,7 +1,7 @@
 """Benchmarking runner for controllers on a specific task."""
 
 import time
-from typing import Dict, Any, List, Tuple, Type
+from typing import Dict, Any, List, Type
 
 import jax
 import jax.numpy as jnp
@@ -17,7 +17,6 @@ import importlib
 import hydrax.tasks as tasks
 from hydrax.task_base import Task
 from hydrax.alg_base import SamplingBasedController
-from hydrax.task_base import Task
 from hydrax import ROOT
 
 from controllers import get_default_controller_configs
@@ -27,24 +26,40 @@ RESULTS_DIR = Path(ROOT) / "benchmark" / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
 
-def run_benchmark_episode(
-    controller: SamplingBasedController, task: Task, total_steps: int
+def run_benchmark(
+    controller_name: str,
+    controller_config: Dict[str, Any],
+    task_name: str,
+    task_class: Type[Task],
+    total_steps: int = 500,
 ) -> Dict[str, Any]:
-    """Run a single benchmark episode with the given controller and task.
+    """Run a benchmark for a controller on a task.
 
     Args:
-        controller: The controller to benchmark.
-        task: The task to run.
-        total_steps: Number of control steps to run.
+        controller_name: Name of the controller.
+        controller_config: Configuration for the controller.
+        task_name: Name of the task.
+        task_class: Task class.
+        total_steps: Number of steps to run.
 
     Returns:
         Dictionary with benchmark results.
     """
-    # Initialize results dict
+    print(f"Benchmarking {controller_name} on {task_name}...")
+
+    # Create task instance
+    task = task_class()
+
+    # Create controller
+    controller_class = controller_config["class"]
+    controller = controller_class(task, **controller_config["params"])
+
+    # Initialize results
     results = {
+        "controller": controller_name,
+        "task": task_name,
         "plan_times": [],
         "costs": [],
-        "final_cost": 0.0,
         "timestamps": [],
     }
 
@@ -63,131 +78,57 @@ def run_benchmark_episode(
     jit_optimize = jax.jit(controller.optimize)
     jit_interp_func = jax.jit(controller.interp_func)
 
-    # Run the episode
-    for _ in range(total_steps):
-        # Set the start state for the controller
-        mjx_data = mjx_data.replace(
-            qpos=jnp.array(mj_data.qpos),
-            qvel=jnp.array(mj_data.qvel),
-            mocap_pos=jnp.array(mj_data.mocap_pos),
-            mocap_quat=jnp.array(mj_data.mocap_quat),
-            time=mj_data.time,
-        )
+    # Record start time for total runtime calculation
+    total_start_time = time.time()
 
-        plan_start_time = time.time()
-        # Do a replanning step
-        policy_params, rollouts = jit_optimize(mjx_data, policy_params)
-        # Record time for this control step
-        plan_end_time = time.time()
-        results["plan_times"].append(plan_end_time - plan_start_time)
-
-        # Record current timestamp
-        results["timestamps"].append(mj_data.time)
-
-        # Interpolate control signals at simulation frequency
-        sim_dt = mj_model.opt.timestep
-        t_curr = mj_data.time
-        tq = jnp.arange(0, sim_steps_per_replan) * sim_dt + t_curr
-        tk = policy_params.tk
-        knots = policy_params.mean[None, ...]
-        us = np.asarray(jit_interp_func(tq, tk, knots))[0]  # (ss, nu)
-
-        # Track the running cost at this step
-        results["costs"].append(float(task.running_cost(mjx_data, us[0])))
-
-        # Simulate the system for the replan period
-        for i in range(sim_steps_per_replan):
-            mj_data.ctrl[:] = np.array(us[i])
-            mujoco.mj_step(mj_model, mj_data)
-
-    # Convert final MuJoCo state to MJX
-    final_mjx_data = mjx.put_data(mj_model, mj_data)
-
-    # Record final cost
-    results["final_cost"] = float(task.terminal_cost(final_mjx_data))
-
-    return results
-
-
-def benchmark_controller_on_task(
-    controller_name: str,
-    controller_config: Dict[str, Any],
-    task_name: str,
-    task_class: Task,
-    num_episodes: int = 3,
-    total_steps: int = 500,
-) -> Dict[str, Any]:
-    """Benchmark a controller on a task for multiple episodes.
-
-    Args:
-        controller_name: Name of the controller.
-        controller_config: Configuration for the controller.
-        task_name: Name of the task.
-        task_class: Task class.
-        num_episodes: Number of episodes to run.
-        total_steps: Number of steps per episode.
-
-    Returns:
-        Dictionary with benchmark results.
-    """
-    print(f"Benchmarking {controller_name} on {task_name}...")
-
-    # Results for this controller-task pair
-    results = {
-        "controller": controller_name,
-        "task": task_name,
-        "total_time": [],
-        "avg_plan_time": [],
-        "avg_cost": [],
-        "final_cost": [],
-        "cost_trajectories": [],
-        "time_trajectories": [],
-    }
-
-    # Run multiple episodes
-    for episode in range(num_episodes):
-        print(f"  Episode {episode + 1}/{num_episodes}")
-
-        # Create task instance
-        task = task_class()
-
-        # Create controller
-        controller_class = controller_config["class"]
-        controller = controller_class(task, **controller_config["params"])
-
-        # Run the episode
-        try:
-            episode_start = time.time()
-            episode_results = run_benchmark_episode(
-                controller, task, total_steps
+    try:
+        # Run the simulation
+        for step in range(total_steps):
+            # Set the start state for the controller
+            mjx_data = mjx_data.replace(
+                qpos=jnp.array(mj_data.qpos),
+                qvel=jnp.array(mj_data.qvel),
+                mocap_pos=jnp.array(mj_data.mocap_pos),
+                mocap_quat=jnp.array(mj_data.mocap_quat),
+                time=mj_data.time,
             )
-            episode_end = time.time()
 
-            # Record results
-            results["total_time"].append(episode_end - episode_start)
-            results["avg_plan_time"].append(
-                np.mean(episode_results["plan_times"])
-            )
-            results["avg_cost"].append(np.mean(episode_results["costs"]))
-            results["final_cost"].append(episode_results["final_cost"])
+            # Record planning time
+            plan_start_time = time.time()
+            policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+            plan_end_time = time.time()
+            results["plan_times"].append(plan_end_time - plan_start_time)
 
-            # Store trajectories
-            results["cost_trajectories"].append(episode_results["costs"])
-            results["time_trajectories"].append(episode_results["timestamps"])
+            # Record current timestamp
+            results["timestamps"].append(mj_data.time)
 
-        except Exception as e:
-            print(f"  Error in episode {episode + 1}: {e}")
-            # If an episode fails, record poor performance
-            results["total_time"].append(float("inf"))
-            results["avg_plan_time"].append(float("inf"))
-            results["avg_cost"].append(float("inf"))
-            results["final_cost"].append(float("inf"))
-            results["cost_trajectories"].append([])
-            results["time_trajectories"].append([])
+            # Interpolate control signals at simulation frequency
+            sim_dt = mj_model.opt.timestep
+            t_curr = mj_data.time
+            tq = jnp.arange(0, sim_steps_per_replan) * sim_dt + t_curr
+            tk = policy_params.tk
+            knots = policy_params.mean[None, ...]
+            us = np.asarray(jit_interp_func(tq, tk, knots))[0]  # (ss, nu)
 
-    # Calculate averages across episodes
-    for key in ["total_time", "avg_plan_time", "avg_cost", "final_cost"]:
-        results[key] = np.mean(results[key])
+            # Track the running cost at this step
+            results["costs"].append(float(task.running_cost(mjx_data, us[0])))
+
+            # Simulate the system for the replan period
+            for i in range(sim_steps_per_replan):
+                mj_data.ctrl[:] = np.array(us[i])
+                mujoco.mj_step(mj_model, mj_data)
+
+        # Calculate summary statistics
+        results["avg_plan_time"] = np.mean(results["plan_times"])
+        results["avg_cost"] = np.mean(results["costs"])
+        results["total_time"] = time.time() - total_start_time
+
+    except Exception as e:
+        print(f"Error running benchmark for {controller_name}: {e}")
+        # Record failure with infinite cost
+        results["avg_plan_time"] = float("inf")
+        results["avg_cost"] = float("inf")
+        results["total_time"] = float("inf")
 
     return results
 
@@ -216,14 +157,13 @@ def get_all_tasks() -> Dict[str, Type[Task]]:
 
 
 def run_task_benchmark(
-    task_name: str, num_episodes: int = 3, total_steps: int = 500
+    task_name: str, total_steps: int = 500
 ) -> List[Dict[str, Any]]:
     """Run the benchmark for a single task with all controllers.
 
     Args:
         task_name: Name of the task to benchmark.
-        num_episodes: Number of episodes per benchmark.
-        total_steps: Number of steps per episode.
+        total_steps: Number of steps to run.
 
     Returns:
         List of result dictionaries with benchmark data
@@ -244,12 +184,11 @@ def run_task_benchmark(
     # Benchmark each controller on the selected task
     for controller_name, config in controller_configs.items():
         try:
-            result = benchmark_controller_on_task(
+            result = run_benchmark(
                 controller_name,
                 config,
                 task_name,
                 task_class,
-                num_episodes,
                 total_steps,
             )
             all_results.append(result)
@@ -260,12 +199,12 @@ def run_task_benchmark(
                 {
                     "controller": controller_name,
                     "task": task_name,
-                    "total_time": float("inf"),
+                    "plan_times": [],
+                    "costs": [],
+                    "timestamps": [],
                     "avg_plan_time": float("inf"),
                     "avg_cost": float("inf"),
-                    "final_cost": float("inf"),
-                    "cost_trajectories": [],
-                    "time_trajectories": [],
+                    "total_time": float("inf"),
                 }
             )
 
