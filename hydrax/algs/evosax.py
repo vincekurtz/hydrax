@@ -47,6 +47,7 @@ class Evosax(SamplingBasedController):
         plan_horizon: float = 1.0,
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
         num_knots: int = 4,
+        iterations: int = 1,
         **kwargs,
     ) -> None:
         """Initialize the controller.
@@ -64,6 +65,7 @@ class Evosax(SamplingBasedController):
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
+            iterations: The number of optimization iterations to perform.
             **kwargs: Additional keyword arguments for the optimizer.
         """
         super().__init__(
@@ -74,6 +76,7 @@ class Evosax(SamplingBasedController):
             plan_horizon=plan_horizon,
             spline_type=spline_type,
             num_knots=num_knots,
+            iterations=iterations,
         )
 
         self.strategy = optimizer(

@@ -164,10 +164,36 @@ class SamplingBasedController(ABC):
 
             return (params, rollouts)
 
-        params, rollouts = _optimize_loop_body(0, (params, None))
+        knots, params = self.sample_knots(params)
+
+        # params, rollouts = _optimize_loop_body(0, (params, None))
+
+        rollouts = Trajectory(
+            controls=jnp.zeros(
+                (
+                    knots.shape[0],
+                    int(self.plan_horizon / self.task.dt),
+                    self.task.model.nu,
+                )
+            ),
+            knots=jnp.zeros(
+                (knots.shape[0], self.num_knots, self.task.model.nu)
+            ),
+            costs=jnp.zeros(
+                (knots.shape[0], int(self.plan_horizon / self.task.dt) + 1)
+            ),
+            trace_sites=jnp.zeros(
+                (
+                    knots.shape[0],
+                    int(self.plan_horizon / self.task.dt) + 1,
+                    self.task.trace_site_ids.shape[0],
+                    3,
+                )
+            ),
+        )
 
         params, rollouts = jax.lax.fori_loop(
-            1, self.iterations, _optimize_loop_body, (params, rollouts)
+            0, self.iterations, _optimize_loop_body, (params, rollouts)
         )
 
         return params, rollouts

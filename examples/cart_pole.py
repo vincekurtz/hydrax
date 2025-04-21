@@ -35,7 +35,6 @@ if args.algorithm == "ps" or args.algorithm is None:
         spline_type="cubic",
         plan_horizon=1.0,
         num_knots=4,
-        iterations=1,
     )
 elif args.algorithm == "mppi":
     print("Running MPPI")
@@ -47,7 +46,6 @@ elif args.algorithm == "mppi":
         spline_type="cubic",
         plan_horizon=1.0,
         num_knots=4,
-        iterations=1,
     )
 elif args.algorithm == "cem":
     print("Running CEM")
@@ -60,7 +58,6 @@ elif args.algorithm == "cem":
         spline_type="cubic",
         plan_horizon=1.0,
         num_knots=4,
-        iterations=1,
     )
 else:
     parser.error("Other algorithms not implemented for this example!")
