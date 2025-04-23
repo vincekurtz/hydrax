@@ -67,4 +67,5 @@ run_interactive(
     frequency=100,
     show_traces=False,
     reference=reference,
+    reference_fps=task.reference_fps,
 )
