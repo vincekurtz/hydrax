@@ -30,15 +30,15 @@ def test_init_params() -> None:
     assert params.tk.shape == (controller.num_knots,)
 
     # Test with initial control
-    initial_control = jnp.rand((task.model.nu * controller.num_knots,))
+    initial_knots = jnp.rand((task.model.nu * controller.num_knots,))
     params = controller.init_params(
-        initial_control=jnp.ones((task.model.nu * controller.num_knots,))
+        initial_knots=jnp.ones((task.model.nu * controller.num_knots,))
     )
     assert params.mean.shape == (task.model.nu * controller.num_knots,)
     assert params.cov.shape == (task.model.nu * controller.num_knots,)
     assert params.rng.shape == ()
     assert params.tk.shape == (controller.num_knots,)
-    assert jnp.all(params.mean == initial_control)
+    assert jnp.all(params.mean == initial_knots)
 
 
 if __name__ == "__main__":

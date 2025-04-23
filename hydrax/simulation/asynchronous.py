@@ -102,7 +102,7 @@ def run_controller(
     shm_data: SharedMemoryMujocoData,
     ready: Event,
     finished: Event,
-    initial_control: jax.Array = None,
+    initial_knots: jax.Array = None,
 ) -> None:
     """Run the controller, communicating with the simulator over shared memory.
 
@@ -111,11 +111,11 @@ def run_controller(
         shm_data: Shared memory object for state and control action data.
         ready: Shared flag for signaling that the controller is ready.
         finished: Shared flag for stopping the simulation.
-        initial_control: The initial control to use for the controller.
+        initial_knots: The initial control to use for the controller.
     """
     # Initialize the policy parameters and state estimate
     mjx_data = mjx.make_data(ctrl.task.model)
-    policy_params = ctrl.init_params(initial_control=initial_control)
+    policy_params = ctrl.init_params(initial_knots=initial_knots)
 
     # Print out some planning horizon information
     print(
@@ -224,7 +224,7 @@ def run_interactive(
     controller: SamplingBasedController,
     mj_model: mujoco.MjModel,
     mj_data: mujoco.MjData,
-    initial_control: jax.Array = None,
+    initial_knots: jax.Array = None,
 ) -> None:
     """Run an asynchronous interactive simulation.
 
@@ -236,7 +236,7 @@ def run_interactive(
         controller: The controller to use for planning.
         mj_model: Mujoco model for the simulation.
         mj_data: Mujoco data specifying the initial state.
-        initial_control: The initial control to use for the controller.
+        initial_knots: The initial knots of the control spline.
     """
     ctx = mp.get_context("spawn")  # Need to use spawn for jax compatibility
 
@@ -252,7 +252,7 @@ def run_interactive(
     )
     control = ctx.Process(
         target=run_controller,
-        args=(controller, shm_data, ready, finished, initial_control),
+        args=(controller, shm_data, ready, finished, initial_knots),
     )
 
     # Run the simulation and controller in parallel

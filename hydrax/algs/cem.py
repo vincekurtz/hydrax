@@ -79,10 +79,10 @@ class CEM(SamplingBasedController):
         self.num_explore = int(self.num_samples * explore_fraction)
 
     def init_params(
-        self, initial_control: jax.Array = None, seed: int = 0
+        self, initial_knots: jax.Array = None, seed: int = 0
     ) -> CEMParams:
         """Initialize the policy parameters."""
-        _params = super().init_params(initial_control, seed)
+        _params = super().init_params(initial_knots, seed)
         cov = jnp.full_like(_params.mean, self.sigma_start)
         return CEMParams(
             tk=_params.tk, mean=_params.mean, cov=cov, rng=_params.rng

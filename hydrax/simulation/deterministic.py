@@ -24,7 +24,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     mj_model: mujoco.MjModel,
     mj_data: mujoco.MjData,
     frequency: float,
-    initial_control: jax.Array = None,
+    initial_knots: jax.Array = None,
     fixed_camera_id: int = None,
     show_traces: bool = True,
     max_traces: int = 5,
@@ -51,6 +51,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                   be slightly different from the model used by the controller.
         mj_data: A MuJoCo data object containing the initial system state.
         frequency: The requested control frequency (Hz) for replanning.
+        initial_knots: The initial knots of the control spline.
         fixed_camera_id: The camera ID to use for the fixed camera view.
         show_traces: Whether to show traces for the site positions.
         max_traces: The maximum number of traces to show at once.
@@ -83,7 +84,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     mjx_data = mjx_data.replace(
         mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
     )
-    policy_params = controller.init_params(initial_control=initial_control)
+    policy_params = controller.init_params(initial_knots=initial_knots)
     jit_optimize = jax.jit(controller.optimize)
     jit_interp_func = jax.jit(controller.interp_func)
 
