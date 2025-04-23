@@ -46,6 +46,7 @@ class HumanoidMocap(Task):
 
         reference = npz_file["qpos"]
         self.reference = jnp.array(reference)
+        self.reference_fps = npz_file["frequency"]
 
         # Cost weights
         cost_weights = np.ones(mj_model.nq)
@@ -54,7 +55,7 @@ class HumanoidMocap(Task):
 
     def _get_reference_configuration(self, t: jax.Array) -> jax.Array:
         """Get the reference position (q) at time t."""
-        i = jnp.int32(t * 30.0)  # reference runs at 30 FPS
+        i = jnp.int32(t * self.reference_fps)
         i = jnp.clip(i, 0, self.reference.shape[0] - 1)
         return self.reference[i, :]
 
