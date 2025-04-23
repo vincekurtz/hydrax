@@ -49,7 +49,7 @@ class HumanoidMocap(Task):
 
         # Cost weights
         cost_weights = np.ones(mj_model.nq)
-        cost_weights[:7] = 10.0  # Base pose is more important
+        cost_weights[:7] = 5.0  # Base pose is more important
         self.cost_weights = jnp.array(cost_weights)
 
     def _get_reference_configuration(self, t: jax.Array) -> jax.Array:

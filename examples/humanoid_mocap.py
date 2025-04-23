@@ -35,7 +35,7 @@ ctrl = CEM(
     task,
     num_samples=512,
     num_elites=20,
-    sigma_start=0.1,
+    sigma_start=0.2,
     sigma_min=0.05,
     explore_fraction=0.5,
     plan_horizon=0.6,
