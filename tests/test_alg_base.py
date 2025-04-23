@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+from jax import random
 
 from hydrax.alg_base import Trajectory
 from hydrax.tasks.particle import Particle
@@ -24,18 +25,23 @@ def test_init_params() -> None:
         task, num_samples=10, num_elites=5, sigma_start=1.0, sigma_min=0.1
     )
     params = controller.init_params()
-    assert params.mean.shape == (task.model.nu * controller.num_knots,)
-    assert params.cov.shape == (task.model.nu * controller.num_knots,)
+    expected_shape = (
+        controller.num_knots,
+        task.model.nu,
+    )
+    assert params.mean.shape == expected_shape
+    assert params.cov.shape == expected_shape
     assert params.rng.shape == ()
     assert params.tk.shape == (controller.num_knots,)
 
-    # Test with initial control
-    initial_knots = jnp.rand((task.model.nu * controller.num_knots,))
-    params = controller.init_params(
-        initial_knots=jnp.ones((task.model.nu * controller.num_knots,))
+    # Test with initial control knots
+    key = random.PRNGKey(0)  # seed
+    initial_knots = random.uniform(
+        key, shape=(controller.num_knots, task.model.nu)
     )
-    assert params.mean.shape == (task.model.nu * controller.num_knots,)
-    assert params.cov.shape == (task.model.nu * controller.num_knots,)
+    params = controller.init_params(initial_knots=initial_knots)
+    assert params.mean.shape == expected_shape
+    assert params.cov.shape == expected_shape
     assert params.rng.shape == ()
     assert params.tk.shape == (controller.num_knots,)
     assert jnp.all(params.mean == initial_knots)
@@ -43,3 +49,4 @@ def test_init_params() -> None:
 
 if __name__ == "__main__":
     test_traj()
+    test_init_params()
