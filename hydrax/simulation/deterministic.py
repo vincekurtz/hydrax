@@ -24,6 +24,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     mj_model: mujoco.MjModel,
     mj_data: mujoco.MjData,
     frequency: float,
+    initial_control: jax.Array = None,
     fixed_camera_id: int = None,
     show_traces: bool = True,
     max_traces: int = 5,
@@ -82,7 +83,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     mjx_data = mjx_data.replace(
         mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
     )
-    policy_params = controller.init_params()
+    policy_params = controller.init_params(initial_control=initial_control)
     jit_optimize = jax.jit(controller.optimize)
     jit_interp_func = jax.jit(controller.interp_func)
 
