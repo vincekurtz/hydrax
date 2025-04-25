@@ -143,8 +143,7 @@ class SamplingBasedController(ABC):
         new_mean = self.interp_func(new_tk, tk, params.mean[None, ...])[0]
         params = params.replace(tk=new_tk, mean=new_mean)
 
-        def _optimize_loop_body(i: int, carry: Any):
-            params, _ = carry
+        def _optimize_scan_body(params: Any, _: Any):
             # Sample random control sequences from spline knots
             knots, params = self.sample_knots(params)
             knots = jnp.clip(
@@ -162,41 +161,21 @@ class SamplingBasedController(ABC):
             # Update the policy parameters based on the combined costs
             params = self.update_params(params, rollouts)
 
-            return (params, rollouts)
+            return params, rollouts
 
-        knots, params = self.sample_knots(params)
-
-        # params, rollouts = _optimize_loop_body(0, (params, None))
-
-        rollouts = Trajectory(
-            controls=jnp.zeros(
-                (
-                    knots.shape[0],
-                    int(self.plan_horizon / self.task.dt),
-                    self.task.model.nu,
-                )
-            ),
-            knots=jnp.zeros(
-                (knots.shape[0], self.num_knots, self.task.model.nu)
-            ),
-            costs=jnp.zeros(
-                (knots.shape[0], int(self.plan_horizon / self.task.dt) + 1)
-            ),
-            trace_sites=jnp.zeros(
-                (
-                    knots.shape[0],
-                    int(self.plan_horizon / self.task.dt) + 1,
-                    self.task.trace_site_ids.shape[0],
-                    3,
-                )
-            ),
+        params, rollouts = jax.lax.scan(
+            f=_optimize_scan_body, init=params, xs=jnp.arange(self.iterations)
         )
 
-        params, rollouts = jax.lax.fori_loop(
-            0, self.iterations, _optimize_loop_body, (params, rollouts)
+        # Get the rollouts from the last iteration only
+        rollouts_final = Trajectory(
+            knots=rollouts.knots[-1],
+            costs=rollouts.costs[-1],
+            controls=rollouts.controls[-1],
+            trace_sites=rollouts.trace_sites[-1],
         )
 
-        return params, rollouts
+        return params, rollouts_final
 
     def rollout_with_randomizations(
         self,

@@ -38,7 +38,7 @@ def test_opt_iterations() -> None:
     # Start timer
     start_time = time.perf_counter()
 
-    jit_optimize(mjx_data, params)
+    params, _ = jit_optimize(mjx_data, params)
     jit_optimize(mjx_data, params)
 
     # End timer
