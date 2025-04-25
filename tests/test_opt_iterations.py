@@ -1,6 +1,7 @@
 import time
 
 import jax
+import jax.numpy as jnp
 import mujoco
 from mujoco import mjx
 
@@ -39,7 +40,7 @@ def test_opt_iterations() -> None:
     start_time = time.perf_counter()
 
     params, _ = jit_optimize(mjx_data, params)
-    jit_optimize(mjx_data, params)
+    params_1_iter_, _ = jit_optimize(mjx_data, params)
 
     # End timer
     end_time = time.perf_counter()
@@ -68,10 +69,15 @@ def test_opt_iterations() -> None:
     # Start timer
     start_time = time.perf_counter()
 
-    jit_optimize(mjx_data, params)
+    params, _ = jit_optimize(mjx_data, params)
 
     # End timer
     end_time = time.perf_counter()
 
     elapsed_time = end_time - start_time
     print(f"\nTwo iterations time: {elapsed_time:.4f} seconds")
+
+    # Verify that the parameters are the same
+    assert jnp.all(params.tk == params_1_iter_.tk)
+    assert jnp.all(params.mean == params_1_iter_.mean)
+    assert jnp.all(params.rng == params_1_iter_.rng)

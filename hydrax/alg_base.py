@@ -167,13 +167,13 @@ class SamplingBasedController(ABC):
             f=_optimize_scan_body, init=params, xs=jnp.arange(self.iterations)
         )
 
-        # Get the rollouts from the last iteration only
-        rollouts_final = Trajectory(
-            knots=rollouts.knots[-1],
-            costs=rollouts.costs[-1],
-            controls=rollouts.controls[-1],
-            trace_sites=rollouts.trace_sites[-1],
-        )
+        def _get_last_element(leaf: Any):
+            if isinstance(leaf, jax.Array):
+                return leaf[-1]
+            else:
+                return leaf
+
+        rollouts_final = jax.tree.map(_get_last_element, rollouts)
 
         return params, rollouts_final
 
