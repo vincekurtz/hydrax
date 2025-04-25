@@ -1,5 +1,6 @@
 import time
 from typing import Sequence
+import os
 
 import jax
 import jax.numpy as jnp
@@ -9,6 +10,8 @@ import numpy as np
 from mujoco import mjx
 
 from hydrax.alg_base import SamplingBasedController
+from hydrax import ROOT
+from hydrax.utils.video import VideoRecorder
 
 """
 Tools for deterministic (synchronous) simulation, with the simulator and
@@ -28,6 +31,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     trace_color: Sequence = [1.0, 1.0, 1.0, 0.1],
     reference: np.ndarray = None,
     reference_fps: float = 30.0,
+    record_video: bool = False,
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -53,6 +57,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         trace_color: The RGBA color of the trace lines.
         reference: The reference trajectory (qs) to visualize.
         reference_fps: The frame rate of the reference trajectory.
+        record_video: Whether to record a video of the simulation.
     """
     # Report the planning horizon in seconds for debugging
     print(
@@ -106,6 +111,25 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         vopt.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True  # Transparent.
         pert = mujoco.MjvPerturb()
         catmask = mujoco.mjtCatBit.mjCAT_DYNAMIC  # only show dynamic bodies
+
+    # Initialize video recording if enabled
+    recorder = None
+    if record_video:
+        # Video dimensions
+        width, height = 720, 480
+        # Create the video recorder
+        recorder = VideoRecorder(
+            output_dir=os.path.join(ROOT, "recordings"),
+            width=width,
+            height=height,
+            fps=actual_frequency,
+        )
+        # Ensure model visual offscreen buffer is compatible with video recording
+        mj_model.vis.global_.offwidth = width
+        mj_model.vis.global_.offheight = height
+        if not recorder.start():
+            record_video = False
+        renderer = mujoco.Renderer(mj_model, height=height, width=width)
 
     # Start the simulation
     with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
@@ -201,6 +225,12 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 mujoco.mj_step(mj_model, mj_data)
                 viewer.sync()
 
+                # Capture frame if recording
+                if record_video and recorder.is_recording:
+                    renderer.update_scene(mj_data, viewer.cam)
+                    frame = renderer.render()
+                    recorder.add_frame(frame.tobytes())
+
             # Try to run in roughly realtime
             elapsed = time.time() - start_time
             if elapsed < step_dt:
@@ -215,3 +245,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
 
     # Preserve the last printout
     print("")
+
+    # Close the video recorder if recording was enabled
+    if record_video and recorder is not None:
+        recorder.stop()

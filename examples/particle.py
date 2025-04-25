@@ -3,7 +3,7 @@ import argparse
 import evosax
 import mujoco
 
-from hydrax.algs import MPPI, Evosax, PredictiveSampling
+from hydrax.algs import MPPI, CEM, Evosax, PredictiveSampling
 from hydrax.risk import WorstCase
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.particle import Particle
@@ -26,6 +26,7 @@ subparsers = parser.add_subparsers(
 )
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
+subparsers.add_parser("cem", help="Cross-Entropy Method")
 subparsers.add_parser("cmaes", help="CMA-ES")
 subparsers.add_parser(
     "samr", help="Genetic Algorithm with Self-Adaptation Mutation Rate (SAMR)"
@@ -56,6 +57,20 @@ elif args.algorithm == "mppi":
         num_samples=16,
         noise_level=0.3,
         temperature=0.01,
+        plan_horizon=0.25,
+        spline_type="zero",
+        num_knots=11,
+    )
+
+elif args.algorithm == "cem":
+    print("Running CEM")
+    ctrl = CEM(
+        task,
+        num_samples=32,
+        num_elites=8,
+        sigma_start=0.3,
+        sigma_min=0.05,
+        explore_fraction=0.5,
         plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,

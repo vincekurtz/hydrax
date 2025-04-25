@@ -6,4 +6,5 @@ __pycache__
 *.pkl
 *.egg-info
 MUJOCO_LOG.TXT
+hydrax/recordings/
 .idea
