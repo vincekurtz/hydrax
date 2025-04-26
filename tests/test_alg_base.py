@@ -1,5 +1,5 @@
 import jax.numpy as jnp
-from jax import random
+import jax
 
 from hydrax.alg_base import Trajectory
 from hydrax.tasks.particle import Particle
@@ -35,8 +35,8 @@ def test_init_params() -> None:
     assert params.tk.shape == (controller.num_knots,)
 
     # Test with initial control knots
-    key = random.PRNGKey(0)  # seed
-    initial_knots = random.uniform(
+    key = jax.random.key(0)  # seed
+    initial_knots = jax.random.uniform(
         key, shape=(controller.num_knots, task.model.nu)
     )
     params = controller.init_params(initial_knots=initial_knots)
