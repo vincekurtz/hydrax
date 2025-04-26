@@ -270,10 +270,9 @@ class SamplingBasedController(ABC):
             if initial_knots is not None
             else jnp.zeros((self.num_knots, self.task.model.nu))
         )
-        if initial_knots is not None:
-            assert mean.shape == (self.num_knots, self.task.model.nu), (
-                f"Initial knots must have shape (num_knots, nu), got {mean.shape}"
-            )
+        assert mean.shape == (self.num_knots, self.task.model.nu), (
+            f"Initial knots must have shape (num_knots, nu), got {mean.shape}"
+        )
         tk = jnp.linspace(0.0, self.plan_horizon, self.num_knots)
         return SamplingParams(tk=tk, mean=mean, rng=rng)
 
