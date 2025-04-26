@@ -51,7 +51,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                   be slightly different from the model used by the controller.
         mj_data: A MuJoCo data object containing the initial system state.
         frequency: The requested control frequency (Hz) for replanning.
-        initial_knots: The initial knots of the control spline.
+        initial_knots: The initial knot points for the control spline at t=0
         fixed_camera_id: The camera ID to use for the fixed camera view.
         show_traces: Whether to show traces for the site positions.
         max_traces: The maximum number of traces to show at once.

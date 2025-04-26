@@ -236,7 +236,7 @@ def run_interactive(
         controller: The controller to use for planning.
         mj_model: Mujoco model for the simulation.
         mj_data: Mujoco data specifying the initial state.
-        initial_knots: The initial knots of the control spline.
+        initial_knots: The initial knot points for the control spline at t=0
     """
     ctx = mp.get_context("spawn")  # Need to use spawn for jax compatibility
 
