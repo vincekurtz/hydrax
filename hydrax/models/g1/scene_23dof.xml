@@ -17,6 +17,7 @@
   </asset>
 
   <worldbody>
+    <!-- Floor is raised slightly due to adjust for reference mocap data for the humanoid_mocap task -->
     <geom name="floor" size="0 0 0.05" pos="0 0 0.025" type="plane" material="groundplane"/>
   </worldbody>
 </mujoco>
