@@ -17,8 +17,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--reference_filename",
     type=str,
-    default="walk1_subject1.csv",
-    help="Reference mocap file name, from https://huggingface.co/datasets/unitreerobotics/LAFAN1_Retargeting_Dataset/tree/main/g1.",
+    default="Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
+    help="Reference mocap file name, from https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.",
 )
 parser.add_argument(
     "--show_reference",
@@ -35,8 +35,9 @@ ctrl = CEM(
     task,
     num_samples=512,
     num_elites=20,
-    sigma_start=0.1,
-    sigma_min=0.1,
+    sigma_start=0.2,
+    sigma_min=0.05,
+    explore_fraction=0.5,
     plan_horizon=0.6,
     spline_type="zero",
     num_knots=4,
@@ -66,4 +67,5 @@ run_interactive(
     frequency=100,
     show_traces=False,
     reference=reference,
+    reference_fps=task.reference_fps,
 )

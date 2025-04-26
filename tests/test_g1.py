@@ -75,7 +75,6 @@ def test_standup() -> None:
     assert phi > 0.0
 
 
-@pytest.mark.skip(reason="mocap dataset taken off huggingface")
 def test_mocap() -> None:
     """Test the humanoid mocap task."""
     task = HumanoidMocap()
