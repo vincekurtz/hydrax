@@ -86,9 +86,11 @@ class Evosax(SamplingBasedController):
             es_params = self.strategy.default_params
         self.es_params = es_params
 
-    def init_params(self, seed: int = 0) -> EvosaxParams:
+    def init_params(
+        self, initial_knots: jax.Array = None, seed: int = 0
+    ) -> EvosaxParams:
         """Initialize the policy parameters."""
-        _params = super().init_params(seed)
+        _params = super().init_params(initial_knots, seed)
         rng, init_rng = jax.random.split(_params.rng)
         opt_state = self.strategy.initialize(init_rng, self.es_params)
         return EvosaxParams(
