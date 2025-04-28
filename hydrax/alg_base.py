@@ -167,13 +167,7 @@ class SamplingBasedController(ABC):
             f=_optimize_scan_body, init=params, xs=jnp.arange(self.iterations)
         )
 
-        def _get_last_element(leaf: Any):
-            if isinstance(leaf, jax.Array):
-                return leaf[-1]
-            else:
-                return leaf
-
-        rollouts_final = jax.tree.map(_get_last_element, rollouts)
+        rollouts_final = jax.tree.map(lambda x: x[-1], rollouts)
 
         return params, rollouts_final
 
