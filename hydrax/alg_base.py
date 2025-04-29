@@ -63,6 +63,7 @@ class SamplingBasedController(ABC):
         plan_horizon: float,
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
         num_knots: int = 4,
+        iterations: int = 1,
     ) -> None:
         """Initialize the MPC controller.
 
@@ -75,6 +76,7 @@ class SamplingBasedController(ABC):
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
+            iterations: The number of optimization iterations to perform.
         """
         self.task = task
         self.num_randomizations = max(num_randomizations, 1)
@@ -100,6 +102,12 @@ class SamplingBasedController(ABC):
         # Use a single model (no domain randomization) by default
         self.model = task.model
         self.randomized_axes = None
+
+        # Number of optimization iterations
+        if iterations < 1:
+            raise ValueError("iterations must be greater than 0!")
+
+        self.iterations = iterations
 
         if self.num_randomizations > 1:
             # Make domain randomized models
@@ -135,23 +143,33 @@ class SamplingBasedController(ABC):
         new_mean = self.interp_func(new_tk, tk, params.mean[None, ...])[0]
         params = params.replace(tk=new_tk, mean=new_mean)
 
-        # Sample random control sequences from spline knots
-        knots, params = self.sample_knots(params)
-        knots = jnp.clip(
-            knots, self.task.u_min, self.task.u_max
-        )  # (num_rollouts, num_knots, nu)
+        def _optimize_scan_body(params: Any, _: Any):
+            # Sample random control sequences from spline knots
+            knots, params = self.sample_knots(params)
+            knots = jnp.clip(
+                knots, self.task.u_min, self.task.u_max
+            )  # (num_rollouts, num_knots, nu)
 
-        # Roll out the control sequences, applying domain randomizations and
-        # combining costs using self.risk_strategy.
-        rng, dr_rng = jax.random.split(params.rng)
-        rollouts = self.rollout_with_randomizations(
-            state, new_tk, knots, dr_rng
+            # Roll out the control sequences, applying domain randomizations and
+            # combining costs using self.risk_strategy.
+            rng, dr_rng = jax.random.split(params.rng)
+            rollouts = self.rollout_with_randomizations(
+                state, new_tk, knots, dr_rng
+            )
+            params = params.replace(rng=rng)
+
+            # Update the policy parameters based on the combined costs
+            params = self.update_params(params, rollouts)
+
+            return params, rollouts
+
+        params, rollouts = jax.lax.scan(
+            f=_optimize_scan_body, init=params, xs=jnp.arange(self.iterations)
         )
-        params = params.replace(rng=rng)
 
-        # Update the policy parameters based on the combined costs
-        params = self.update_params(params, rollouts)
-        return params, rollouts
+        rollouts_final = jax.tree.map(lambda x: x[-1], rollouts)
+
+        return params, rollouts_final
 
     def rollout_with_randomizations(
         self,
