@@ -26,6 +26,13 @@ parser.add_argument(
     action="store_true",
     help="Show the reference trajectory as a 'ghost' in the simulation.",
 )
+parser.add_argument(
+    "--iterations",
+    type=int,
+    default=1,
+    help="Number of CEM iterations.",
+)
+
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
@@ -42,6 +49,7 @@ ctrl = CEM(
     plan_horizon=0.6,
     spline_type="zero",
     num_knots=4,
+    iterations=args.iterations,
 )
 
 # Define the model used for simulation
