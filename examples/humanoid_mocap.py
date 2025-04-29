@@ -81,6 +81,5 @@ run_interactive(
     show_traces=False,
     reference=reference,
     reference_fps=task.reference_fps,
-    record_video=True,
     initial_knots=initial_knots,
 )
