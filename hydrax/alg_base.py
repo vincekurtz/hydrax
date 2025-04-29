@@ -332,5 +332,5 @@ class SamplingBasedController(ABC):
         """
         knots = params.mean[None, ...]  # (1, num_knots, nu)
         tk = params.tk
-        u = self.interp_func(t, tk, knots)[0, 0]  # (nu,)
+        u = self.interp_func(t, tk, knots)[0]  # (nu,)
         return u
