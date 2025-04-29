@@ -1,7 +1,6 @@
 import argparse
 
 import mujoco
-import jax.numpy as jnp
 
 from hydrax.algs import CEM
 from hydrax.simulation.deterministic import run_interactive
