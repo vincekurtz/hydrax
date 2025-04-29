@@ -25,6 +25,13 @@ parser.add_argument(
     action="store_true",
     help="Show the reference trajectory as a 'ghost' in the simulation.",
 )
+parser.add_argument(
+    "--iterations",
+    type=int,
+    default=1,
+    help="Number of CEM iterations.",
+)
+
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
@@ -41,6 +48,7 @@ ctrl = CEM(
     plan_horizon=0.6,
     spline_type="zero",
     num_knots=4,
+    iterations=args.iterations,
 )
 
 # Define the model used for simulation
@@ -54,6 +62,7 @@ mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 # Set the initial state
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = task.reference[0]
+initial_knots = task.reference[: ctrl.num_knots, 7:]
 
 if args.show_reference:
     reference = task.reference
@@ -68,4 +77,5 @@ run_interactive(
     show_traces=False,
     reference=reference,
     reference_fps=task.reference_fps,
+    initial_knots=initial_knots,
 )
