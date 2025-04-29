@@ -1,6 +1,7 @@
 import argparse
 
 import mujoco
+import jax.numpy as jnp
 
 from hydrax.algs import CEM
 from hydrax.simulation.deterministic import run_interactive
@@ -54,6 +55,10 @@ mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 # Set the initial state
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = task.reference[0]
+initial_knots = jnp.tile(
+    task.reference[0][7:],
+    (ctrl.num_knots, 1),
+)
 
 if args.show_reference:
     reference = task.reference
@@ -68,4 +73,6 @@ run_interactive(
     show_traces=False,
     reference=reference,
     reference_fps=task.reference_fps,
+    record_video=True,
+    initial_knots=initial_knots,
 )
