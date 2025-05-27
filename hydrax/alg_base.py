@@ -143,8 +143,7 @@ class SamplingBasedController(ABC):
             jnp.linspace(0.0, self.plan_horizon, self.num_knots) + state.time
         )
         new_mean = self.interp_func(new_tk, tk, params.mean[None, ...])[0]
-        params = params.replace(tk=new_tk, mean=new_mean)
-        params = params.replace(opt_iteration=0)
+        params = params.replace(tk=new_tk, mean=new_mean, opt_iteration=0)
 
         def _optimize_scan_body(params: Any, _: Any):
             # Sample random control sequences from spline knots
