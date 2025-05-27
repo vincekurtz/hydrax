@@ -42,11 +42,13 @@ class SamplingParams:
 
     Attributes:
         tk: The knot times of the control spline.
+        opt_iteration: The optimization iteration number.
         mean: The mean of the control spline knot distribution, μ = [u₀, ...].
         rng: The pseudo-random number generator key.
     """
 
     tk: jax.Array
+    opt_iteration: int
     mean: jax.Array
     rng: jax.Array
 
@@ -142,10 +144,15 @@ class SamplingBasedController(ABC):
         )
         new_mean = self.interp_func(new_tk, tk, params.mean[None, ...])[0]
         params = params.replace(tk=new_tk, mean=new_mean)
+        params = params.replace(opt_iteration=0)
 
         def _optimize_scan_body(params: Any, _: Any):
             # Sample random control sequences from spline knots
             knots, params = self.sample_knots(params)
+
+            # Increment the iteration number
+            params = params.replace(opt_iteration=params.opt_iteration + 1)
+
             knots = jnp.clip(
                 knots, self.task.u_min, self.task.u_max
             )  # (num_rollouts, num_knots, nu)
@@ -292,7 +299,7 @@ class SamplingBasedController(ABC):
             f"Initial knots must have shape (num_knots, nu), got {mean.shape}"
         )
         tk = jnp.linspace(0.0, self.plan_horizon, self.num_knots)
-        return SamplingParams(tk=tk, mean=mean, rng=rng)
+        return SamplingParams(tk=tk, mean=mean, rng=rng, opt_iteration=0)
 
     @abstractmethod
     def sample_knots(self, params: Any) -> Tuple[jax.Array, Any]:

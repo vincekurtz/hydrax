@@ -10,26 +10,29 @@ from hydrax.task_base import Task
 
 
 @dataclass
-class PSParams(SamplingParams):
-    """Policy parameters for predictive sampling.
+class DIALParams(SamplingParams):
+    """Policy parameters for Diffusion-Inspired Annealing for Legged MPC (DIAL).
 
     Same as SamplingParams, but with a different name for clarity.
 
     Attributes:
         tk: The knot times of the control spline.
+        opt_iteration: The optimization iteration number.
         mean: The mean of the control spline knot distribution, μ = [u₀, ...].
         rng: The pseudo-random number generator key.
     """
 
 
-class PredictiveSampling(SamplingBasedController):
-    """A simple implementation of https://arxiv.org/abs/2212.00541."""
+class DIAL(SamplingBasedController):
+    """DIAL MPC based on https://arxiv.org/abs/2409.15610"""
 
     def __init__(
         self,
         task: Task,
         num_samples: int,
-        noise_level: float,
+        beta_opt_iter: float,
+        beta_horizon: float,
+        temperature: float,
         num_randomizations: int = 1,
         risk_strategy: RiskStrategy = None,
         seed: int = 0,
@@ -42,8 +45,13 @@ class PredictiveSampling(SamplingBasedController):
 
         Args:
             task: The dynamics and cost for the system we want to control.
-            num_samples: The number of control tapes to sample.
-            noise_level: The scale of Gaussian noise to add to sampled controls.
+            num_samples: The number of control sequences to sample.
+            beta_opt_iter: The temperature parameter β₁ used in the noise schedule
+                          for annealing the control sequence.
+            beta_horizon: The temperature parameter β₂ used in the noise schedule
+                              for annealing the planning horizon.
+            temperature: The MPPI temperature parameter λ. Higher values take a more
+                         even average over the samples.
             num_randomizations: The number of domain randomizations to use.
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
@@ -52,7 +60,6 @@ class PredictiveSampling(SamplingBasedController):
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
-            iterations: The number of optimization iterations to perform.
         """
         super().__init__(
             task,
@@ -64,39 +71,47 @@ class PredictiveSampling(SamplingBasedController):
             num_knots=num_knots,
             iterations=iterations,
         )
-        self.noise_level = noise_level
+        self.beta_opt_iter = beta_opt_iter
+        self.beta_horizon = beta_horizon
         self.num_samples = num_samples
+        self.temperature = temperature
 
     def init_params(
         self, initial_knots: jax.Array = None, seed: int = 0
-    ) -> PSParams:
+    ) -> DIALParams:
         """Initialize the policy parameters."""
         _params = super().init_params(initial_knots, seed)
-        return PSParams(
-            tk=_params.tk, opt_iteration=0, mean=_params.mean, rng=_params.rng
+
+        return DIALParams(
+            tk=_params.tk,
+            opt_iteration=0,
+            mean=_params.mean,
+            rng=_params.rng,
         )
 
-    def sample_knots(self, params: PSParams) -> Tuple[jax.Array, PSParams]:
-        """Sample a control sequence."""
+    def sample_knots(self, params: DIALParams) -> Tuple[jax.Array, DIALParams]:
         rng, sample_rng = jax.random.split(params.rng)
+
         noise = jax.random.normal(
             sample_rng,
-            (
-                self.num_samples,
-                self.num_knots,
-                self.task.model.nu,
-            ),
+            (self.num_samples, self.num_knots, self.task.model.nu),
         )
-        controls = params.mean + self.noise_level * noise
 
-        # The original mean of the distribution is included as a sample
-        controls = controls.at[0].set(params.mean)
+        noise_level = jnp.exp(
+            -(params.opt_iteration) / (self.beta_opt_iter * self.iterations)
+            - (self.num_knots - jnp.arange(self.num_knots))
+            / (self.beta_horizon * self.num_knots)
+        )
 
+        controls = params.mean + noise_level[None, :, None] * noise
         return controls, params.replace(rng=rng)
 
-    def update_params(self, params: PSParams, rollouts: Trajectory) -> PSParams:
-        """Update the policy parameters by choosing the lowest-cost rollout."""
+    def update_params(
+        self, params: DIALParams, rollouts: Trajectory
+    ) -> DIALParams:
+        """Update the mean with an exponentially weighted average."""
         costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
-        best_idx = jnp.argmin(costs)
-        mean = rollouts.knots[best_idx]
+        # N.B. jax.nn.softmax takes care of details like baseline subtraction.
+        weights = jax.nn.softmax(-costs / self.temperature, axis=0)
+        mean = jnp.sum(weights[:, None, None] * rollouts.knots, axis=0)
         return params.replace(mean=mean)

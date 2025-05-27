@@ -89,7 +89,11 @@ class CEM(SamplingBasedController):
         _params = super().init_params(initial_knots, seed)
         cov = jnp.full_like(_params.mean, self.sigma_start)
         return CEMParams(
-            tk=_params.tk, mean=_params.mean, cov=cov, rng=_params.rng
+            tk=_params.tk,
+            opt_iteration=0,
+            mean=_params.mean,
+            cov=cov,
+            rng=_params.rng,
         )
 
     def sample_knots(self, params: CEMParams) -> Tuple[jax.Array, CEMParams]:
