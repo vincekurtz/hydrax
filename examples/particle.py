@@ -145,13 +145,14 @@ elif args.algorithm == "dial":
     ctrl = DIAL(
         task,
         num_samples=16,
-        temperature=0.01,
+        noise_level=0.4,
+        beta_opt_iter=1.0,
+        beta_horizon=1.0,
+        temperature=0.001,
         plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
         iterations=5,
-        beta_opt_iter=2.0,
-        beta_horizon=2.0,
     )
 else:
     parser.error("Invalid algorithm")

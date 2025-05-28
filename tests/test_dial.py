@@ -14,9 +14,10 @@ def test_open_loop() -> None:
     opt = DIAL(
         task,
         num_samples=32,
-        beta_opt_iter=2.0,
-        beta_horizon=2.0,
-        temperature=1.0,
+        noise_level=0.4,
+        beta_opt_iter=1.0,
+        beta_horizon=1.0,
+        temperature=0.001,
         plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,
@@ -78,6 +79,7 @@ def test_sample_knots_shape() -> None:
     opt = DIAL(
         task,
         num_samples=20,
+        noise_level=0.4,
         beta_opt_iter=1.5,
         beta_horizon=1.5,
         temperature=0.8,
@@ -114,6 +116,7 @@ def test_update_params() -> None:
     opt = DIAL(
         task,
         num_samples=4,
+        noise_level=0.4,
         beta_opt_iter=1.0,
         beta_horizon=1.0,
         temperature=1.0,

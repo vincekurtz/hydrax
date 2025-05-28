@@ -30,6 +30,7 @@ class DIAL(SamplingBasedController):
         self,
         task: Task,
         num_samples: int,
+        noise_level: float,
         beta_opt_iter: float,
         beta_horizon: float,
         temperature: float,
@@ -71,6 +72,7 @@ class DIAL(SamplingBasedController):
             num_knots=num_knots,
             iterations=iterations,
         )
+        self.noise_level = noise_level
         self.beta_opt_iter = beta_opt_iter
         self.beta_horizon = beta_horizon
         self.num_samples = num_samples
@@ -97,9 +99,9 @@ class DIAL(SamplingBasedController):
             (self.num_samples, self.num_knots, self.task.model.nu),
         )
 
-        noise_level = jnp.exp(
+        noise_level = self.noise_level * jnp.exp(
             -(params.opt_iteration) / (self.beta_opt_iter * self.iterations)
-            - (self.num_knots - jnp.arange(self.num_knots))
+            - (self.num_knots - 1 - jnp.arange(self.num_knots))
             / (self.beta_horizon * self.num_knots)
         )
 
