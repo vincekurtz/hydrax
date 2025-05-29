@@ -46,7 +46,6 @@ def test_init_params() -> None:
     assert params.tk.shape == (controller.num_knots,)
     assert jnp.all(params.mean == initial_knots)
 
-
 def test_get_action() -> None:
     """Make sure we can get the action from the policy parameters of the correct shape."""
     task = Particle()
@@ -57,7 +56,6 @@ def test_get_action() -> None:
     action = controller.get_action(params, 0)
     expected_shape = task.model.nu
     assert action.shape[0] == expected_shape
-
 
 if __name__ == "__main__":
     test_traj()

@@ -107,12 +107,7 @@ class DIAL(SamplingBasedController):
         """Initialize the policy parameters."""
         _params = super().init_params(initial_knots, seed)
 
-        return DIALParams(
-            tk=_params.tk,
-            mean=_params.mean,
-            rng=_params.rng,
-            opt_iteration=0,
-        )
+        return DIALParams(tk=_params.tk, mean=_params.mean, rng=_params.rng, opt_iteration=0)
 
     def sample_knots(self, params: DIALParams) -> Tuple[jax.Array, DIALParams]:
         """Sample control knots.
