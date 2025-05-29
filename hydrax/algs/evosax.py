@@ -98,7 +98,6 @@ class Evosax(SamplingBasedController):
         opt_state = self.strategy.initialize(init_rng, self.es_params)
         return EvosaxParams(
             tk=_params.tk,
-            opt_iteration=0,
             mean=_params.mean,
             opt_state=opt_state,
             rng=rng,

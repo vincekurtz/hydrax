@@ -47,43 +47,6 @@ def test_init_params() -> None:
     assert jnp.all(params.mean == initial_knots)
 
 
-def test_opt_iteration() -> None:
-    """Test that opt_iteration is properly initialized and updated during optimization."""
-    task = Particle()
-    controller = CEM(
-        task,
-        num_samples=10,
-        num_elites=5,
-        sigma_start=1.0,
-        sigma_min=0.1,
-        iterations=3,
-    )
-
-    # Test initial opt_iteration value
-    params = controller.init_params()
-    assert params.opt_iteration == 0, (
-        f"Expected opt_iteration to be 0, got {params.opt_iteration}"
-    )
-
-    # Test that opt_iteration is reset during optimize
-    from mujoco import mjx
-
-    state = mjx.make_data(task.model)
-
-    # Manually set opt_iteration to a non-zero value to test reset
-    params = params.replace(opt_iteration=5)
-
-    # Run optimization and check that opt_iteration gets reset and incremented
-    jit_opt = jax.jit(controller.optimize)
-    final_params, _ = jit_opt(state, params)
-
-    # After optimization, opt_iteration should equal the number of iterations
-    assert final_params.opt_iteration == controller.iterations, (
-        f"Expected opt_iteration to be {controller.iterations} after optimization, "
-        f"got {final_params.opt_iteration}"
-    )
-
-
 def test_get_action() -> None:
     """Make sure we can get the action from the policy parameters of the correct shape."""
     task = Particle()
@@ -99,5 +62,4 @@ def test_get_action() -> None:
 if __name__ == "__main__":
     test_traj()
     test_init_params()
-    test_opt_iteration()
     test_get_action()
