@@ -17,14 +17,33 @@ class DIALParams(SamplingParams):
 
     Attributes:
         tk: The knot times of the control spline.
-        opt_iteration: The optimization iteration number.
         mean: The mean of the control spline knot distribution, μ = [u₀, ...].
         rng: The pseudo-random number generator key.
+        opt_iteration: The optimization iteration number.
     """
+
+    opt_iteration: int
 
 
 class DIAL(SamplingBasedController):
-    """DIAL MPC based on https://arxiv.org/abs/2409.15610"""
+    """Diffusion-Inspired Annealing for Legged MPC (DIAL) based on https://arxiv.org/abs/2409.15610.
+
+    DIAL-MPC is MPPI with a dual-loop, annealed sampling covariance that:
+        - Decreases across optimisation iterations (trajectory-level annealing).
+        - Increases along the planning horizon (action-level annealing).
+
+    The noise level is given by:
+
+        sigma[i,h] = sigma_0 * exp(-i/(β₁*N) - (H-h)/(β₂*H))
+
+    where:
+        - sigma_0 is the tunable `noise_level`,
+        - β₁ is the tunable `beta_opt_iter`,
+        - β₂ is the tunable `beta_horizon`,
+        - i in {0,...,N-1} is the optimisation iteration,
+        - h in {0,...,H} indexes the knot along the horizon, and
+        - N is the number of iterations and H is the number of knots.
+    """
 
     def __init__(
         self,
@@ -47,10 +66,12 @@ class DIAL(SamplingBasedController):
         Args:
             task: The dynamics and cost for the system we want to control.
             num_samples: The number of control sequences to sample.
-            beta_opt_iter: The temperature parameter β₁ used in the noise schedule
-                          for annealing the control sequence.
-            beta_horizon: The temperature parameter β₂ used in the noise schedule
-                              for annealing the planning horizon.
+            beta_opt_iter: The temperature parameter β₁ for the trajectory-level
+                          annealing. Higher values will result in less
+                          annealing over optimisation iterations (exploration).
+            beta_horizon: The temperature parameter β₂ for the action-level
+                          annealing. Higher values will result in less
+                          variation over the planning horizon (exploitation).
             temperature: The MPPI temperature parameter λ. Higher values take a more
                          even average over the samples.
             num_randomizations: The number of domain randomizations to use.
@@ -75,6 +96,8 @@ class DIAL(SamplingBasedController):
         self.noise_level = noise_level
         self.beta_opt_iter = beta_opt_iter
         self.beta_horizon = beta_horizon
+        assert self.beta_opt_iter > 0.0, "beta_opt_iter must be positive"
+        assert self.beta_horizon > 0.0, "beta_horizon must be positive"
         self.num_samples = num_samples
         self.temperature = temperature
 
@@ -86,12 +109,17 @@ class DIAL(SamplingBasedController):
 
         return DIALParams(
             tk=_params.tk,
-            opt_iteration=0,
             mean=_params.mean,
             rng=_params.rng,
+            opt_iteration=0,
         )
 
     def sample_knots(self, params: DIALParams) -> Tuple[jax.Array, DIALParams]:
+        """Sample control knots.
+
+        Anneals noise and adds it to the mean control sequence, then increments
+        the optimisation iteration number.
+        """
         rng, sample_rng = jax.random.split(params.rng)
 
         noise = jax.random.normal(
@@ -106,7 +134,12 @@ class DIAL(SamplingBasedController):
         )
 
         controls = params.mean + noise_level[None, :, None] * noise
-        return controls, params.replace(rng=rng)
+
+        # Increment opt_iteration, wrapping after maximum iterations reached
+        return controls, params.replace(
+            opt_iteration=(params.opt_iteration + 1) % self.iterations,
+            rng=rng,
+        )
 
     def update_params(
         self, params: DIALParams, rollouts: Trajectory

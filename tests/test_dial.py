@@ -5,6 +5,7 @@ from mujoco import mjx
 
 from hydrax.algs.dial import DIAL
 from hydrax.tasks.pendulum import Pendulum
+from hydrax.alg_base import Trajectory
 
 
 def test_open_loop() -> None:
@@ -110,6 +111,44 @@ def test_sample_knots_shape() -> None:
     assert params.opt_iteration == updated_params.opt_iteration
 
 
+def test_opt_iteration() -> None:
+    """Test that opt_iteration is properly initialized and updated during optimization."""
+    task = Pendulum()
+    controller = DIAL(
+        task,
+        num_samples=10,
+        noise_level=0.4,
+        beta_opt_iter=1.0,
+        beta_horizon=1.0,
+        temperature=1.0,
+        plan_horizon=0.5,
+        spline_type="zero",
+        num_knots=3,
+        iterations=3,
+    )
+
+    # Test initial opt_iteration value
+    params = controller.init_params()
+    assert params.opt_iteration == 0, (
+        f"Expected opt_iteration to be 0, got {params.opt_iteration}"
+    )
+
+    # Test that opt_iteration is reset after n iterations
+    for _ in range(controller.iterations):
+        _, params = controller.sample_knots(params)
+    assert params.opt_iteration == 0, (
+        f"Expected opt_iteration to be 0, got {params.opt_iteration}"
+    )
+
+    # Test that opt_iteration is reset after optimization
+    state = mjx.make_data(task.model)
+    jit_opt = jax.jit(controller.optimize)
+    final_params, _ = jit_opt(state, params)
+    assert final_params.opt_iteration == 0, (
+        f"Expected opt_iteration to be 0, got {final_params.opt_iteration}"
+    )
+
+
 def test_update_params() -> None:
     """Test that update_params correctly updates the mean using weighted average."""
     task = Pendulum()
@@ -140,8 +179,6 @@ def test_update_params() -> None:
     controls = jnp.zeros((num_samples, ctrl_steps, nu))
     trace_sites = jnp.zeros((num_samples, ctrl_steps + 1, 3))
 
-    from hydrax.alg_base import Trajectory
-
     rollouts = Trajectory(
         controls=controls,
         knots=knots,
@@ -170,3 +207,4 @@ if __name__ == "__main__":
     test_open_loop()
     test_sample_knots_shape()
     test_update_params()
+    test_opt_iteration()
