@@ -34,10 +34,10 @@ class DIAL(SamplingBasedController):
 
     The noise level is given by:
 
-        sigma[i,h] = sigma_0 * exp(-i/(β₁*N) - (H-h)/(β₂*H))
+        σ[i,h] = σ₀ * exp(-i/(β₁*N) - (H-h)/(β₂*H))
 
     where:
-        - sigma_0 is the tunable `noise_level`,
+        - σ₀ is the tunable `noise_level`,
         - β₁ is the tunable `beta_opt_iter`,
         - β₂ is the tunable `beta_horizon`,
         - i in {0,...,N-1} is the optimisation iteration,
