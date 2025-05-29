@@ -23,6 +23,7 @@ Available methods:
 | [Predictive sampling](https://arxiv.org/abs/2212.00541) | Take the lowest-cost rollout at each iteration. | [`hydrax.algs.PredictiveSampling`](hydrax/algs/predictive_sampling.py) |
 | [MPPI](https://arxiv.org/abs/1707.02342) | Take an exponentially weighted average of the rollouts. | [`hydrax.algs.MPPI`](hydrax/algs/mppi.py) |
 | [Cross Entropy Method](https://en.wikipedia.org/wiki/Cross-entropy_method) | Fit a Gaussian distribution to the `n` best "elite" rollouts. | [`hydrax.algs.CEM`](hydrax/algs/cem.py) |
+| [DIAL-MPC](https://arxiv.org/abs/2409.15610) | MPPI with dual-loop, annealed sampling covariance. | [`hydrax.algs.DIAL`](hydrax/algs/dial.py) |
 | [Evosax](https://github.com/RobertTLange/evosax/) | Any of the 30+ evolution strategies implemented in `evosax`. Includes CMA-ES, differential evolution, and many more. | [`hydrax.algs.Evosax`](hydrax/algs.evosax.py) |
 
 ## News
