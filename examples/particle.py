@@ -3,7 +3,7 @@ import argparse
 import evosax
 import mujoco
 
-from hydrax.algs import MPPI, CEM, Evosax, PredictiveSampling
+from hydrax.algs import MPPI, CEM, Evosax, PredictiveSampling, DIAL
 from hydrax.risk import WorstCase
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.particle import Particle
@@ -34,6 +34,9 @@ subparsers.add_parser(
 subparsers.add_parser("de", help="Differential Evolution")
 subparsers.add_parser("gld", help="Gradient-Less Descent")
 subparsers.add_parser("rs", help="Uniform Random Search")
+subparsers.add_parser(
+    "dial", help="Diffusion-Inspired Annealing for Legged MPC (DIAL)"
+)
 args = parser.parse_args()
 
 # Set the controller based on command-line arguments
@@ -135,6 +138,21 @@ elif args.algorithm == "rs":
         plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
+    )
+
+elif args.algorithm == "dial":
+    print("Running Diffusion-Inspired Annealing for Legged MPC (DIAL)")
+    ctrl = DIAL(
+        task,
+        num_samples=16,
+        noise_level=0.4,
+        beta_opt_iter=1.0,
+        beta_horizon=1.0,
+        temperature=0.001,
+        plan_horizon=0.25,
+        spline_type="zero",
+        num_knots=11,
+        iterations=5,
     )
 else:
     parser.error("Invalid algorithm")
