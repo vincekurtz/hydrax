@@ -1,6 +1,5 @@
 from typing import Any, Literal, Tuple
 
-import evosax
 import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
@@ -8,6 +7,8 @@ from flax.struct import dataclass
 from hydrax.alg_base import SamplingBasedController, SamplingParams, Trajectory
 from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
+
+from evosax.algorithms.base import EvolutionaryAlgorithm
 
 # Generic types for evosax
 EvoParams = Any
@@ -38,7 +39,7 @@ class Evosax(SamplingBasedController):
     def __init__(
         self,
         task: Task,
-        optimizer: evosax.Strategy,
+        optimizer: EvolutionaryAlgorithm,
         num_samples: int,
         es_params: EvoParams = None,
         num_randomizations: int = 1,
@@ -80,8 +81,9 @@ class Evosax(SamplingBasedController):
         )
 
         self.strategy = optimizer(
-            popsize=num_samples,
-            num_dims=task.model.nu * self.num_knots,
+            population_size=num_samples,
+            # Only to inform the dimension to evosax 
+            solution=jnp.zeros(task.model.nu * self.num_knots), 
             **kwargs,
         )
 
@@ -95,7 +97,13 @@ class Evosax(SamplingBasedController):
         """Initialize the policy parameters."""
         _params = super().init_params(initial_knots, seed)
         rng, init_rng = jax.random.split(_params.rng)
-        opt_state = self.strategy.initialize(init_rng, self.es_params)
+
+        opt_state = self.strategy.init(key = init_rng, 
+                                       mean=jnp.reshape(
+                                            _params.mean,
+                                            (self.task.model.nu * self.num_knots)
+                                        ), 
+                                       params = self.es_params)
         return EvosaxParams(
             tk=_params.tk, mean=_params.mean, opt_state=opt_state, rng=rng
         )
@@ -114,7 +122,7 @@ class Evosax(SamplingBasedController):
         controls = jnp.reshape(
             x,
             (
-                self.strategy.popsize,
+                self.strategy.population_size,
                 self.num_knots,
                 self.task.model.nu,
             ),
@@ -127,9 +135,13 @@ class Evosax(SamplingBasedController):
     ) -> EvosaxParams:
         """Update the policy parameters based on the rollouts."""
         costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
-        x = jnp.reshape(rollouts.knots, (self.strategy.popsize, -1))
-        opt_state = self.strategy.tell(
-            x, costs, params.opt_state, self.es_params
+        x = jnp.reshape(rollouts.knots, (self.strategy.population_size, -1))
+
+        # Evosax 0.2 requires a key in its tell() methods        
+        rng, update_rng = jax.random.split(params.rng)
+
+        opt_state, _ = self.strategy.tell(
+            key=update_rng, population=x, fitness=costs, state=params.opt_state, params=self.es_params
         )
 
         best_idx = jnp.argmin(costs)
@@ -140,6 +152,16 @@ class Evosax(SamplingBasedController):
         # member from this generation, since the cost landscape is constantly
         # changing.
         opt_state = opt_state.replace(
-            best_member=x[best_idx], best_fitness=costs[best_idx]
+            best_solution=x[best_idx], best_fitness=costs[best_idx]
         )
-        return params.replace(mean=best_knots, opt_state=opt_state)
+
+        # It is correct to use the mean of the distribution updated from ES, 
+        # instead of the best sample.
+        mean = jnp.reshape(opt_state.mean,
+                    (
+                    self.num_knots,
+                    self.task.model.nu,
+                    )
+        )
+
+        return params.replace(mean=mean, opt_state=opt_state, rng=rng)
