@@ -155,8 +155,6 @@ class Evosax(SamplingBasedController):
             best_solution=x[best_idx], best_fitness=costs[best_idx]
         )
 
-        # It is correct to use the mean of the distribution updated from ES, 
-        # instead of the best sample.
         mean = jnp.reshape(opt_state.mean,
                     (
                     self.num_knots,
