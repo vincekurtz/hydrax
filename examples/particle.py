@@ -1,7 +1,9 @@
 import argparse
 
-import evosax
+from evosax.algorithms.distribution_based import CMA_ES, RandomSearch, GradientlessDescent, Open_ES, SimulatedAnnealing, xNES
+
 import mujoco
+import jax
 
 from hydrax.algs import MPPI, CEM, Evosax, PredictiveSampling, DIAL
 from hydrax.risk import WorstCase
@@ -28,10 +30,9 @@ subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
 subparsers.add_parser("cmaes", help="CMA-ES")
-subparsers.add_parser(
-    "samr", help="Genetic Algorithm with Self-Adaptation Mutation Rate (SAMR)"
-)
-subparsers.add_parser("de", help="Differential Evolution")
+subparsers.add_parser("openes", help="OpenAI-ES")
+subparsers.add_parser("sa", help="Simulated Annealing")
+subparsers.add_parser("xnes", help="Exponential Natural Evolution Strategy")
 subparsers.add_parser("gld", help="Gradient-Less Descent")
 subparsers.add_parser("rs", help="Uniform Random Search")
 subparsers.add_parser(
@@ -83,30 +84,7 @@ elif args.algorithm == "cmaes":
     print("Running CMA-ES")
     ctrl = Evosax(
         task,
-        evosax.Sep_CMA_ES,
-        num_samples=16,
-        elite_ratio=0.5,
-        plan_horizon=0.25,
-        spline_type="zero",
-        num_knots=11,
-    )
-
-elif args.algorithm == "samr":
-    print("Running genetic algorithm with Self-Adaptation Mutation Rate (SAMR)")
-    ctrl = Evosax(
-        task,
-        evosax.SAMR_GA,
-        num_samples=16,
-        plan_horizon=0.25,
-        spline_type="zero",
-        num_knots=11,
-    )
-
-elif args.algorithm == "de":
-    print("Running Differential Evolution (DE)")
-    ctrl = Evosax(
-        task,
-        evosax.DE,
+        CMA_ES,
         num_samples=16,
         plan_horizon=0.25,
         spline_type="zero",
@@ -117,7 +95,40 @@ elif args.algorithm == "gld":
     print("Running Gradient-Less Descent (GLD)")
     ctrl = Evosax(
         task,
-        evosax.GLD,
+        GradientlessDescent,
+        num_samples=16,
+        plan_horizon=0.25,
+        spline_type="zero",
+        num_knots=11,
+    )
+
+elif args.algorithm == "openes":
+    print("Running OpenAI-ES")
+    ctrl = Evosax(
+        task,
+        Open_ES,
+        num_samples=16,
+        plan_horizon=0.25,
+        spline_type="zero",
+        num_knots=11,
+    )
+
+elif args.algorithm == "sa":
+    print("Running Simulated Annealing")
+    ctrl = Evosax(
+        task,
+        SimulatedAnnealing,
+        num_samples=16,
+        plan_horizon=0.25,
+        spline_type="zero",
+        num_knots=11,
+    )
+
+elif args.algorithm == "xnes":
+    print("Running Exponential Natural Evolution Strategy")
+    ctrl = Evosax(
+        task,
+        xNES,
         num_samples=16,
         plan_horizon=0.25,
         spline_type="zero",
@@ -126,15 +137,14 @@ elif args.algorithm == "gld":
 
 elif args.algorithm == "rs":
     print("Running uniform random search")
-    es_params = evosax.strategies.random.EvoParams(
-        range_min=-1.0,
-        range_max=1.0,
+    sampling_fn = lambda key: jax.random.uniform(
+        key, shape=(11 * 2), minval=-1.0, maxval=1.0
     )
     ctrl = Evosax(
         task,
-        evosax.RandomSearch,
+        RandomSearch,
+        sampling_fn=sampling_fn,
         num_samples=16,
-        es_params=es_params,
         plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,
