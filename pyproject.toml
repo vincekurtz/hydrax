@@ -15,7 +15,7 @@ classifiers = [
 ]
 # TODO: evosax v0.2.0 introduced many breaking changes in the API that cause test failures
 dependencies = [
-    "evosax<0.2.0",
+    "evosax>=0.2.0",
     "flax>=0.10.0",
     "huggingface_hub>=0.29.3",
     "interpax>=0.3.7",
