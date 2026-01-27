@@ -5,7 +5,7 @@ import numpy as np
 
 from hydrax.algs import CEM, DIAL, MPPI, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
-from hydrax.tasks.quadruped import QuadrupedStanding
+from hydrax.tasks.quadruped_standup import QuadrupedStanding
 
 """
 Run an interactive simulation of the quadruped standing task.
@@ -91,12 +91,14 @@ mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 # Set the initial state to the home keyframe (standing position)
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = mj_model.keyframe("home").qpos
+mj_data.ctrl[:] = mj_model.keyframe("home").ctrl
+mj_data.qpos[0:3] = [0.0, 0.0, 0.29]
 
 # Run the interactive simulation
 run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=50,
+    frequency=30,
     show_traces=False,
 )

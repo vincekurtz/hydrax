@@ -8,3 +8,4 @@ __pycache__
 MUJOCO_LOG.TXT
 hydrax/recordings/
 .idea
+hydrax/data_csv/
