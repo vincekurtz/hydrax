@@ -470,13 +470,9 @@ dependencies = [
     { name = "huggingface-hub" },
     { name = "interpax" },
     { name = "jax", extra = ["cuda12"] },
+    { name = "matplotlib" },
     { name = "mujoco" },
     { name = "mujoco-mjx" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "matplotlib" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "ruff" },
@@ -489,14 +485,13 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=0.29.3" },
     { name = "interpax", specifier = ">=0.3.7" },
     { name = "jax", extras = ["cuda12"], specifier = ">=0.4.35" },
-    { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.9.2" },
+    { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "mujoco", specifier = ">=3.2.4" },
     { name = "mujoco-mjx", specifier = ">=3.2.4" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.3" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7.1" },
+    { name = "pre-commit", specifier = ">=4.0.1" },
+    { name = "pytest", specifier = ">=8.3.3" },
+    { name = "ruff", specifier = ">=0.7.1" },
 ]
-provides-extras = ["dev"]
 
 [[package]]
 name = "identify"

@@ -13,7 +13,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python",
 ]
-# TODO: evosax v0.2.0 introduced many breaking changes in the API that cause test failures
 dependencies = [
     "evosax>=0.2.0",
     "flax>=0.10.0",
@@ -22,10 +21,6 @@ dependencies = [
     "jax[cuda12]>=0.4.35",
     "mujoco>=3.2.4",
     "mujoco-mjx>=3.2.4",
-]
-
-[project.optional-dependencies]
-dev = [
     "matplotlib>=3.9.2",
     "pre-commit>=4.0.1",
     "pytest>=8.3.3",
