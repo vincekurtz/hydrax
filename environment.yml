@@ -1,6 +1,6 @@
 name: hydrax
 channels:
-  - nvidia/label/cuda-12.3.0
+  - nvidia/label/cuda-13.0.2
   - conda-forge
 dependencies:
   - cuda
