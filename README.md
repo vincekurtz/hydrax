@@ -28,9 +28,50 @@ Available methods:
 
 ## News
 
-- April 13, 2024. Large changes to the core `hydrax` functionality + some breaking changes.
-    - Splines (and their knots) are now the default parameterization of the control signals and decision variables! Before, it was always assumed that every control step applied a zero-order hold. This is now a special case of the new spline parameterization.
-    - All "time-based" variables are now specified in the controller. Previously, variables like the planning horizon and number of sim steps per control step were specified in the task. Now, the main variables to specify are `plan_horizon` (the length of the planning horizon in seconds), `num_knots` (the number of spline knots to plan with), and `dt` (the planning time step (in the model XML)). **This is a breaking change!**
+- February 15, 2026. Our preferred package manager is now
+  [uv](https://docs.astral.sh/uv/), which is lighter weight and offers improved
+  reproducibility via `uv.lock`. Conda use is still possible, but we recommend
+  switching to uv for the best experience.
+- April 13, 2024. Large changes to the core `hydrax` functionality + some
+  breaking changes.
+    - Splines (and their knots) are now the default parameterization of the
+      control signals and decision variables! Before, it was always assumed that
+      every control step applied a zero-order hold. This is now a special case
+      of the new spline parameterization.
+    - All "time-based" variables are now specified in the controller.
+      Previously, variables like the planning horizon and number of sim steps
+      per control step were specified in the task. Now, the main variables to
+      specify are `plan_horizon` (the length of the planning horizon in
+      seconds), `num_knots` (the number of spline knots to plan with), and `dt`
+      (the planning time step (in the model XML)). **This is a breaking
+      change!**
+
+## Setup (uv)
+
+Clone this repository:
+```bash
+git clone https://github.com/vincekurtz/hydrax.git
+cd hydrax
+```
+
+Install the package and dependencies:
+```bash
+uv sync
+```
+
+You can use `uv` to run examples and tests directly:
+```bash
+uv run python examples/pendulum.py mppi  # pendulum swing up with MPPI
+uv run pytest  # run unit tests
+```
+
+Or you can activate the virtual environment (created by `uv sync`) and run
+things directly:
+```bash
+source .venv/bin/activate
+python examples/pendulum.py mppi  # pendulum swing up with MPPI
+pytest  # run unit tests
+```
 
 ## Setup (conda)
 
@@ -52,14 +93,14 @@ Install the package and dependencies:
 pip install -e .
 ```
 
-(Optional) Set up pre-commit hooks if using development dependencies:
+(Optional) Set up pre-commit hooks:
 
 ```bash
 pre-commit autoupdate
 pre-commit install
 ```
 
-(Optional) Run unit tests if using development dependencies:
+(Optional) Run unit tests:
 
 ```bash
 pytest
