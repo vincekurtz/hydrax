@@ -21,8 +21,13 @@ def _write_to_shared_nparray(shared: SharedMemoryNumpyArray) -> None:
     shared[0] = 4.0
 
 
-def test_shared_nparray() -> None:
-    """Test reading and writing a shared-memory numpy array."""
+def manual_test_shared_nparray() -> None:
+    """Test reading and writing a shared-memory numpy array.
+
+    Note: pytest's garbage collection can cause the shared memory to be deleted
+    before the main thread can read it, leading to errors. Thus this test is to
+    be run manually only.
+    """
     ctx = mp.get_context("spawn")
 
     original = np.array([0.0, 1.0, 2.0, 3.0])
@@ -115,7 +120,7 @@ def manual_test_interactive() -> None:
 
 
 if __name__ == "__main__":
-    test_shared_nparray()
+    manual_test_shared_nparray()
     manual_test_controller()
     manual_test_simulator()
     manual_test_interactive()
