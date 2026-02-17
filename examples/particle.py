@@ -1,11 +1,17 @@
 import argparse
 
-from evosax.algorithms.distribution_based import CMA_ES, RandomSearch, GradientlessDescent, Open_ES, SimulatedAnnealing, xNES
-
-import mujoco
 import jax
+import mujoco
+from evosax.algorithms.distribution_based import (
+    CMA_ES,
+    GradientlessDescent,
+    Open_ES,
+    RandomSearch,
+    SimulatedAnnealing,
+    xNES,
+)
 
-from hydrax.algs import MPPI, CEM, Evosax, PredictiveSampling, DIAL
+from hydrax.algs import CEM, DIAL, MPPI, Evosax, PredictiveSampling
 from hydrax.risk import WorstCase
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.particle import Particle

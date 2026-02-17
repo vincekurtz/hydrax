@@ -1,7 +1,7 @@
-from evosax.algorithms.distribution_based.cma_es import CMA_ES
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+from evosax.algorithms.distribution_based.cma_es import CMA_ES
 from mujoco import mjx
 
 from hydrax.algs.evosax import Evosax
@@ -23,7 +23,8 @@ def test_cmaes() -> None:
     # Initialize the policy parameters
     params = ctrl.init_params()
     assert params.opt_state.C.shape == (ctrl.num_knots, ctrl.num_knots)
-    assert ctrl.es_params.weights.shape == (32,) # weights in evosax 0.2.0 stay in params
+    # weights in evosax 0.2.0 stay in params
+    assert ctrl.es_params.weights.shape == (32,)
 
     # Sample control sequences from the policy
     knots, params = ctrl.sample_knots(params)
@@ -58,7 +59,8 @@ def test_open_loop() -> None:
         num_knots=11,
     )
 
-    # elite_ratio was not an argument of the constructor in exosax 0.2.0, it was hard-coded
+    # elite_ratio was not an argument of the constructor in exosax 0.2.0, it was
+    # hard-coded
     opt.elite_ratio = 0.1
 
     jit_opt = jax.jit(opt.optimize)

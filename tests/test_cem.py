@@ -84,7 +84,8 @@ def test_explore_fraction() -> None:
     sigma_start = 1.0
     sigma_min = 0.1
 
-    # Test different fractions: no exploration, partial exploration, full exploration.
+    # Test different fractions: no exploration, partial exploration, full
+    # exploration.
     for explore_fraction in [0.0, 0.3, 0.5, 0.75, 1.0]:
         task = Pendulum()
         opt = CEM(
@@ -112,7 +113,8 @@ def test_explore_fraction() -> None:
         num_explore = int(explore_fraction * num_samples)
         num_main = num_samples - num_explore
 
-        # The implementation concatenates main samples first and exploration samples later.
+        # The implementation concatenates main samples first and exploration
+        # samples later.
         main_controls = controls[:num_main]
         explore_controls = controls[num_main:]
 
@@ -124,12 +126,13 @@ def test_explore_fraction() -> None:
             task.model.nu,
         )
         assert main_controls.shape == expected_main_shape, (
-            f"Expected main controls shape {expected_main_shape} but got {main_controls.shape} "
-            f"for explore_fraction = {explore_fraction}"
+            f"Expected main controls shape {expected_main_shape} but got "
+            f"{main_controls.shape} for explore_fraction = {explore_fraction}"
         )
         assert explore_controls.shape == expected_explore_shape, (
-            f"Expected explore controls shape {expected_explore_shape} but got {explore_controls.shape} "
-            f"for explore_fraction = {explore_fraction}"
+            f"Expected explore controls shape {expected_explore_shape} but got "
+            f"{explore_controls.shape} for explore_fraction = "
+            f"{explore_fraction}"
         )
 
 
