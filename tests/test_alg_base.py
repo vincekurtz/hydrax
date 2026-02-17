@@ -1,9 +1,9 @@
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
 
 from hydrax.alg_base import Trajectory
-from hydrax.tasks.particle import Particle
 from hydrax.algs.cem import CEM
+from hydrax.tasks.particle import Particle
 
 
 def test_traj() -> None:
@@ -46,8 +46,9 @@ def test_init_params() -> None:
     assert params.tk.shape == (controller.num_knots,)
     assert jnp.all(params.mean == initial_knots)
 
+
 def test_get_action() -> None:
-    """Make sure we can get the action from the policy parameters of the correct shape."""
+    """Make sure we can get the action from the policy parameters."""
     task = Particle()
     controller = CEM(
         task, num_samples=10, num_elites=5, sigma_start=1.0, sigma_min=0.1
@@ -56,6 +57,7 @@ def test_get_action() -> None:
     action = controller.get_action(params, 0)
     expected_shape = task.model.nu
     assert action.shape[0] == expected_shape
+
 
 if __name__ == "__main__":
     test_traj()

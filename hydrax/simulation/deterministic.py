@@ -1,6 +1,6 @@
+import os
 import time
 from typing import Sequence
-import os
 
 import jax
 import jax.numpy as jnp
@@ -9,8 +9,8 @@ import mujoco.viewer
 import numpy as np
 from mujoco import mjx
 
-from hydrax.alg_base import SamplingBasedController
 from hydrax import ROOT
+from hydrax.alg_base import SamplingBasedController
 from hydrax.utils.video import VideoRecorder
 
 """
@@ -126,7 +126,8 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             height=height,
             fps=actual_frequency,
         )
-        # Ensure model visual offscreen buffer is compatible with video recording
+        # Ensure model visual offscreen buffer is compatible with video
+        # recording
         mj_model.vis.global_.offwidth = width
         mj_model.vis.global_.offheight = height
         if not recorder.start():

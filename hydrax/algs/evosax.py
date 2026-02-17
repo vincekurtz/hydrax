@@ -2,13 +2,12 @@ from typing import Any, Literal, Tuple
 
 import jax
 import jax.numpy as jnp
+from evosax.algorithms.base import EvolutionaryAlgorithm
 from flax.struct import dataclass
 
 from hydrax.alg_base import SamplingBasedController, SamplingParams, Trajectory
 from hydrax.risk import RiskStrategy
 from hydrax.task_base import Task
-
-from evosax.algorithms.base import EvolutionaryAlgorithm
 
 # Generic types for evosax
 EvoParams = Any
@@ -82,8 +81,8 @@ class Evosax(SamplingBasedController):
 
         self.strategy = optimizer(
             population_size=num_samples,
-            # Only to inform the dimension to evosax 
-            solution=jnp.zeros(task.model.nu * self.num_knots), 
+            # Only to inform the dimension to evosax
+            solution=jnp.zeros(task.model.nu * self.num_knots),
             **kwargs,
         )
 
@@ -98,12 +97,13 @@ class Evosax(SamplingBasedController):
         _params = super().init_params(initial_knots, seed)
         rng, init_rng = jax.random.split(_params.rng)
 
-        opt_state = self.strategy.init(key = init_rng, 
-                                       mean=jnp.reshape(
-                                            _params.mean,
-                                            (self.task.model.nu * self.num_knots)
-                                        ), 
-                                       params = self.es_params)
+        opt_state = self.strategy.init(
+            key=init_rng,
+            mean=jnp.reshape(
+                _params.mean, (self.task.model.nu * self.num_knots)
+            ),
+            params=self.es_params,
+        )
         return EvosaxParams(
             tk=_params.tk, mean=_params.mean, opt_state=opt_state, rng=rng
         )
@@ -137,15 +137,18 @@ class Evosax(SamplingBasedController):
         costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
         x = jnp.reshape(rollouts.knots, (self.strategy.population_size, -1))
 
-        # Evosax 0.2 requires a key in its tell() methods        
+        # Evosax 0.2 requires a key in its tell() methods
         rng, update_rng = jax.random.split(params.rng)
 
         opt_state, _ = self.strategy.tell(
-            key=update_rng, population=x, fitness=costs, state=params.opt_state, params=self.es_params
+            key=update_rng,
+            population=x,
+            fitness=costs,
+            state=params.opt_state,
+            params=self.es_params,
         )
 
         best_idx = jnp.argmin(costs)
-        best_knots = rollouts.knots[best_idx]
 
         # By default, opt_state stores the best member ever, rather than the
         # best member from the current generation. We want to just use the best
@@ -155,11 +158,12 @@ class Evosax(SamplingBasedController):
             best_solution=x[best_idx], best_fitness=costs[best_idx]
         )
 
-        mean = jnp.reshape(opt_state.mean,
-                    (
-                    self.num_knots,
-                    self.task.model.nu,
-                    )
+        mean = jnp.reshape(
+            opt_state.mean,
+            (
+                self.num_knots,
+                self.task.model.nu,
+            ),
         )
 
         return params.replace(mean=mean, opt_state=opt_state, rng=rng)

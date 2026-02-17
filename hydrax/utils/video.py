@@ -3,7 +3,6 @@
 import os
 import subprocess
 from datetime import datetime
-from typing import Optional, Dict, Any
 
 
 class VideoRecorder:
@@ -153,7 +152,7 @@ class VideoRecorder:
             # Try to terminate the process if it's still running
             try:
                 self.ffmpeg_process.terminate()
-            except:
+            except Exception:
                 pass
             self.is_recording = False
             return False

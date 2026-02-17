@@ -66,14 +66,15 @@ class DIAL(SamplingBasedController):
         Args:
             task: The dynamics and cost for the system we want to control.
             num_samples: The number of control sequences to sample.
+            noise_level: The initial noise level σ₀ for the sampling covariance.
             beta_opt_iter: The temperature parameter β₁ for the trajectory-level
                           annealing. Higher values will result in less
                           annealing over optimisation iterations (exploration).
             beta_horizon: The temperature parameter β₂ for the action-level
                           annealing. Higher values will result in less
                           variation over the planning horizon (exploitation).
-            temperature: The MPPI temperature parameter λ. Higher values take a more
-                         even average over the samples.
+            temperature: The MPPI temperature parameter λ. Higher values take a
+                         more even average over the samples.
             num_randomizations: The number of domain randomizations to use.
             risk_strategy: How to combining costs from different randomizations.
                            Defaults to average cost.
@@ -82,6 +83,7 @@ class DIAL(SamplingBasedController):
             spline_type: The type of spline used for control interpolation.
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
+            iterations: The number of optimization iterations to perform.
         """
         super().__init__(
             task,
@@ -109,7 +111,7 @@ class DIAL(SamplingBasedController):
 
         return DIALParams(
             tk=_params.tk, mean=_params.mean, rng=_params.rng, opt_iteration=0
-            )
+        )
 
     def sample_knots(self, params: DIALParams) -> Tuple[jax.Array, DIALParams]:
         """Sample control knots.

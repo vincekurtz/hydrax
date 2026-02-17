@@ -4,7 +4,6 @@ from typing import Tuple
 import jax
 import jax.numpy as jnp
 import mujoco
-import pytest
 from mujoco import mjx
 
 from hydrax import ROOT

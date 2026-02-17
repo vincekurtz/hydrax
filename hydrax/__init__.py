@@ -1,6 +1,7 @@
 import os
-import jax
 from pathlib import Path
+
+import jax
 
 # package root
 ROOT = str(Path(__file__).parent.absolute())
