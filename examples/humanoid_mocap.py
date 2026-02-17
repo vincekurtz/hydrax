@@ -1,4 +1,5 @@
 import argparse
+from copy import deepcopy
 
 import mujoco
 
@@ -52,7 +53,7 @@ ctrl = CEM(
 )
 
 # Define the model used for simulation
-mj_model = task.mj_model
+mj_model = deepcopy(task.mj_model)
 mj_model.opt.timestep = 0.01
 mj_model.opt.iterations = 10
 mj_model.opt.ls_iterations = 50

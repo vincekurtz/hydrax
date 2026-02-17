@@ -23,19 +23,22 @@ class Task(ABC):
         self,
         mj_model: mujoco.MjModel,
         trace_sites: Sequence[str] | None = None,
+        impl: str = "jax",
     ) -> None:
         """Set the model and simulation parameters.
 
         Args:
             mj_model: The MuJoCo model to use for simulation.
             trace_sites: A list of site names to visualize with traces.
+            impl: The backend implementation for rollouts ("jax" for standard
+                  MJX or "warp" for MjWarp).
 
         Note: many other simulator parameters, e.g., simulator time step,
               Newton iterations, etc., are set in the model itself.
         """
         assert isinstance(mj_model, mujoco.MjModel)
         self.mj_model = mj_model
-        self.model = mjx.put_model(mj_model)
+        self.model = mjx.put_model(mj_model, impl=impl)
 
         # Set actuator limits
         self.u_min = jnp.where(

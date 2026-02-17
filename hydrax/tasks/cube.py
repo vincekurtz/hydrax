@@ -12,12 +12,13 @@ from hydrax.task_base import Task
 class CubeRotation(Task):
     """Cube rotation with the LEAP hand."""
 
-    def __init__(self) -> None:
+    def __init__(self, impl: str = "jax") -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/cube/scene.xml")
         super().__init__(
             mj_model,
             trace_sites=["cube_center", "if_tip", "mf_tip", "rf_tip", "th_tip"],
+            impl=impl
         )
 
         # Get sensor ids

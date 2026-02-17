@@ -1,4 +1,5 @@
 import mujoco
+from copy import deepcopy
 
 from hydrax.algs import PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
@@ -23,7 +24,7 @@ ctrl = PredictiveSampling(
 )
 
 # Define the model used for simulation
-mj_model = task.mj_model
+mj_model = deepcopy(task.mj_model)
 mj_model.opt.timestep = 0.001
 mj_model.opt.iterations = 100
 mj_model.opt.ls_iterations = 50

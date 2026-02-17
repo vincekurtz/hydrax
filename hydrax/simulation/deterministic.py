@@ -1,5 +1,6 @@
 import time
-from typing import Sequence
+from typing import Sequence, Dict
+from copy import deepcopy
 import os
 
 import jax
@@ -33,6 +34,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     reference: np.ndarray = None,
     reference_fps: float = 30.0,
     record_video: bool = False,
+    make_data_kwargs: Dict = None,
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -60,6 +62,9 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         reference: The reference trajectory (qs) to visualize.
         reference_fps: The frame rate of the reference trajectory.
         record_video: Whether to record a video of the simulation.
+        make_data_kwargs: Optional kwargs to pass to `mjx.make_data`. This is
+                          particularly useful for setting MjWarp options like
+                          `naconmax` and `njmax` for complex scenes.
     """
     # Report the planning horizon in seconds for debugging
     print(
@@ -79,11 +84,21 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         f"simulating at {1.0 / mj_model.opt.timestep} Hz"
     )
 
-    # Initialize the controller
-    mjx_data = mjx.put_data(mj_model, mj_data)
-    mjx_data = mjx_data.replace(
-        mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
+    # Create a data structure for the controller to run rollouts from.
+    #TODO: controller.make_data(mj_data)
+    mjx_data = mjx.make_data(
+        controller.task.mj_model,
+        impl=controller.task.model.impl,
+        **(make_data_kwargs or {}),
     )
+    mjx_data = mjx_data.replace(
+        qpos=mj_data.qpos,
+        qvel=mj_data.qvel,
+        mocap_pos=mj_data.mocap_pos,
+        mocap_quat=mj_data.mocap_quat
+    )
+    
+    # Initialize the controller
     policy_params = controller.init_params(initial_knots=initial_knots)
     jit_optimize = jax.jit(controller.optimize)
     jit_interp_func = jax.jit(controller.interp_func)

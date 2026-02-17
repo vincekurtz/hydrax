@@ -10,12 +10,12 @@ from hydrax.task_base import Task
 class Pendulum(Task):
     """An inverted pendulum swingup task."""
 
-    def __init__(self) -> None:
+    def __init__(self, impl: str = "jax") -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/pendulum/scene.xml"
         )
-        super().__init__(mj_model, trace_sites=["tip"])
+        super().__init__(mj_model, trace_sites=["tip"], impl=impl)
 
     def _distance_to_upright(self, state: mjx.Data) -> jax.Array:
         """Get a measure of distance to the upright position."""

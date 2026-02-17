@@ -22,6 +22,7 @@ class HumanoidMocap(Task):
     def __init__(
         self,
         reference_filename: str = "Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
+        impl: str = "jax",
     ) -> None:
         """Load the MuJoCo model and set task parameters.
 
@@ -34,6 +35,7 @@ class HumanoidMocap(Task):
         super().__init__(
             mj_model,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
+            impl=impl
         )
 
         # Get sensor IDs

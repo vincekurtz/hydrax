@@ -12,12 +12,13 @@ from hydrax.task_base import Task
 class HumanoidStandup(Task):
     """Standup task for the Unitree G1 humanoid."""
 
-    def __init__(self) -> None:
+    def __init__(self, impl: str = "jax") -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
         super().__init__(
             mj_model,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
+            impl=impl,
         )
 
         # Get sensor and site ids

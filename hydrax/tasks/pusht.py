@@ -12,12 +12,12 @@ from hydrax.task_base import Task
 class PushT(Task):
     """Push a T-shaped block to a desired pose."""
 
-    def __init__(self) -> None:
+    def __init__(self, impl: str = "jax") -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/pusht/scene.xml"
         )
-        super().__init__(mj_model, trace_sites=["pusher"])
+        super().__init__(mj_model, trace_sites=["pusher"], impl=impl)
 
         # Get sensor ids
         self.block_position_sensor = mujoco.mj_name2id(
