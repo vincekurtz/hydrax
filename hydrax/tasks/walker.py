@@ -66,3 +66,7 @@ class Walker(Task):
             self._get_torso_velocity(state) - self.target_velocity
         )
         return 10.0 * height_cost + 3.0 * orientation_cost + 1.0 * velocity_cost
+    
+    def make_data(self) -> mjx.Data:
+        """Create a new state object with extra constraints allocated."""
+        return super().make_data(naconmax=800)

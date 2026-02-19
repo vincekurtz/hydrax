@@ -137,3 +137,24 @@ class Task(ABC):
             A dictionary of randomized data elements.
         """
         return {}
+    
+    def make_data(self, **kwargs) -> mjx.Data:
+        """Create a new state consistent with this task.
+
+        By default, this just creates a new `mjx.Data` instance from the model.
+        Specific tasks can override this method to set parameters that must be
+        adjusted per task, e.g., nconmax and naconmax.
+
+        TODO(vincekurtz): figure out a smarter place to set naconmax and njmax.
+        N.B. when performing parallel rollouts with MjWarp, naconmax and
+        njmax need to be set high enough to support constraint solving across
+        *all* rollouts. This means that these parameters scale with the number
+        of parallel rollouts/samples, as well as the complexity of the task.
+
+        Args:
+            **kwargs: Additional keyword arguments to pass to `mjx.make_data`.
+
+        Returns:
+            A new `mjx.Data` instance for this task.
+        """
+        return mjx.make_data(self.mj_model, impl=self.model.impl, **kwargs)

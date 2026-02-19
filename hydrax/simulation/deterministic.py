@@ -35,7 +35,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     reference: np.ndarray = None,
     reference_fps: float = 30.0,
     record_video: bool = False,
-    make_data_kwargs: Dict = None,
 ) -> None:
     """Run an interactive simulation with the MPC controller.
 
@@ -63,9 +62,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         reference: The reference trajectory (qs) to visualize.
         reference_fps: The frame rate of the reference trajectory.
         record_video: Whether to record a video of the simulation.
-        make_data_kwargs: Optional kwargs to pass to `mjx.make_data`. This is
-                          particularly useful for setting MjWarp options like
-                          `naconmax` and `njmax` for complex scenes.
     """
     # Report the planning horizon in seconds for debugging
     print(
@@ -86,12 +82,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     )
 
     # Create a data structure for the controller to run rollouts from.
-    #TODO: controller.make_data(mj_data)
-    mjx_data = mjx.make_data(
-        controller.task.mj_model,
-        impl=controller.task.model.impl,
-        **(make_data_kwargs or {}),
-    )
     mjx_data = controller.task.make_data()
     mjx_data = mjx_data.replace(
         qpos=mj_data.qpos,

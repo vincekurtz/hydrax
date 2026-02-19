@@ -62,9 +62,6 @@ mj_model.opt.timestep = 0.005
 mj_model.opt.iterations = 50
 mj_data = mujoco.MjData(mj_model)
 
-# Set a MjWarp constraint limit parameters if using the warp backend.
-make_data_kwargs = {"naconmax": 800, "njmax": 50} if args.warp else None
-
 # Run the interactive simulation
 run_interactive(
     ctrl,
@@ -74,5 +71,4 @@ run_interactive(
     fixed_camera_id=0,
     show_traces=False,
     max_traces=1,
-    make_data_kwargs=make_data_kwargs,
 )
