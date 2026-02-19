@@ -25,10 +25,16 @@ if __name__ == "__main__":
         help="Use asynchronous simulation",
         default=False,
     )
+    parser.add_argument(
+        "--warp",
+        action="store_true",
+        help="Whether to use the (experimental) MjWarp backend.",
+        required=False,
+    )
     args = parser.parse_args()
 
     # Define the task (cost and dynamics)
-    task = HumanoidStandup()
+    task = HumanoidStandup(impl="warp" if args.warp else "jax")
 
     # Set up the controller
     ctrl = MPPI(
@@ -77,5 +83,4 @@ if __name__ == "__main__":
             mj_data,
             frequency=50,
             show_traces=False,
-            make_data_kwargs={"naconmax": 200*128*4, "njmax": 200},
         )
