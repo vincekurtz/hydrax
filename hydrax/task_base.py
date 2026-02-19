@@ -137,7 +137,7 @@ class Task(ABC):
             A dictionary of randomized data elements.
         """
         return {}
-    
+
     def make_data(self, **kwargs) -> mjx.Data:
         """Create a new state consistent with this task.
 

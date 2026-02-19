@@ -69,3 +69,7 @@ class PushT(Task):
             self.model.geom_friction[:, 0] * multiplier
         )
         return {"geom_friction": new_frictions}
+
+    def make_data(self) -> mjx.Data:
+        """Create a new state object with extra constraints allocated."""
+        return super().make_data(nconmax=6000)

@@ -1,15 +1,12 @@
 import os
 import time
-from typing import Sequence, Dict
-from copy import deepcopy
-import os
+from typing import Sequence
 
 import jax
 import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
 import numpy as np
-from mujoco import mjx
 
 from hydrax import ROOT
 from hydrax.alg_base import SamplingBasedController
@@ -87,9 +84,9 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         qpos=mj_data.qpos,
         qvel=mj_data.qvel,
         mocap_pos=mj_data.mocap_pos,
-        mocap_quat=mj_data.mocap_quat
+        mocap_quat=mj_data.mocap_quat,
     )
-    
+
     # Initialize the controller
     policy_params = controller.init_params(initial_knots=initial_knots)
     jit_optimize = jax.jit(controller.optimize)

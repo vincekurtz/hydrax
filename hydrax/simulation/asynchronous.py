@@ -7,7 +7,6 @@ import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
 import numpy as np
-from mujoco import mjx
 
 from hydrax.alg_base import SamplingBasedController
 
@@ -114,7 +113,7 @@ def run_controller(
         initial_knots: The initial control to use for the controller.
     """
     # Initialize the policy parameters and state estimate
-    mjx_data = mjx.make_data(ctrl.task.mj_model, impl=ctrl.task.model.impl)
+    mjx_data = ctrl.task.make_data()
     policy_params = ctrl.init_params(initial_knots=initial_knots)
 
     # Print out some planning horizon information
