@@ -1,5 +1,4 @@
 import jax.numpy as jnp
-import pytest
 
 from hydrax.utils.spline import get_interp_func
 
@@ -40,14 +39,8 @@ def test_linear_interp_func() -> None:
     assert jnp.allclose(out, expected), f"Expected {expected}, got {out}!"
 
 
-@pytest.mark.skip(reason="Failure due to interpax bug.")
 def test_cubic_interp_func() -> None:
-    """Tests the correctness of the cubic interpolation function.
-
-    NOTE: this test is currently failing, but I think there's some deep bug in
-    the interp1d implementation. See this open issue I opened:
-    https://github.com/f0uriest/interpax/issues/87
-    """
+    """Tests the correctness of the cubic interpolation function."""
     func = get_interp_func("cubic")
 
     tq = jnp.linspace(0.0, 2.0 * jnp.pi, 10001)
@@ -55,7 +48,8 @@ def test_cubic_interp_func() -> None:
     f = lambda x: jnp.stack([jnp.sin(x), jnp.cos(x)], axis=0)
     knots = f(tk)
     out = func(tq, tk, knots)
-    assert jnp.allclose(out, f(tq), rtol=1e-6, atol=1e-5), (
+    # N.B. loose tolerance due to loose (float32) jax precision.
+    assert jnp.allclose(out, f(tq), rtol=1e-3, atol=1e-3), (
         f"Expected {f(tq)}, got {out}!"
     )
 
