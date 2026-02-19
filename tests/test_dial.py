@@ -3,9 +3,9 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from mujoco import mjx
 
+from hydrax.alg_base import Trajectory
 from hydrax.algs.dial import DIAL
 from hydrax.tasks.pendulum import Pendulum
-from hydrax.alg_base import Trajectory
 
 
 def test_open_loop() -> None:
@@ -75,7 +75,7 @@ def test_open_loop() -> None:
 
 
 def test_sample_knots_shape() -> None:
-    """Test that sample_knots returns the correct shape and updates parameters."""
+    """Test that sample_knots returns the correct shape and updates params."""
     task = Pendulum()
     opt = DIAL(
         task,
@@ -112,7 +112,7 @@ def test_sample_knots_shape() -> None:
 
 
 def test_opt_iteration() -> None:
-    """Test that opt_iteration is properly initialized and updated during optimization."""
+    """Test that opt_iteration is properly initialized and updated."""
     task = Pendulum()
     controller = DIAL(
         task,
@@ -150,7 +150,7 @@ def test_opt_iteration() -> None:
 
 
 def test_update_params() -> None:
-    """Test that update_params correctly updates the mean using weighted average."""
+    """Test that update_params correctly updates the mean."""
     task = Pendulum()
     opt = DIAL(
         task,

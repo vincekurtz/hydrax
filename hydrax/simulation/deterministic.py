@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Sequence, Dict
 from copy import deepcopy
@@ -10,8 +11,8 @@ import mujoco.viewer
 import numpy as np
 from mujoco import mjx
 
-from hydrax.alg_base import SamplingBasedController
 from hydrax import ROOT
+from hydrax.alg_base import SamplingBasedController
 from hydrax.utils.video import VideoRecorder
 
 """
@@ -91,6 +92,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         impl=controller.task.model.impl,
         **(make_data_kwargs or {}),
     )
+    mjx_data = controller.task.make_data()
     mjx_data = mjx_data.replace(
         qpos=mj_data.qpos,
         qvel=mj_data.qvel,
@@ -141,7 +143,8 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             height=height,
             fps=actual_frequency,
         )
-        # Ensure model visual offscreen buffer is compatible with video recording
+        # Ensure model visual offscreen buffer is compatible with video
+        # recording
         mj_model.vis.global_.offwidth = width
         mj_model.vis.global_.offheight = height
         if not recorder.start():
