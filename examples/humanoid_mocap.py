@@ -16,6 +16,12 @@ parser = argparse.ArgumentParser(
     description="Run an interactive simulation of mocap tracking with the G1."
 )
 parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
+    required=False,
+)
+parser.add_argument(
     "--reference_filename",
     type=str,
     default="Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
@@ -36,7 +42,10 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
-task = HumanoidMocap(reference_filename=args.reference_filename)
+task = HumanoidMocap(
+    reference_filename=args.reference_filename,
+    impl="warp" if args.warp else "jax",
+)
 
 # Set up the controller
 ctrl = CEM(

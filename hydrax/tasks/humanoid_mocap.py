@@ -35,7 +35,7 @@ class HumanoidMocap(Task):
         super().__init__(
             mj_model,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
-            impl=impl
+            impl=impl,
         )
 
         # Get sensor IDs
@@ -228,3 +228,7 @@ class HumanoidMocap(Task):
         qvel = data.qvel.at[0:6].set(data.qvel[0:6] + v_err)
 
         return {"qpos": qpos, "qvel": qvel}
+
+    def make_data(self) -> mjx.Data:
+        """Create a new state object with extra constraints allocated."""
+        return super().make_data(naconmax=20000, njmax=200)
