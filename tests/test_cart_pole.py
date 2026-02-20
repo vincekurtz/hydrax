@@ -1,15 +1,21 @@
 import jax.numpy as jnp
+import pytest
 from mujoco import mjx
 
 from hydrax.tasks.cart_pole import CartPole
 
 
-def test_cart_pole() -> None:
-    """Make sure we can instantiate the task."""
-    task = CartPole()
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_cart_pole(impl: str) -> None:
+    """Make sure we can instantiate the task.
+
+    Args:
+        impl: Which implementation to use ("jax" or "warp")
+    """
+    task = CartPole(impl=impl)
     assert isinstance(task, CartPole)
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     assert isinstance(state, mjx.Data)
 
     ell = task.running_cost(state, jnp.zeros(1))
@@ -21,4 +27,5 @@ def test_cart_pole() -> None:
 
 
 if __name__ == "__main__":
-    test_cart_pole()
+    test_cart_pole("jax")
+    test_cart_pole("warp")

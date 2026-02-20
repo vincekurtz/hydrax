@@ -4,6 +4,7 @@ from typing import Tuple
 import jax
 import jax.numpy as jnp
 import mujoco
+import pytest
 from mujoco import mjx
 
 from hydrax import ROOT
@@ -49,13 +50,18 @@ def test_mjx_model() -> None:
     assert not jnp.any(jnp.isnan(data.qvel))
 
 
-def test_standup() -> None:
-    """Test the humanoid standup task."""
-    task = HumanoidStandup()
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_standup(impl: str) -> None:
+    """Test the humanoid standup task.
+
+    Args:
+        impl: Which implementation to use ("jax" or "warp").
+    """
+    task = HumanoidStandup(impl=impl)
     assert task.orientation_sensor_id >= 0
     assert task.torso_id >= 0
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     assert isinstance(state, mjx.Data)
 
     # Check sensor measurements
@@ -74,12 +80,17 @@ def test_standup() -> None:
     assert phi > 0.0
 
 
-def test_mocap() -> None:
-    """Test the humanoid mocap task."""
-    task = HumanoidMocap()
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_mocap(impl: str) -> None:
+    """Test the humanoid mocap task.
+
+    Args:
+        impl: Which implementation to use ("jax" or "warp").
+    """
+    task = HumanoidMocap(impl=impl)
     assert task.reference is not None
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     assert isinstance(state, mjx.Data)
 
     ell = task.running_cost(state, jnp.zeros(task.model.nu))
@@ -93,5 +104,7 @@ def test_mocap() -> None:
 
 if __name__ == "__main__":
     test_mjx_model()
-    test_standup()
-    test_mocap()
+    test_standup("jax")
+    test_standup("warp")
+    test_mocap("jax")
+    test_mocap("warp")

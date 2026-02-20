@@ -1,18 +1,24 @@
 import jax.numpy as jnp
+import pytest
 from mujoco import mjx
 
 from hydrax.tasks.walker import Walker
 
 
-def test_walker() -> None:
-    """Make sure we can instantiate the Walker task."""
-    task = Walker()
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_walker(impl: str) -> None:
+    """Make sure we can instantiate the Walker task.
+
+    Args:
+        impl: Which implementation to use ("jax" or "warp").
+    """
+    task = Walker(impl=impl)
     assert isinstance(task, Walker)
     assert task.torso_position_sensor >= 0
     assert task.torso_velocity_sensor >= 0
     assert task.torso_zaxis_sensor >= 0
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     assert isinstance(state, mjx.Data)
 
     # Check sensor measurements
@@ -35,4 +41,5 @@ def test_walker() -> None:
 
 
 if __name__ == "__main__":
-    test_walker()
+    test_walker("jax")
+    test_walker("warp")
