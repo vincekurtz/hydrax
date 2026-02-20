@@ -1,17 +1,23 @@
 import jax.numpy as jnp
+import pytest
 from mujoco import mjx
 
 from hydrax.tasks.crane import Crane
 
 
-def test_crane() -> None:
-    """Make sure we can instantiate the luffing crane task."""
-    task = Crane()
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_crane(impl: str) -> None:
+    """Make sure we can instantiate the luffing crane task.
+
+    Args:
+        impl: Which implementation to use ("jax" or "warp").
+    """
+    task = Crane(impl=impl)
     assert isinstance(task, Crane)
     assert task.payload_pos_sensor_adr >= 0
     assert task.payload_vel_sensor_adr >= 0
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     state = state.replace(
         mocap_pos=jnp.array([[0.1, 0.1, 0.1]]),
         mocap_quat=jnp.array([[1.0, 0.0, 0.0, 0.0]]),
@@ -37,4 +43,5 @@ def test_crane() -> None:
 
 
 if __name__ == "__main__":
-    test_crane()
+    test_crane("jax")
+    test_crane("warp")

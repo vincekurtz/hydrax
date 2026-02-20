@@ -1,4 +1,5 @@
 import argparse
+from copy import deepcopy
 
 import mujoco
 
@@ -10,12 +11,15 @@ from hydrax.tasks.walker import Walker
 Run an interactive simulation of the walker task.
 """
 
-# Define the task (cost and dynamics)
-task = Walker()
-
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
     description="Run an interactive simulation of the walker task."
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
+    required=False,
 )
 subparsers = parser.add_subparsers(
     dest="algorithm", help="Sampling algorithm (choose one)"
@@ -23,6 +27,9 @@ subparsers = parser.add_subparsers(
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 args = parser.parse_args()
+
+# Define the task (cost and dynamics)
+task = Walker(impl="warp" if args.warp else "jax")
 
 # Set the controller based on command-line arguments
 if args.algorithm == "ps" or args.algorithm is None:
@@ -50,7 +57,7 @@ else:
     parser.error("Invalid algorithm")
 
 # Define the model used for simulation
-mj_model = task.mj_model
+mj_model = deepcopy(task.mj_model)
 mj_model.opt.timestep = 0.005
 mj_model.opt.iterations = 50
 mj_data = mujoco.MjData(mj_model)

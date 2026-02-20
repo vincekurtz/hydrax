@@ -52,9 +52,11 @@ def test_mjx_model() -> None:
 
 def test_task() -> None:
     """Set up the cube rotation task."""
-    task = CubeRotation()
+    # TODO(vincekurtz): Fully support warp for the cube task. For now it looks
+    # like we need to do some model refinement to be fully MjWarp compatible.
+    task = CubeRotation(impl="jax")
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     assert isinstance(state, mjx.Data)
     state = state.replace(mocap_quat=jnp.array([[0.0, 1.0, 0.0, 0.0]]))
     state = jax.jit(mjx.forward)(task.model, state)

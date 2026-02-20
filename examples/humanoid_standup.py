@@ -1,4 +1,5 @@
 import argparse
+from copy import deepcopy
 
 import mujoco
 
@@ -24,10 +25,16 @@ if __name__ == "__main__":
         help="Use asynchronous simulation",
         default=False,
     )
+    parser.add_argument(
+        "--warp",
+        action="store_true",
+        help="Whether to use the (experimental) MjWarp backend.",
+        required=False,
+    )
     args = parser.parse_args()
 
     # Define the task (cost and dynamics)
-    task = HumanoidStandup()
+    task = HumanoidStandup(impl="warp" if args.warp else "jax")
 
     # Set up the controller
     ctrl = MPPI(
@@ -42,7 +49,7 @@ if __name__ == "__main__":
     )
 
     # Define the model used for simulation (stiffer contact parameters)
-    mj_model = task.mj_model
+    mj_model = deepcopy(task.mj_model)
     mj_model.opt.timestep = 0.01
     mj_model.opt.o_solimp = [0.9, 0.95, 0.001, 0.5, 2]
     mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
