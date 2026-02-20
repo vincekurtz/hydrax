@@ -2,14 +2,14 @@ import argparse
 import time
 from copy import deepcopy
 
-from evosax.algorithms.distribution_based import CMA_ES
 import jax
 import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
+from evosax.algorithms.distribution_based import CMA_ES
 from mujoco import mjx
 
-from hydrax.algs import CEM, MPPI, PredictiveSampling, Evosax
+from hydrax.algs import CEM, MPPI, Evosax, PredictiveSampling
 from hydrax.tasks.cart_pole import CartPole
 
 """
@@ -112,9 +112,12 @@ print("Retrieving best trajectory...")
 states, _ = jax.jit(ctrl.eval_rollouts)(
     task.model,
     mjx_data,
-    rollouts.controls[best_idx, None],  # get the proper
+    rollouts.controls[best_idx, None],  # get the proper vmap shape
     rollouts.knots[best_idx, None],
 )
+
+# Un-vmap the trajectory to get arrays of shape (T, state_dim)
+states = jax.tree.map(lambda x: x[0], states)
 
 # Play back on the mujoco visualizer
 print("Starting playback...")
@@ -127,8 +130,8 @@ with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
         start_time = time.time()
 
         # Set the state to the current point in the trajectory
-        mj_data.qpos[:] = states.qpos[0, i]
-        mj_data.qvel[:] = states.qvel[0, i]
+        mj_data.qpos[:] = states.qpos[i]
+        mj_data.qvel[:] = states.qvel[i]
         mj_data.time += ctrl.dt
         mujoco.mj_forward(mj_model, mj_data)
         viewer.sync()
@@ -140,7 +143,7 @@ with mujoco.viewer.launch_passive(mj_model, mj_data) as viewer:
 
         # Loop the trajectory when we reach the end
         i += 1
-        if i >= states.qpos.shape[1]:
+        if i >= states.qpos.shape[0]:
             time.sleep(1.0)  # pause for a moment
             i = 0
             mj_data.time = 0.0
