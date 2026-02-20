@@ -1,5 +1,6 @@
-import mujoco
 from copy import deepcopy
+
+import mujoco
 
 from hydrax.algs import PredictiveSampling
 from hydrax.simulation.asynchronous import run_interactive

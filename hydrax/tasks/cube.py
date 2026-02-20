@@ -18,7 +18,7 @@ class CubeRotation(Task):
         super().__init__(
             mj_model,
             trace_sites=["cube_center", "if_tip", "mf_tip", "rf_tip", "th_tip"],
-            impl=impl
+            impl=impl,
         )
 
         # Get sensor ids
