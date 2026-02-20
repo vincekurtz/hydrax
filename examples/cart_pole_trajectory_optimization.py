@@ -2,13 +2,14 @@ import argparse
 import time
 from copy import deepcopy
 
+from evosax.algorithms.distribution_based import CMA_ES
 import jax
 import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
 from mujoco import mjx
 
-from hydrax.algs import CEM, MPPI, PredictiveSampling
+from hydrax.algs import CEM, MPPI, PredictiveSampling, Evosax
 from hydrax.tasks.cart_pole import CartPole
 
 """
@@ -34,6 +35,7 @@ subparsers = parser.add_subparsers(
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
+subparsers.add_parser("cmaes", help="CMA-ES")
 args = parser.parse_args()
 
 # Set up the controller
@@ -55,7 +57,7 @@ elif args.algorithm == "mppi":
         noise_level=0.3,
         temperature=0.1,
         spline_type="cubic",
-        plan_horizon=1.0,
+        plan_horizon=2.0,
         num_knots=4,
     )
 elif args.algorithm == "cem":
@@ -67,7 +69,17 @@ elif args.algorithm == "cem":
         sigma_start=0.5,
         sigma_min=0.1,
         spline_type="cubic",
-        plan_horizon=1.0,
+        plan_horizon=2.0,
+        num_knots=4,
+    )
+elif args.algorithm == "cmaes":
+    print("Running CMA-ES")
+    ctrl = Evosax(
+        task,
+        CMA_ES,
+        num_samples=128,
+        plan_horizon=2.0,
+        spline_type="zero",
         num_knots=4,
     )
 else:
