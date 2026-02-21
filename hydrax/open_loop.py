@@ -30,6 +30,8 @@ def trajectory_optimization(
         optimized trajectory. For example, the configuration at the i-th
         timestep will be in data.qpos[i].
     """
+    assert iterations > 0, "Number of iterations must be positive"
+
     params = ctrl.init_params()
     jit_optimizer_step = jax.jit(ctrl.optimize)
 
