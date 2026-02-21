@@ -314,6 +314,48 @@ from hydrax.tasks.pendulum import Pendulum
 task = Pendulum(impl="warp")
 ```
 
+## Open-Loop Trajectory Optimization
+
+While `hydrax` is primarily designed for sampling-based MPC, it can also be used
+for [offline sampling-based trajectory optimization](hydrax/open_loop.py). This
+includes support for various interpolation schemes, domain randomization, risk
+strategies, and any of the optimization algorithms described above.
+
+Performing open-loop trajectory optimization is as simple as calling the
+`trajectory_optimization` function. For example, to produce a cart-pole swingup
+trajectory using CEM:
+
+```python
+from hydrax.tasks.cart_pole import CartPole
+from hydrax.algs import CEM
+from hydrax.open_loop import trajectory_optimization, playback
+
+# Define the task (system to be optimized).
+task = CartPole()
+
+# Define the optimization algorithm, planning horizon, and other details.
+ctrl = CEM(
+    task,
+    num_samples=128,
+    num_elites=3,
+    sigma_start=0.5,
+    sigma_min=0.1,
+    spline_type="cubic",
+    plan_horizon=2.0,
+    num_knots=4,
+)
+
+# Set the initial state.
+mjx_data = task.make_data()
+
+# Run trajectory optimization, then play back the resulting trajectory.
+optimized_trajectory = trajectory_optimization(ctrl, mjx_data, iterations=10)
+playback(optimized_trajectory, ctrl)
+```
+
+For further details, see the
+[`examples/cart_pole_trajectory_optimization.py`](examples/cart_pole_trajectory_optimization.py).
+
 ## Citation
 
 ```
