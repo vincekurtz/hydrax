@@ -1,4 +1,5 @@
 import argparse
+from copy import deepcopy
 
 import mujoco
 
@@ -13,6 +14,12 @@ Run an interactive simulation of the humanoid motion capture tracking task.
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
     description="Run an interactive simulation of mocap tracking with the G1."
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
+    required=False,
 )
 parser.add_argument(
     "--reference_filename",
@@ -35,7 +42,10 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
-task = HumanoidMocap(reference_filename=args.reference_filename)
+task = HumanoidMocap(
+    reference_filename=args.reference_filename,
+    impl="warp" if args.warp else "jax",
+)
 
 # Set up the controller
 ctrl = CEM(
@@ -52,7 +62,7 @@ ctrl = CEM(
 )
 
 # Define the model used for simulation
-mj_model = task.mj_model
+mj_model = deepcopy(task.mj_model)
 mj_model.opt.timestep = 0.01
 mj_model.opt.iterations = 10
 mj_model.opt.ls_iterations = 50

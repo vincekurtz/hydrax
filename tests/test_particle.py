@@ -1,15 +1,21 @@
 import jax.numpy as jnp
+import pytest
 from mujoco import mjx
 
 from hydrax.tasks.particle import Particle
 
 
-def test_particle() -> None:
-    """Make sure we can instantiate and get basic info about the task."""
-    task = Particle()
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_particle(impl: str) -> None:
+    """Make sure we can instantiate and get basic info about the task.
+
+    Args:
+        impl: Which implementation to use ("jax" or "warp")
+    """
+    task = Particle(impl=impl)
     assert task.pointmass_id >= 0
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     state = state.replace(mocap_pos=jnp.array([[0.0, 0.1, 0.0]]))
     assert isinstance(state, mjx.Data)
     assert state.site_xpos.shape == (1, 3)
@@ -26,4 +32,5 @@ def test_particle() -> None:
 
 
 if __name__ == "__main__":
-    test_particle()
+    test_particle("jax")
+    test_particle("warp")

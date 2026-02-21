@@ -1,15 +1,21 @@
 import jax
 import jax.numpy as jnp
+import pytest
 from mujoco import mjx
 
 from hydrax.tasks.pusht import PushT
 
 
-def test_task() -> None:
-    """Set up the push T task."""
-    task = PushT()
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_task(impl: str) -> None:
+    """Set up the push T task.
 
-    state = mjx.make_data(task.model)
+    Args:
+        impl: Which implementation to use ("jax" or "warp").
+    """
+    task = PushT(impl=impl)
+
+    state = task.make_data()
     assert isinstance(state, mjx.Data)
     state = state.replace(mocap_quat=jnp.array([[0.0, 1.0, 0.0, 0.0]]))
     state = jax.jit(mjx.forward)(task.model, state)
@@ -28,4 +34,5 @@ def test_task() -> None:
 
 
 if __name__ == "__main__":
-    test_task()
+    test_task("jax")
+    test_task("warp")

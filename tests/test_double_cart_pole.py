@@ -1,15 +1,17 @@
 import jax.numpy as jnp
+import pytest
 from mujoco import mjx
 
 from hydrax.tasks.double_cart_pole import DoubleCartPole
 
 
-def test_double_cart_pole() -> None:
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_double_cart_pole(impl: str) -> None:
     """Make sure we can instantiate the task."""
-    task = DoubleCartPole()
+    task = DoubleCartPole(impl=impl)
     assert isinstance(task, DoubleCartPole)
 
-    state = mjx.make_data(task.model)
+    state = task.make_data()
     state = state.replace(qpos=jnp.array([0.0, 0.1, 0.1]))  # x, θ₁, θ₂
     state = mjx.forward(task.model, state)
     tip_pos = state.site_xpos[task.tip_id]
@@ -26,4 +28,5 @@ def test_double_cart_pole() -> None:
 
 
 if __name__ == "__main__":
-    test_double_cart_pole()
+    test_double_cart_pole("jax")
+    test_double_cart_pole("warp")

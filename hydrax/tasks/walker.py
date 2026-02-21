@@ -10,12 +10,12 @@ from hydrax.task_base import Task
 class Walker(Task):
     """A planar biped tasked with walking forward."""
 
-    def __init__(self) -> None:
+    def __init__(self, impl: str = "jax") -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/walker/scene.xml"
         )
-        super().__init__(mj_model, trace_sites=["torso_site"])
+        super().__init__(mj_model, trace_sites=["torso_site"], impl=impl)
 
         # Get sensor ids
         self.torso_position_sensor = mujoco.mj_name2id(
@@ -66,3 +66,7 @@ class Walker(Task):
             self._get_torso_velocity(state) - self.target_velocity
         )
         return 10.0 * height_cost + 3.0 * orientation_cost + 1.0 * velocity_cost
+
+    def make_data(self) -> mjx.Data:
+        """Create a new state object with extra constraints allocated."""
+        return super().make_data(naconmax=800)

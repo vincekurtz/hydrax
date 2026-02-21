@@ -7,7 +7,6 @@ import jax.numpy as jnp
 import mujoco
 import mujoco.viewer
 import numpy as np
-from mujoco import mjx
 
 from hydrax import ROOT
 from hydrax.alg_base import SamplingBasedController
@@ -79,11 +78,16 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         f"simulating at {1.0 / mj_model.opt.timestep} Hz"
     )
 
-    # Initialize the controller
-    mjx_data = mjx.put_data(mj_model, mj_data)
+    # Create a data structure for the controller to run rollouts from.
+    mjx_data = controller.task.make_data()
     mjx_data = mjx_data.replace(
-        mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
+        qpos=mj_data.qpos,
+        qvel=mj_data.qvel,
+        mocap_pos=mj_data.mocap_pos,
+        mocap_quat=mj_data.mocap_quat,
     )
+
+    # Initialize the controller
     policy_params = controller.init_params(initial_knots=initial_knots)
     jit_optimize = jax.jit(controller.optimize)
     jit_interp_func = jax.jit(controller.interp_func)

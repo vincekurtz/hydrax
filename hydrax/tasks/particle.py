@@ -12,12 +12,12 @@ from hydrax.task_base import Task
 class Particle(Task):
     """A velocity-controlled planar point mass chases a target position."""
 
-    def __init__(self) -> None:
+    def __init__(self, impl: str = "jax") -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/particle/scene.xml"
         )
-        super().__init__(mj_model, trace_sites=["pointmass"])
+        super().__init__(mj_model, trace_sites=["pointmass"], impl=impl)
         self.pointmass_id = mj_model.site("pointmass").id
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import mujoco
 
 from hydrax.algs import PredictiveSampling
@@ -25,7 +27,7 @@ ctrl = PredictiveSampling(
 )
 
 # Define the model used for simulation
-mj_model = task.mj_model
+mj_model = deepcopy(task.mj_model)
 mj_data = mujoco.MjData(mj_model)
 
 # Introduce some modeling error

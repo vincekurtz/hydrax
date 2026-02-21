@@ -299,6 +299,21 @@ Available risk strategies:
 | VaR | Use the [Value at Risk (VaR)](https://en.wikipedia.org/wiki/Value_at_risk). | [`hydrax.risk.ValueAtRisk`](hydrax/risk.py) |
 | CVaR | Use the [Conditional Value at Risk (CVaR)](https://en.wikipedia.org/wiki/Expected_shortfall). | [`hydrax.risk.ConditionalValueAtRisk`](hydrax/risk.py) |
 
+## MuJoCo Warp (Experimental)
+
+Hydrax includes some preliminary experimental support for using [MuJoCo
+Warp](https://mujoco.readthedocs.io/en/latest/mjwarp/) as the simulation backend
+for performing rollouts, instead of JAX. This may offer some performance
+benefits over JAX.
+
+To try MjWarp with Hydrax, simply specify `impl="warp"` when constructing a
+task, e.g.,
+```python
+from hydrax.tasks.pendulum import Pendulum
+
+task = Pendulum(impl="warp")
+```
+
 ## Citation
 
 ```

@@ -12,12 +12,13 @@ from hydrax.task_base import Task
 class HumanoidStandup(Task):
     """Standup task for the Unitree G1 humanoid."""
 
-    def __init__(self) -> None:
+    def __init__(self, impl: str = "jax") -> None:
         """Load the MuJoCo model and set task parameters."""
         mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
         super().__init__(
             mj_model,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
+            impl=impl,
         )
 
         # Get sensor and site ids
@@ -78,3 +79,7 @@ class HumanoidStandup(Task):
         qvel = data.qvel.at[0:6].set(data.qvel[0:6] + v_err)
 
         return {"qpos": qpos, "qvel": qvel}
+
+    def make_data(self) -> mjx.Data:
+        """Create a new state object with extra constraints allocated."""
+        return super().make_data(naconmax=20000, njmax=200)

@@ -22,12 +22,15 @@ Run an interactive simulation of the particle tracking task.
 Double click on the green target, then drag it around with [ctrl + right-click].
 """
 
-# Define the task (cost and dynamics)
-task = Particle()
-
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
     description="Run an interactive simulation of the particle tracking task."
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
+    required=False,
 )
 subparsers = parser.add_subparsers(
     dest="algorithm", help="Sampling algorithm (choose one)"
@@ -45,6 +48,9 @@ subparsers.add_parser(
     "dial", help="Diffusion-Inspired Annealing for Legged MPC (DIAL)"
 )
 args = parser.parse_args()
+
+# Define the task (cost and dynamics)
+task = Particle(impl="warp" if args.warp else "jax")
 
 # Set the controller based on command-line arguments
 if args.algorithm == "ps" or args.algorithm is None:
