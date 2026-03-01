@@ -1,0 +1,42 @@
+<mujoco model="double_pendulum">
+  <compiler meshdir="meshes"/>
+  <option timestep="0.01" iterations="1" ls_iterations="5">
+    <flag contact="disable"/>
+  </option>
+
+  <asset>
+    <mesh name="base_link_mesh" file="base_link.STL" maxhullvert="20"/>
+    <mesh name="link1_mesh" file="link1.STL" maxhullvert="20"/>
+    <mesh name="link2_mesh" file="link2.STL" maxhullvert="20"/>
+    <mesh name="weight_mesh" file="weight.STL" maxhullvert="20"/>
+  </asset>
+
+  <worldbody>
+    <body name="base_link" pos="0 -0.6 0.5" euler="0 0 -90">
+      <inertial pos="-0.025147 0 -0.021712" mass="1.0806" fullinertia="0.0052004 0.001836 0.0051241 0 -0.00037275 0"/>
+      <geom type="mesh" mesh="base_link_mesh" rgba="0.89804 0.91765 0.92941 1"/>
+      <body name="link1" pos="0.0342 0 0"  >
+        <inertial pos="0 0 -0.27401" mass="0.608" diaginertia="0.05472 0.05472 0.05472"/>
+        <joint name="joint1" type="hinge" pos="0 0 0" axis="1 0 0" damping="0.08089" frictionloss="0.09335"/>
+        <geom type="mesh" mesh="link1_mesh" rgba="0.75294 0.75294 0.75294 1"/>
+        <body name="link2" pos="0.0522 0 -0.3">
+            <inertial pos="0 0 0.16635" mass="0.6306" diaginertia="0.02522 0.02522 0.02522"/>
+            <joint name="joint2" type="hinge" pos="0 0 0" axis="1 0 0" damping="0.000" frictionloss="0.1865"/>
+            <geom type="mesh" mesh="link2_mesh" rgba="0.75294 0.75294 0.75294 1"/>
+            <body name="Weight" pos="0 0 0">
+                <inertial pos="0.010583 0 0" mass="0" diaginertia="0 0 0"/>
+                <geom type="mesh" mesh="weight_mesh" rgba="0.69804 0.69804 0.69804 1"/>
+                <site name="tip" pos="0 0 0.2" size="0.01"/>
+            </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="joint1_actuator" joint="joint1" gear="1" ctrllimited="true" ctrlrange="-16.0 16.0"/>
+    <!-- <motor name="joint2_actuator" joint="joint2" gear="1" ctrllimited="true" ctrlrange="-16.0 16.0"/> --> 
+  </actuator>
+
+  <equality/>
+</mujoco>
