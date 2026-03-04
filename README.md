@@ -31,7 +31,7 @@ Available methods:
 - February 15, 2026. Our preferred package manager is now
   [uv](https://docs.astral.sh/uv/), which is lighter weight and offers improved
   reproducibility via `uv.lock`. Conda use is still possible, but we recommend
-  switching to uv for the best experience.
+  switching to uv for the best experience. Note that `hydrax` now requires CUDA 13.
 - April 13, 2024. Large changes to the core `hydrax` functionality + some
   breaking changes.
     - Splines (and their knots) are now the default parameterization of the
