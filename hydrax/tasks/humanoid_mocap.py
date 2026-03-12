@@ -48,10 +48,14 @@ class HumanoidMocap(Task):
             ("pelvis_position", "pelvis_site"),
             ("torso_position", "torso_site"),
             ("head_position", "head_site"),
+            ("left_shoulder_position", "left_shoulder"),
+            ("right_shoulder_position", "right_shoulder"),
             ("left_elbow_position", "left_elbow"),
             ("right_elbow_position", "right_elbow"),
-            ("left_hand_position", "left_hand"),
-            ("right_hand_position", "right_hand"),
+            ("left_thumb_position", "left_thumb"),
+            ("right_thumb_position", "right_thumb"),
+            ("left_pink_position", "left_pink"),
+            ("right_pink_position", "right_pink"),
         )
 
         sensor_ids = [

@@ -210,6 +210,7 @@
               <inertial pos="0 0.035892 -0.011628" quat="0.654152 0.0130458 -0.326267 0.68225" mass="0.718" diaginertia="0.000465864 0.000432842 0.000406394" />
               <joint name="left_shoulder_pitch_joint" axis="0 1 0" range="-3.0892 2.6704" actuatorfrcrange="-25 25" />
               <geom class="visual" mesh="left_shoulder_pitch_link" />
+              <site name="left_shoulder" />
               <body name="left_shoulder_roll_link" pos="0 0.038 -0.013831" quat="0.990268 -0.139172 0 0">
                 <inertial pos="-0.000227 0.00727 -0.063243" quat="0.701256 -0.0196223 -0.00710317 0.712604" mass="0.643" diaginertia="0.000691311 0.000618011 0.000388977" />
                 <joint name="left_shoulder_roll_joint" axis="1 0 0" range="-1.5882 2.2515" actuatorfrcrange="-25 25" />
@@ -237,7 +238,8 @@
                           <geom class="visual" mesh="left_wrist_yaw_link" />
                           <geom pos="0.0415 0.003 0" quat="1 0 0 0" class="visual" mesh="left_rubber_hand" />
                           <geom class="hand_collision" />
-                          <site name="left_hand" pos="0.0415 0.003 0" />
+                          <site name="left_thumb" pos="0.1 0.003 0.04" />
+                          <site name="left_pink" pos="0.1 0.003 -0.04" />
                         </body>
                       </body>
                     </body>
@@ -249,6 +251,7 @@
               <inertial pos="0 -0.035892 -0.011628" quat="0.68225 -0.326267 0.0130458 0.654152" mass="0.718" diaginertia="0.000465864 0.000432842 0.000406394" />
               <joint name="right_shoulder_pitch_joint" axis="0 1 0" range="-3.0892 2.6704" actuatorfrcrange="-25 25" />
               <geom class="visual" mesh="right_shoulder_pitch_link" />
+              <site name="right_shoulder" />
               <body name="right_shoulder_roll_link" pos="0 -0.038 -0.013831" quat="0.990268 0.139172 0 0">
                 <inertial pos="-0.000227 -0.00727 -0.063243" quat="0.712604 -0.00710317 -0.0196223 0.701256" mass="0.643" diaginertia="0.000691311 0.000618011 0.000388977" />
                 <joint name="right_shoulder_roll_joint" axis="1 0 0" range="-2.2515 1.5882" actuatorfrcrange="-25 25" />
@@ -276,7 +279,8 @@
                           <geom class="visual" mesh="right_wrist_yaw_link" />
                           <geom pos="0.0415 -0.003 0" quat="1 0 0 0" class="visual" mesh="right_rubber_hand" />
                           <geom class="hand_collision" />
-                          <site name="right_hand" pos="0.0415 -0.003 0" />
+                          <site name="right_thumb" pos="0.1 -0.003 0.04" />
+                          <site name="right_pink" pos="0.1 -0.003 -0.04" />
                         </body>
                       </body>
                     </body>
@@ -335,9 +339,13 @@
     <framepos name="pelvis_position" objtype="site" objname="pelvis_site" />
     <framepos name="torso_position" objtype="site" objname="torso_site" />
     <framepos name="head_position" objtype="site" objname="head_site" />
+    <framepos name="left_shoulder_position" objtype="site" objname="left_shoulder" />
+    <framepos name="right_shoulder_position" objtype="site" objname="right_shoulder" />
     <framepos name="left_elbow_position" objtype="site" objname="left_elbow" />
     <framepos name="right_elbow_position" objtype="site" objname="right_elbow" />
-    <framepos name="left_hand_position" objtype="site" objname="left_hand" />
-    <framepos name="right_hand_position" objtype="site" objname="right_hand" />
+    <framepos name="left_thumb_position" objtype="site" objname="left_thumb" />
+    <framepos name="right_thumb_position" objtype="site" objname="right_thumb" />
+    <framepos name="left_pink_position" objtype="site" objname="left_pink" />
+    <framepos name="right_pink_position" objtype="site" objname="right_pink" />
   </sensor>
 </mujoco>
