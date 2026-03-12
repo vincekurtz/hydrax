@@ -131,7 +131,26 @@ class HumanoidMocap(Task):
         q_ref = self._get_reference_configuration(state.time)
         configuration_tracking_cost = jnp.sum(jnp.square(q - q_ref))
 
-        return 1.0 * site_tracking_cost + 0.1 * configuration_tracking_cost
+        # Extra penalty for tracking the base height.
+        z = state.qpos[2]
+        z_ref = q_ref[2]
+        height_tracking_cost = jnp.sum(jnp.square(z - z_ref))
+
+        # Extra penalty for tracking the z velocity
+        h = 1.0 / self.reference_fps
+        z_next = self._get_reference_configuration(state.time + h)[2]
+        z_vel_ref = (z_next - z_ref) / h
+        z_vel = state.qvel[2]
+        is_going_up = z_vel_ref > 0
+        # Only penalize if the reference is going up (to encourage jumping)
+        velocity_tracking_cost = jnp.square(z_vel - z_vel_ref) * is_going_up
+
+        return (
+            1.0 * site_tracking_cost
+            + 0.1 * configuration_tracking_cost
+            + 10.0 * height_tracking_cost
+            + 10.0 * velocity_tracking_cost
+        )
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""

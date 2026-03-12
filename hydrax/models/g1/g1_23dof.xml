@@ -14,8 +14,10 @@
     <geom condim="3" solimp="0.0 0.95 0.01" />
     <default class="g1">
       <site rgba="1 0 0 1" size="0.01" group="5" />
-      <joint damping="0.0" armature="1.0" frictionloss="0.0" />
-      <position kp="500" dampratio="1" inheritrange="1" />
+      <joint damping="0.0" armature="1.0" frictionloss="0.0" actuatorfrclimited="false"/>
+      <position kp="500" dampratio="1" inheritrange="0" ctrllimited="false" forcelimited="false"/>
+      <!-- <motor ctrllimited="false" forcelimited="false" gear="100" /> -->
+      <!-- <velocity ctrlrange="-10 10" ctrllimited="true" forcelimited="false" kv="100" gear="1" />  -->
       <default class="visual">
         <geom group="2" type="mesh" contype="0" conaffinity="0" density="0" material="metal" />
       </default>
