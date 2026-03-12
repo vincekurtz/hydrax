@@ -94,6 +94,12 @@ class HumanoidMocap(Task):
 
         self.ref_sensor_positions = jnp.array(ref_positions)
 
+    def _get_reference_configuration(self, t: jax.Array) -> jax.Array:
+        """Get the reference configuration q at time t."""
+        i = jnp.int32(t * self.reference_fps)
+        i = jnp.clip(i, 0, self.reference.shape[0] - 1)
+        return self.reference[i]
+
     def _get_reference_positions(self, t: jax.Array) -> jax.Array:
         """Get reference positions for all tracked sensors at time t."""
         i = jnp.int32(t * self.reference_fps)
@@ -117,7 +123,15 @@ class HumanoidMocap(Task):
 
     def running_cost(self, state: mjx.Data, _control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
-        return self._position_tracking_cost(state)
+        # Track the positions of listed sensors (feet, hands, head, etc.).
+        site_tracking_cost = self._position_tracking_cost(state)
+
+        # Track the overall configuration q
+        q = state.qpos
+        q_ref = self._get_reference_configuration(state.time)
+        configuration_tracking_cost = jnp.sum(jnp.square(q - q_ref))
+
+        return 1.0 * site_tracking_cost + 0.1 * configuration_tracking_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
