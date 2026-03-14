@@ -96,10 +96,12 @@ def test_mocap(impl: str) -> None:
     ell = task.running_cost(state, jnp.zeros(task.model.nu))
     assert ell.shape == ()
     assert ell > 0.0
+    assert ell < 1.0
 
     phi = task.terminal_cost(state)
     assert phi.shape == ()
     assert phi > 0.0
+    assert phi < 1.0
 
 
 if __name__ == "__main__":
