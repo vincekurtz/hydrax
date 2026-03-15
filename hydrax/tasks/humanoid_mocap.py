@@ -38,20 +38,6 @@ class HumanoidMocap(Task):
             impl=impl,
         )
 
-        # Get sensor IDs
-        self.left_foot_pos_sensor = mujoco.mj_name2id(
-            mj_model, mujoco.mjtObj.mjOBJ_SENSOR, "left_foot_position"
-        )
-        self.left_foot_quat_sensor = mujoco.mj_name2id(
-            mj_model, mujoco.mjtObj.mjOBJ_SENSOR, "left_foot_orientation"
-        )
-        self.right_foot_pos_sensor = mujoco.mj_name2id(
-            mj_model, mujoco.mjtObj.mjOBJ_SENSOR, "right_foot_position"
-        )
-        self.right_foot_quat_sensor = mujoco.mj_name2id(
-            mj_model, mujoco.mjtObj.mjOBJ_SENSOR, "right_foot_orientation"
-        )
-
         # Download and load reference data
         npz_file = np.load(
             hf_hub_download(
@@ -62,34 +48,57 @@ class HumanoidMocap(Task):
         )
 
         reference = npz_file["qpos"]
-        self.reference = jnp.array(reference)
         self.reference_fps = npz_file["frequency"]
 
         # Precompute the pose of each body throughout the reference trajectory.
         mj_data = mujoco.MjData(mj_model)
         n_frames = len(reference)
-        reference_xpos = np.zeros((n_frames, mj_model.nbody, 3))
-        reference_xquat = np.zeros((n_frames, mj_model.nbody, 4))
-        for i in range(n_frames):
-            # TODO(vincekurtz): set a suitable qvel, then look at mj_data.cvel
-            # for reference body twists
+        reference_xpos = np.zeros((n_frames - 1, mj_model.nbody, 3))
+        reference_xquat = np.zeros((n_frames - 1, mj_model.nbody, 4))
+        reference_qvel = np.zeros((n_frames - 1, mj_model.nv))
+        reference_cvel = np.zeros((n_frames - 1, mj_model.nbody, 6))
+        for i in range(n_frames - 1):
             mj_data.qpos[:] = reference[i]
+
+            # Set qvel = (reference[i+1] - reference[i]) / dt, converting
+            # quaternions appropriately.
+            dt = 1.0 / self.reference_fps
+            mujoco.mj_differentiatePos(
+                mj_model, mj_data.qvel, dt, reference[i], reference[i + 1]
+            )
+
+            # Forward kinematics to get body poses etc.
             mujoco.mj_forward(mj_model, mj_data)
+
             reference_xpos[i] = mj_data.xpos
             reference_xquat[i] = mj_data.xquat
+            reference_qvel[i] = mj_data.qvel
+
+            # N.B. this reference body velocity is expressed as a spatial
+            # velocity in the frame of the root of the kinematic tree. This is
+            # a bit funny, and we should consider using mj_objectVelocity
+            # instead. But for now these quantities are readily available.
+            reference_cvel[i] = mj_data.cvel
 
         # Convert reference data to jax arrays
+        self.reference_qpos = jnp.array(reference[0:-1])
+        self.reference_qvel = jnp.array(reference_qvel)
         self.reference_xpos = jnp.array(reference_xpos)
         self.reference_xquat = jnp.array(reference_xquat)
+        self.reference_cvel = jnp.array(reference_cvel)
 
         # Weigh different cost terms
         configuration_cost_weight = 0.1
         body_position_cost_weight = 1.0
         body_orientation_cost_weight = 0.1
+        generalized_velocity_cost_weight = 0.1
+        body_twist_cost_weight = 0.1
         total_weights = (
             configuration_cost_weight
             + body_position_cost_weight
             + body_orientation_cost_weight
+            + generalized_velocity_cost_weight
+            + body_twist_cost_weight
         )
         self.configuration_cost_weight = (
             configuration_cost_weight / total_weights
@@ -100,32 +109,36 @@ class HumanoidMocap(Task):
         self.body_orientation_cost_weight = (
             body_orientation_cost_weight / total_weights
         )
+        self.generalized_velocity_cost_weight = (
+            generalized_velocity_cost_weight / total_weights
+        )
+        self.body_twist_cost_weight = body_twist_cost_weight / total_weights
 
     def _get_reference_configuration(self, t: jax.Array) -> jax.Array:
         """Get the reference position (q) at time t."""
         i = jnp.int32(t * self.reference_fps)
-        i = jnp.clip(i, 0, self.reference.shape[0] - 1)
-        return self.reference[i, :]
+        i = jnp.clip(i, 0, self.reference_qpos.shape[0] - 1)
+        return self.reference_qpos[i, :]
+
+    def _get_reference_velocity(self, t: jax.Array) -> jax.Array:
+        """Get the reference velocity (v) at time t."""
+        i = jnp.int32(t * self.reference_fps)
+        i = jnp.clip(i, 0, self.reference_qvel.shape[0] - 1)
+        return self.reference_qvel[i, :]
 
     def _get_reference_body_poses(
         self, t: jax.Array
     ) -> tuple[jax.Array, jax.Array]:
         """Get the reference body positions and orientations at time t."""
         i = jnp.int32(t * self.reference_fps)
-        i = jnp.clip(i, 0, self.reference.shape[0] - 1)
+        i = jnp.clip(i, 0, self.reference_xpos.shape[0] - 1)
         return self.reference_xpos[i], self.reference_xquat[i]
 
-    def _get_body_pose_error(self, state: mjx.Data) -> jax.Array:
-        """Get the error between the current and reference body poses.
-
-        Args:
-            state: the current state of the system, containing the current body
-                poses and the relevent time stamp for the reference trajectory.
-
-        Returns:
-            xpos_err: the error in body positions, shape (nbody, 3)
-            xquat_err: the error in body orientations, shape (nbody, 3)
-        """
+    def _get_reference_body_twists(self, t: jax.Array) -> jax.Array:
+        """Get the reference body linear and angular velocities at time t."""
+        i = jnp.int32(t * self.reference_fps)
+        i = jnp.clip(i, 0, self.reference_cvel.shape[0] - 1)
+        return self.reference_cvel[i]
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
@@ -141,10 +154,22 @@ class HumanoidMocap(Task):
             state.xquat, ref_xquat
         )  # size (nbody, 3)
 
+        # Generalized velocity tracking error
+        v_ref = self._get_reference_velocity(state.time)
+        v = state.qvel
+        v_err = v - v_ref  # size (nv,)
+
+        # Body twist tracking error
+        ref_cvel = self._get_reference_body_twists(state.time)
+        cvel_err = state.cvel - ref_cvel  # size (nbody, 6)
+
         # Tracking costs J = 1 - exp(-|error|^2) for each error term. This puts
         # each error term between 0 and 1.
         q_squared_error = jnp.sum(jnp.square(q_err))
         q_cost = 1.0 - jnp.exp(-q_squared_error)
+
+        v_squared_error = jnp.sum(jnp.square(v_err))
+        v_cost = 1.0 - jnp.exp(-v_squared_error)
 
         xpos_squared_error = jnp.sum(jnp.square(xpos_err))
         xpos_cost = 1.0 - jnp.exp(-xpos_squared_error)
@@ -152,12 +177,17 @@ class HumanoidMocap(Task):
         xquat_squared_error = jnp.sum(jnp.square(xquat_err))
         xquat_cost = 1.0 - jnp.exp(-xquat_squared_error)
 
+        cvel_squared_error = jnp.sum(jnp.square(cvel_err))
+        cvel_cost = 1.0 - jnp.exp(-cvel_squared_error)
+
         # Weighted sum of the different error terms. Weights are normalized so
         # the total cost is between 0 and 1.
         total_cost = (
             self.configuration_cost_weight * q_cost
             + self.body_position_cost_weight * xpos_cost
             + self.body_orientation_cost_weight * xquat_cost
+            + self.generalized_velocity_cost_weight * v_cost
+            + self.body_twist_cost_weight * cvel_cost
         )
 
         return total_cost

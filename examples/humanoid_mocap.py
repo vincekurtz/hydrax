@@ -71,11 +71,11 @@ mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 
 # Set the initial state
 mj_data = mujoco.MjData(mj_model)
-mj_data.qpos[:] = task.reference[0]
-initial_knots = task.reference[: ctrl.num_knots, 7:]
+mj_data.qpos[:] = task.reference_qpos[0]
+initial_knots = task.reference_qpos[: ctrl.num_knots, 7:]
 
 if args.show_reference:
-    reference = task.reference
+    reference = task.reference_qpos
 else:
     reference = None
 
