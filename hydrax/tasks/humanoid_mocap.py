@@ -87,30 +87,30 @@ class HumanoidMocap(Task):
         self.reference_xquat = jnp.array(reference_xquat)
         self.reference_cvel = jnp.array(reference_cvel)
 
-        # Weigh different cost terms
+        # Weigh different cost terms, then normalize so all cost terms add to 1.
         configuration_cost_weight = 0.1
+        generalized_velocity_cost_weight = 0.01
         body_position_cost_weight = 1.0
-        body_orientation_cost_weight = 0.1
-        generalized_velocity_cost_weight = 0.1
+        body_orientation_cost_weight = 1.0
         body_twist_cost_weight = 0.1
         total_weights = (
             configuration_cost_weight
+            + generalized_velocity_cost_weight
             + body_position_cost_weight
             + body_orientation_cost_weight
-            + generalized_velocity_cost_weight
             + body_twist_cost_weight
         )
         self.configuration_cost_weight = (
             configuration_cost_weight / total_weights
+        )
+        self.generalized_velocity_cost_weight = (
+            generalized_velocity_cost_weight / total_weights
         )
         self.body_position_cost_weight = (
             body_position_cost_weight / total_weights
         )
         self.body_orientation_cost_weight = (
             body_orientation_cost_weight / total_weights
-        )
-        self.generalized_velocity_cost_weight = (
-            generalized_velocity_cost_weight / total_weights
         )
         self.body_twist_cost_weight = body_twist_cost_weight / total_weights
 
@@ -201,13 +201,36 @@ class HumanoidMocap(Task):
         return self.running_cost(state, jnp.zeros(self.model.nu)) * self.dt
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
-        """Randomize the friction parameters."""
+        """Randomize the contact modeling parameters."""
+        rng, friction_rng, stiffness_rng, margin_rng = jax.random.split(rng, 4)
+
+        # Friction coefficients (via geom_friction)
         n_geoms = self.model.geom_friction.shape[0]
-        multiplier = jax.random.uniform(rng, (n_geoms,), minval=0.5, maxval=2.0)
-        new_frictions = self.model.geom_friction.at[:, 0].set(
-            self.model.geom_friction[:, 0] * multiplier
+        geom_friction = self.model.geom_friction.at[:, 0].set(
+            jax.random.uniform(friction_rng, (n_geoms,), minval=0.3, maxval=1.6)
         )
-        return {"geom_friction": new_frictions}
+
+        # Contact stiffness (via geom_solref). We'll modify the time constant
+        # in particular (mujoco default is 0.02).
+        n_geoms = self.model.geom_solref.shape[0]
+        geom_solref = self.model.geom_solref.at[:, 0].set(
+            jax.random.uniform(
+                stiffness_rng, (n_geoms,), minval=0.01, maxval=0.04
+            )
+        )
+
+        # Contact margin (distance at which contact forces activate. Default is
+        # zero.)
+        n_geoms = self.model.geom_margin.shape[0]
+        geom_margin = self.model.geom_margin.at[:].set(
+            jax.random.uniform(margin_rng, (n_geoms,), minval=0.0, maxval=0.005)
+        )
+
+        return {
+            "geom_friction": geom_friction,
+            "geom_solref": geom_solref,
+            "geom_margin": geom_margin,
+        }
 
     def domain_randomize_data(
         self, data: mjx.Data, rng: jax.Array
