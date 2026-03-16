@@ -88,7 +88,7 @@ def test_mocap(impl: str) -> None:
         impl: Which implementation to use ("jax" or "warp").
     """
     task = HumanoidMocap(impl=impl)
-    assert task.reference is not None
+    assert task.reference_qpos is not None
 
     state = task.make_data()
     assert isinstance(state, mjx.Data)
