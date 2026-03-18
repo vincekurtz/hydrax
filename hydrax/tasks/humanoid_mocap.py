@@ -215,8 +215,11 @@ class HumanoidMocap(Task):
         return self.running_cost(state, jnp.zeros(self.model.nu)) * self.dt
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
-        """Randomize the contact modeling parameters."""
+        """Randomize physical and contact modeling parameters."""
         rng, friction_rng, stiffness_rng, margin_rng = jax.random.split(rng, 4)
+        rng, mass_rng, ipos_rng, damping_rng, fric_rng, kp_rng, kd_rng = (
+            jax.random.split(rng, 7)
+        )
 
         # Friction coefficients (via geom_friction)
         n_geoms = self.model.geom_friction.shape[0]
@@ -240,10 +243,56 @@ class HumanoidMocap(Task):
             jax.random.uniform(margin_rng, (n_geoms,), minval=0.0, maxval=0.005)
         )
 
+        # Body masses: multiplicative noise ±20%
+        n_bodies = self.model.body_mass.shape[0]
+        mass_scale = jax.random.uniform(
+            mass_rng, (n_bodies,), minval=0.8, maxval=1.2
+        )
+        body_mass = self.model.body_mass * mass_scale
+
+        # Center of mass positions: additive noise ±5 mm per axis
+        body_ipos = self.model.body_ipos + jax.random.uniform(
+            ipos_rng, self.model.body_ipos.shape, minval=-0.005, maxval=0.005
+        )
+
+        # Joint damping: uniform [0, 5] N·m·s/rad for actuated DOFs.
+        # The first 6 DOFs belong to the free root joint and are left at 0.
+        n_dof = self.model.dof_damping.shape[0]
+        dof_damping = self.model.dof_damping.at[6:].set(
+            jax.random.uniform(
+                damping_rng, (n_dof - 6,), minval=0.0, maxval=5.0
+            )
+        )
+
+        # Joint friction loss: uniform [0, 1] N·m for actuated DOFs.
+        dof_frictionloss = self.model.dof_frictionloss.at[6:].set(
+            jax.random.uniform(fric_rng, (n_dof - 6,), minval=0.0, maxval=1.0)
+        )
+
+        # Actuator kP gains: multiplicative noise ±20%.
+        # gainprm[:, 0] = kP; biasprm[:, 1] = -kP (must stay consistent).
+        n_act = self.model.actuator_gainprm.shape[0]
+        kp_scale = jax.random.uniform(kp_rng, (n_act,), minval=0.8, maxval=1.2)
+        kp = self.model.actuator_gainprm[:, 0] * kp_scale
+        actuator_gainprm = self.model.actuator_gainprm.at[:, 0].set(kp)
+        actuator_biasprm = self.model.actuator_biasprm.at[:, 1].set(-kp)
+
+        # Actuator kD gains: multiplicative noise ±20% on biasprm[:, 2].
+        kd_scale = jax.random.uniform(kd_rng, (n_act,), minval=0.8, maxval=1.2)
+        actuator_biasprm = actuator_biasprm.at[:, 2].set(
+            self.model.actuator_biasprm[:, 2] * kd_scale
+        )
+
         return {
             "geom_friction": geom_friction,
             "geom_solref": geom_solref,
             "geom_margin": geom_margin,
+            "body_mass": body_mass,
+            "body_ipos": body_ipos,
+            "dof_damping": dof_damping,
+            "dof_frictionloss": dof_frictionloss,
+            "actuator_gainprm": actuator_gainprm,
+            "actuator_biasprm": actuator_biasprm,
         }
 
     def domain_randomize_data(
