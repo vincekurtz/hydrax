@@ -6,7 +6,7 @@ import mujoco
 from hydrax.algs import CEM
 from hydrax.risk import WorstCase
 from hydrax.simulation.deterministic import run_interactive
-from hydrax.tasks.humanoid_mocap import HumanoidMocap
+from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
 
 """
 Run an interactive simulation of the humanoid motion capture tracking task.
@@ -46,6 +46,7 @@ args = parser.parse_args()
 task = HumanoidMocap(
     reference_filename=args.reference_filename,
     impl="warp" if args.warp else "jax",
+    options=HumanoidMocapOptions(),
 )
 
 # Set up the controller

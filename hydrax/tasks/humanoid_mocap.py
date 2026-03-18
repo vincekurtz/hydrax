@@ -1,4 +1,5 @@
-from typing import Dict
+from dataclasses import dataclass
+from typing import Dict, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -12,6 +13,54 @@ from hydrax import ROOT
 from hydrax.task_base import Task
 
 
+@dataclass
+class HumanoidMocapOptions:
+    """Configuration options for the HumanoidMocap task."""
+
+    # --- Cost weights ---
+
+    # Generalized position (qpos) tracking
+    configuration_cost_weight: float = 0.1
+
+    # Generalized velocity (qvel) tracking
+    generalized_velocity_cost_weight: float = 0.01
+
+    # Body position tracking (xpos)
+    body_position_cost_weight: float = 1.0
+
+    # Body orientation tracking (xquat)
+    body_orientation_cost_weight: float = 0.1
+
+    # Body linear and angular velocity tracking (cvel)
+    body_twist_cost_weight: float = 0.1
+
+    # --- Domain randomization ranges ---
+
+    # Contact friction: uniform range for geom_friction[:, 0]
+    geom_friction_range: Tuple[float, float] = (0.3, 1.6)
+
+    # Contact time constant (geom_solref[:, 0]); MuJoCo default is 0.02
+    geom_solref_range: Tuple[float, float] = (0.01, 0.04)
+
+    # Contact margin (geom_margin); MuJoCo default is 0.0
+    geom_margin_range: Tuple[float, float] = (0.0, 0.005)
+
+    # Body mass: multiplicative scale drawn from [1-scale, 1+scale]
+    body_mass_scale: float = 0.2
+
+    # Center-of-mass position: additive noise drawn from [-offset, +offset] (m)
+    body_ipos_offset: float = 0.005
+
+    # Joint damping for actuated DOFs: uniform range (N·m·s/rad)
+    dof_damping_range: Tuple[float, float] = (0.0, 5.0)
+
+    # Joint friction loss for actuated DOFs: uniform range (N·m)
+    dof_frictionloss_range: Tuple[float, float] = (0.0, 1.0)
+
+    # Actuator kP / kD gains: multiplicative scale drawn from [1-scale, 1+scale]
+    actuator_gain_scale: float = 0.2
+
+
 class HumanoidMocap(Task):
     """The Unitree G1 humanoid tracks a reference from motion capture.
 
@@ -23,11 +72,7 @@ class HumanoidMocap(Task):
         self,
         reference_filename: str = "Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
         impl: str = "jax",
-        configuration_cost_weight: float = 0.1,
-        generalized_velocity_cost_weight: float = 0.01,
-        body_position_cost_weight: float = 1.0,
-        body_orientation_cost_weight: float = 0.1,
-        body_twist_cost_weight: float = 0.1,
+        options: HumanoidMocapOptions | None = None,
     ) -> None:
         """Load the MuJoCo model and set task parameters.
 
@@ -37,16 +82,8 @@ class HumanoidMocap(Task):
         Args:
             reference_filename: The name of the reference mocap file to track.
             impl: Backend to use for simulation rollouts ("jax" or "warp").
-            configuration_cost_weight: Weight on the cost term for tracking the
-                                       generalized position reference.
-            generalized_velocity_cost_weight: Weight on the cost term for
-                                              tracking generalized velocity
-                                              reference.
-            body_position_cost_weight: Weight on body position tracking cost.
-            body_orientation_cost_weight: Weight on the body orientation
-                                          tracking cost.
-            body_twist_cost_weight: Weight on the body linear and angular
-                                    velocity tracking cost.
+            options: Task options controlling cost weights and domain
+                     randomization ranges.
         """
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/g1/scene_23dof.xml"
@@ -106,27 +143,33 @@ class HumanoidMocap(Task):
         self.reference_xquat = jnp.array(reference_xquat)
         self.reference_cvel = jnp.array(reference_cvel)
 
+        if options is None:
+            options = HumanoidMocapOptions()
+        self.options = options
+
         # Weigh different cost terms, then normalize so all cost terms add to 1.
         total_weights = (
-            configuration_cost_weight
-            + generalized_velocity_cost_weight
-            + body_position_cost_weight
-            + body_orientation_cost_weight
-            + body_twist_cost_weight
+            options.configuration_cost_weight
+            + options.generalized_velocity_cost_weight
+            + options.body_position_cost_weight
+            + options.body_orientation_cost_weight
+            + options.body_twist_cost_weight
         )
         self.configuration_cost_weight = (
-            configuration_cost_weight / total_weights
+            options.configuration_cost_weight / total_weights
         )
         self.generalized_velocity_cost_weight = (
-            generalized_velocity_cost_weight / total_weights
+            options.generalized_velocity_cost_weight / total_weights
         )
         self.body_position_cost_weight = (
-            body_position_cost_weight / total_weights
+            options.body_position_cost_weight / total_weights
         )
         self.body_orientation_cost_weight = (
-            body_orientation_cost_weight / total_weights
+            options.body_orientation_cost_weight / total_weights
         )
-        self.body_twist_cost_weight = body_twist_cost_weight / total_weights
+        self.body_twist_cost_weight = (
+            options.body_twist_cost_weight / total_weights
+        )
 
     def _get_reference_configuration(self, t: jax.Array) -> jax.Array:
         """Get the reference position (q) at time t."""
@@ -216,6 +259,7 @@ class HumanoidMocap(Task):
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize physical and contact modeling parameters."""
+        opts = self.options
         rng, friction_rng, stiffness_rng, margin_rng = jax.random.split(rng, 4)
         rng, mass_rng, ipos_rng, damping_rng, fric_rng, kp_rng, kd_rng = (
             jax.random.split(rng, 7)
@@ -224,7 +268,12 @@ class HumanoidMocap(Task):
         # Friction coefficients (via geom_friction)
         n_geoms = self.model.geom_friction.shape[0]
         geom_friction = self.model.geom_friction.at[:, 0].set(
-            jax.random.uniform(friction_rng, (n_geoms,), minval=0.3, maxval=1.6)
+            jax.random.uniform(
+                friction_rng,
+                (n_geoms,),
+                minval=opts.geom_friction_range[0],
+                maxval=opts.geom_friction_range[1],
+            )
         )
 
         # Contact stiffness (via geom_solref). We'll modify the time constant
@@ -232,7 +281,10 @@ class HumanoidMocap(Task):
         n_geoms = self.model.geom_solref.shape[0]
         geom_solref = self.model.geom_solref.at[:, 0].set(
             jax.random.uniform(
-                stiffness_rng, (n_geoms,), minval=0.01, maxval=0.04
+                stiffness_rng,
+                (n_geoms,),
+                minval=opts.geom_solref_range[0],
+                maxval=opts.geom_solref_range[1],
             )
         )
 
@@ -240,45 +292,74 @@ class HumanoidMocap(Task):
         # zero.)
         n_geoms = self.model.geom_margin.shape[0]
         geom_margin = self.model.geom_margin.at[:].set(
-            jax.random.uniform(margin_rng, (n_geoms,), minval=0.0, maxval=0.005)
+            jax.random.uniform(
+                margin_rng,
+                (n_geoms,),
+                minval=opts.geom_margin_range[0],
+                maxval=opts.geom_margin_range[1],
+            )
         )
 
-        # Body masses: multiplicative noise ±20%
+        # Body masses: multiplicative noise ±body_mass_scale
         n_bodies = self.model.body_mass.shape[0]
         mass_scale = jax.random.uniform(
-            mass_rng, (n_bodies,), minval=0.8, maxval=1.2
+            mass_rng,
+            (n_bodies,),
+            minval=1.0 - opts.body_mass_scale,
+            maxval=1.0 + opts.body_mass_scale,
         )
         body_mass = self.model.body_mass * mass_scale
 
-        # Center of mass positions: additive noise ±5 mm per axis
+        # Center of mass positions: additive noise ±body_ipos_offset per axis
         body_ipos = self.model.body_ipos + jax.random.uniform(
-            ipos_rng, self.model.body_ipos.shape, minval=-0.005, maxval=0.005
+            ipos_rng,
+            self.model.body_ipos.shape,
+            minval=-opts.body_ipos_offset,
+            maxval=opts.body_ipos_offset,
         )
 
-        # Joint damping: uniform [0, 5] N·m·s/rad for actuated DOFs.
+        # Joint damping for actuated DOFs.
         # The first 6 DOFs belong to the free root joint and are left at 0.
         n_dof = self.model.dof_damping.shape[0]
         dof_damping = self.model.dof_damping.at[6:].set(
             jax.random.uniform(
-                damping_rng, (n_dof - 6,), minval=0.0, maxval=5.0
+                damping_rng,
+                (n_dof - 6,),
+                minval=opts.dof_damping_range[0],
+                maxval=opts.dof_damping_range[1],
             )
         )
 
-        # Joint friction loss: uniform [0, 1] N·m for actuated DOFs.
+        # Joint friction loss for actuated DOFs.
         dof_frictionloss = self.model.dof_frictionloss.at[6:].set(
-            jax.random.uniform(fric_rng, (n_dof - 6,), minval=0.0, maxval=1.0)
+            jax.random.uniform(
+                fric_rng,
+                (n_dof - 6,),
+                minval=opts.dof_frictionloss_range[0],
+                maxval=opts.dof_frictionloss_range[1],
+            )
         )
 
-        # Actuator kP gains: multiplicative noise ±20%.
+        # Actuator kP gains: multiplicative noise ±actuator_gain_scale.
         # gainprm[:, 0] = kP; biasprm[:, 1] = -kP (must stay consistent).
         n_act = self.model.actuator_gainprm.shape[0]
-        kp_scale = jax.random.uniform(kp_rng, (n_act,), minval=0.8, maxval=1.2)
+        kp_scale = jax.random.uniform(
+            kp_rng,
+            (n_act,),
+            minval=1.0 - opts.actuator_gain_scale,
+            maxval=1.0 + opts.actuator_gain_scale,
+        )
         kp = self.model.actuator_gainprm[:, 0] * kp_scale
         actuator_gainprm = self.model.actuator_gainprm.at[:, 0].set(kp)
         actuator_biasprm = self.model.actuator_biasprm.at[:, 1].set(-kp)
 
-        # Actuator kD gains: multiplicative noise ±20% on biasprm[:, 2].
-        kd_scale = jax.random.uniform(kd_rng, (n_act,), minval=0.8, maxval=1.2)
+        # Actuator kD gains: multiplicative noise ±actuator_gain_scale.
+        kd_scale = jax.random.uniform(
+            kd_rng,
+            (n_act,),
+            minval=1.0 - opts.actuator_gain_scale,
+            maxval=1.0 + opts.actuator_gain_scale,
+        )
         actuator_biasprm = actuator_biasprm.at[:, 2].set(
             self.model.actuator_biasprm[:, 2] * kd_scale
         )
