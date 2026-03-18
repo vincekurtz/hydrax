@@ -32,7 +32,7 @@ class HumanoidMocapOptions:
     body_orientation_cost_weight: float = 0.1
 
     # Body linear and angular velocity tracking (cvel)
-    body_twist_cost_weight: float = 0.1
+    body_twist_cost_weight: float = 0.0
 
     # --- Domain randomization ranges ---
 

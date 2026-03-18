@@ -4,7 +4,7 @@ from copy import deepcopy
 import mujoco
 
 from hydrax.algs import CEM
-from hydrax.risk import WorstCase
+from hydrax.risk import AverageCost
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
 
@@ -52,14 +52,14 @@ task = HumanoidMocap(
 # Set up the controller
 ctrl = CEM(
     task,
-    num_samples=512,
+    num_samples=1024,
     num_elites=10,
     sigma_start=0.2,
     sigma_min=0.05,
     explore_fraction=0.5,
     plan_horizon=0.8,
-    num_randomizations=2,
-    risk_strategy=WorstCase(),
+    num_randomizations=1,
+    risk_strategy=AverageCost(),
     spline_type="zero",
     num_knots=4,
     iterations=args.iterations,
@@ -87,7 +87,7 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=100,
+    frequency=50,
     show_traces=False,
     reference=reference,
     reference_fps=task.reference_fps,
