@@ -23,11 +23,30 @@ class HumanoidMocap(Task):
         self,
         reference_filename: str = "Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
         impl: str = "jax",
+        configuration_cost_weight: float = 0.1,
+        generalized_velocity_cost_weight: float = 0.01,
+        body_position_cost_weight: float = 1.0,
+        body_orientation_cost_weight: float = 0.1,
+        body_twist_cost_weight: float = 0.1,
     ) -> None:
         """Load the MuJoCo model and set task parameters.
 
         The list of available reference files can be found at
         https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.
+
+        Args:
+            reference_filename: The name of the reference mocap file to track.
+            impl: Backend to use for simulation rollouts ("jax" or "warp").
+            configuration_cost_weight: Weight on the cost term for tracking the
+                                       generalized position reference.
+            generalized_velocity_cost_weight: Weight on the cost term for
+                                              tracking generalized velocity
+                                              reference.
+            body_position_cost_weight: Weight on body position tracking cost.
+            body_orientation_cost_weight: Weight on the body orientation
+                                          tracking cost.
+            body_twist_cost_weight: Weight on the body linear and angular
+                                    velocity tracking cost.
         """
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/g1/scene_23dof.xml"
@@ -88,11 +107,6 @@ class HumanoidMocap(Task):
         self.reference_cvel = jnp.array(reference_cvel)
 
         # Weigh different cost terms, then normalize so all cost terms add to 1.
-        configuration_cost_weight = 0.1
-        generalized_velocity_cost_weight = 0.01
-        body_position_cost_weight = 1.0
-        body_orientation_cost_weight = 1.0
-        body_twist_cost_weight = 0.1
         total_weights = (
             configuration_cost_weight
             + generalized_velocity_cost_weight
