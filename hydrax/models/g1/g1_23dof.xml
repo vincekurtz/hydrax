@@ -1,7 +1,7 @@
 <mujoco model="g1_29dof_rev_1_0">
   <compiler angle="radian" meshdir="assets" autolimits="true" />
 
-  <option timestep="0.02" iterations="1" ls_iterations="5">
+  <option timestep="0.02" iterations="3" ls_iterations="10">
     <flag eulerdamp="disable" />
   </option>
 
@@ -11,7 +11,7 @@
   </custom>
 
   <default>
-    <geom condim="3" solimp="0.0 0.95 0.01" />
+    <geom condim="3" solimp="0.9 0.95 0.001" />
     <default class="g1">
       <site rgba="1 0 0 1" size="0.01" group="5" />
       <joint damping="0.0" armature="1.0" frictionloss="0.0" />
@@ -312,7 +312,7 @@
     <framelinvel name="imu_in_torso_linvel" objtype="site" objname="imu_in_torso" />
     <gyro site="imu_in_pelvis" name="imu-pelvis-angular-velocity" cutoff="34.9" noise="0.0005" />
     <accelerometer site="imu_in_pelvis" name="imu-pelvis-linear-acceleration" cutoff="157" noise="0.01" />
-    
+
     <framepos name="left_foot_position" objtype="site" objname="left_foot" />
     <framequat name="left_foot_orientation" objtype="site" objname="left_foot" />
     <framepos name="right_foot_position" objtype="site" objname="right_foot" />
