@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Tuple
 
 import jax
@@ -11,7 +11,6 @@ from mujoco.mjx._src.math import quat_sub
 
 from hydrax import ROOT
 from hydrax.task_base import Task
-
 
 @dataclass
 class HumanoidMocapOptions:
@@ -29,28 +28,28 @@ class HumanoidMocapOptions:
     body_position_cost_weight: float = 1.0
 
     # Body orientation tracking (xquat)
-    body_orientation_cost_weight: float = 0.0
+    body_orientation_cost_weight: float = 0.3
 
     # Body linear and angular velocity tracking (cvel)
     body_twist_cost_weight: float = 0.0
 
-    # List of body names to track
-    tracked_bodies: Tuple[str, ...] = (
-        "pelvis",
-        "left_hip_roll_link",
-        "left_knee_link",
-        "left_ankle_roll_link",
-        "right_hip_roll_link",
-        "right_knee_link",
-        "right_ankle_roll_link",
-        "torso_link",
-        "left_shoulder_roll_link",
-        "left_elbow_link",
-        "left_wrist_yaw_link",
-        "right_shoulder_roll_link",
-        "right_elbow_link",
-        "right_wrist_yaw_link",
-    )
+    # List of body names to track, and corresponding cost weights.
+    tracked_bodies: Dict[str, float] = field(default_factory=lambda: {
+        "pelvis": 1.0,
+        "left_hip_roll_link": 1.0,
+        "left_knee_link": 1.0,
+        "left_ankle_roll_link": 10.0,
+        "right_hip_roll_link": 1.0,
+        "right_knee_link": 1.0,
+        "right_ankle_roll_link": 10.0,
+        "torso_link": 1.0,
+        "left_shoulder_roll_link": 1.0,
+        "left_elbow_link": 1.0,
+        "left_wrist_yaw_link": 1.0,
+        "right_shoulder_roll_link": 1.0,
+        "right_elbow_link": 1.0,
+        "right_wrist_yaw_link": 1.0,
+    })
 
     # --- Domain randomization ranges ---
 
@@ -162,8 +161,18 @@ class HumanoidMocap(Task):
         # Precompute the indices of the tracked bodies for fast lookup during
         # cost computation.
         self.tracked_body_indices = jnp.array(
-            [mj_data.body(body_name).id for body_name in options.tracked_bodies]
+            [
+                mj_data.body(body_name).id
+                for body_name in options.tracked_bodies.keys()
+            ]
         )
+
+        # Precompute and normalize the cost weights for each tracked body
+        self.body_weights = jnp.array(list(options.tracked_bodies.values()))
+        sorted_indices = jnp.argsort(self.tracked_body_indices)
+        self.tracked_body_indices = self.tracked_body_indices[sorted_indices]
+        self.body_weights = self.body_weights[sorted_indices]
+        self.body_weights = self.body_weights[:, None]  # for broadcasting
 
         # Convert reference data to jax arrays
         self.reference_qpos = jnp.array(reference[0:-1])
@@ -241,6 +250,8 @@ class HumanoidMocap(Task):
         xquat_err = jax.vmap(quat_sub)(
             state.xquat[self.tracked_body_indices], ref_xquat
         )
+        xpos_err = self.body_weights * xpos_err
+        xquat_err = self.body_weights * xquat_err
 
         # Generalized velocity tracking error
         v_ref = self._get_reference_velocity(state.time)
@@ -250,6 +261,7 @@ class HumanoidMocap(Task):
         # Body twist tracking error
         ref_cvel = self._get_reference_body_twists(state.time)
         cvel_err = state.cvel[self.tracked_body_indices] - ref_cvel
+        cvel_err = self.body_weights * cvel_err
 
         # Tracking costs J = 1 - exp(-|error|^2) for each error term. This puts
         # each error term between 0 and 1.

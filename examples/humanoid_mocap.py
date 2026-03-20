@@ -53,15 +53,15 @@ task = HumanoidMocap(
 ctrl = CEM(
     task,
     num_samples=512,
-    num_elites=10,
-    sigma_start=0.1,
+    num_elites=20,
+    sigma_start=0.2,
     sigma_min=0.05,
     explore_fraction=0.5,
     plan_horizon=0.6,
     num_randomizations=0,
     risk_strategy=AverageCost(),
     spline_type="zero",
-    num_knots=4,
+    num_knots=3,
     iterations=args.iterations,
 )
 
