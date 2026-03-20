@@ -7,11 +7,17 @@
     - Ran asset_zoo/robots/unitree_g1/g1_constraints.py
     - Converted the model to xml: robot.spec.to_xml()
     - Saved the xml file
+    - Added a larger timestep and iteration limits
   -->
+
+  <option timestep="0.005" iterations="3" ls_iterations="10">
+    <flag eulerdamp="disable"/>
+  </option>
 
   <size nkey="1"/>
 
   <default>
+    <geom condim="3" solimp="0.0 0.95 0.01"/>
     <default class="g1">
       <site group="5" rgba="1 0 0 1"/>
       <default class="visual">

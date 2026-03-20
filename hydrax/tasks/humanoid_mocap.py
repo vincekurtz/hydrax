@@ -103,9 +103,13 @@ class HumanoidMocap(Task):
             ),
             delimiter=",",
         )
-        breakpoint()
-
         self.reference_fps = 30
+
+        # Fix the reference to use mujoco format with wxyz quaternions.
+        pos = reference[:, :3]
+        quat_xyzw = reference[:, 3:7]
+        quat_wxyz = quat_xyzw[:, [3, 0, 1, 2]]
+        reference = np.concatenate([pos, quat_wxyz, reference[:, 7:]], axis=1)
 
         # Precompute the pose of each body throughout the reference trajectory.
         mj_data = mujoco.MjData(mj_model)
