@@ -86,7 +86,7 @@ class HumanoidMocap(Task):
                      randomization ranges.
         """
         mj_model = mujoco.MjModel.from_xml_path(
-            ROOT + "/models/g1/scene_23dof.xml"
+            ROOT + "/models/g1/scene.xml"
         )
         super().__init__(
             mj_model,
@@ -95,16 +95,17 @@ class HumanoidMocap(Task):
         )
 
         # Download and load reference data
-        npz_file = np.load(
+        reference = np.loadtxt(
             hf_hub_download(
-                repo_id="robfiras/loco-mujoco-datasets",
+                repo_id="lvhaidong/LAFAN1_Retargeting_Dataset",
                 filename=reference_filename,
                 repo_type="dataset",
-            )
+            ),
+            delimiter=",",
         )
+        breakpoint()
 
-        reference = npz_file["qpos"]
-        self.reference_fps = npz_file["frequency"]
+        self.reference_fps = 30
 
         # Precompute the pose of each body throughout the reference trajectory.
         mj_data = mujoco.MjData(mj_model)

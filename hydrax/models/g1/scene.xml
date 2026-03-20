@@ -1,5 +1,5 @@
 <mujoco model="g1 scene">
-  <include file="g1.xml"/>
+  <include file="g1_mjlab.xml"/>
 
   <statistic center="0.0 0.0 0.5" extent="1.5"/>
 
