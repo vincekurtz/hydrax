@@ -28,7 +28,7 @@ class HumanoidMocapOptions:
     body_position_cost_weight: float = 1.0
 
     # Body orientation tracking (xquat)
-    body_orientation_cost_weight: float = 0.3
+    body_orientation_cost_weight: float = 0.1
 
     # Body linear and angular velocity tracking (cvel)
     body_twist_cost_weight: float = 0.0
@@ -38,10 +38,10 @@ class HumanoidMocapOptions:
         "pelvis": 1.0,
         "left_hip_roll_link": 1.0,
         "left_knee_link": 1.0,
-        "left_ankle_roll_link": 10.0,
+        "left_ankle_roll_link": 2.0,
         "right_hip_roll_link": 1.0,
         "right_knee_link": 1.0,
-        "right_ankle_roll_link": 10.0,
+        "right_ankle_roll_link": 2.0,
         "torso_link": 1.0,
         "left_shoulder_roll_link": 1.0,
         "left_elbow_link": 1.0,
