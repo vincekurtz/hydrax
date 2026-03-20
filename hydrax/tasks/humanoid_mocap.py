@@ -23,16 +23,34 @@ class HumanoidMocapOptions:
     configuration_cost_weight: float = 0.1
 
     # Generalized velocity (qvel) tracking
-    generalized_velocity_cost_weight: float = 0.01
+    generalized_velocity_cost_weight: float = 0.0
 
     # Body position tracking (xpos)
     body_position_cost_weight: float = 1.0
 
     # Body orientation tracking (xquat)
-    body_orientation_cost_weight: float = 0.1
+    body_orientation_cost_weight: float = 0.0
 
     # Body linear and angular velocity tracking (cvel)
     body_twist_cost_weight: float = 0.0
+
+    # List of body names to track
+    tracked_bodies: Tuple[str, ...] = (
+        "pelvis",
+        "left_hip_roll_link",
+        "left_knee_link",
+        "left_ankle_roll_link",
+        "right_hip_roll_link",
+        "right_knee_link",
+        "right_ankle_roll_link",
+        "torso_link",
+        "left_shoulder_roll_link",
+        "left_elbow_link",
+        "left_wrist_yaw_link",
+        "right_shoulder_roll_link",
+        "right_elbow_link",
+        "right_wrist_yaw_link",
+    )
 
     # --- Domain randomization ranges ---
 
@@ -141,6 +159,12 @@ class HumanoidMocap(Task):
             # instead. But for now these quantities are readily available.
             reference_cvel[i] = mj_data.cvel
 
+        # Precompute the indices of the tracked bodies for fast lookup during
+        # cost computation.
+        self.tracked_body_indices = jnp.array(
+            [mj_data.body(body_name).id for body_name in options.tracked_bodies]
+        )
+
         # Convert reference data to jax arrays
         self.reference_qpos = jnp.array(reference[0:-1])
         self.reference_qvel = jnp.array(reference_qvel)
@@ -194,13 +218,15 @@ class HumanoidMocap(Task):
         """Get the reference body positions and orientations at time t."""
         i = jnp.int32(t * self.reference_fps)
         i = jnp.clip(i, 0, self.reference_xpos.shape[0] - 1)
-        return self.reference_xpos[i], self.reference_xquat[i]
+        bodies = self.tracked_body_indices
+        return self.reference_xpos[i, bodies], self.reference_xquat[i, bodies]
 
     def _get_reference_body_twists(self, t: jax.Array) -> jax.Array:
         """Get the reference body linear and angular velocities at time t."""
         i = jnp.int32(t * self.reference_fps)
         i = jnp.clip(i, 0, self.reference_cvel.shape[0] - 1)
-        return self.reference_cvel[i]
+        bodies = self.tracked_body_indices
+        return self.reference_cvel[i, bodies]
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
         """The running cost ℓ(xₜ, uₜ)."""
@@ -211,10 +237,10 @@ class HumanoidMocap(Task):
 
         # Body pose tracking error
         ref_xpos, ref_xquat = self._get_reference_body_poses(state.time)
-        xpos_err = state.xpos - ref_xpos  # size (nbody, 3)
+        xpos_err = state.xpos[self.tracked_body_indices] - ref_xpos
         xquat_err = jax.vmap(quat_sub)(
-            state.xquat, ref_xquat
-        )  # size (nbody, 3)
+            state.xquat[self.tracked_body_indices], ref_xquat
+        )
 
         # Generalized velocity tracking error
         v_ref = self._get_reference_velocity(state.time)
@@ -223,7 +249,7 @@ class HumanoidMocap(Task):
 
         # Body twist tracking error
         ref_cvel = self._get_reference_body_twists(state.time)
-        cvel_err = state.cvel - ref_cvel  # size (nbody, 6)
+        cvel_err = state.cvel[self.tracked_body_indices] - ref_cvel
 
         # Tracking costs J = 1 - exp(-|error|^2) for each error term. This puts
         # each error term between 0 and 1.
