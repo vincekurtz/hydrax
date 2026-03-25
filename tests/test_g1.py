@@ -88,20 +88,18 @@ def test_mocap(impl: str) -> None:
         impl: Which implementation to use ("jax" or "warp").
     """
     task = HumanoidMocap(impl=impl)
-    assert task.reference_qpos is not None
+    assert task.reference_xpos is not None
 
     state = task.make_data()
     assert isinstance(state, mjx.Data)
 
     ell = task.running_cost(state, jnp.zeros(task.model.nu))
     assert ell.shape == ()
-    assert ell > 0.0
-    assert ell < 1.0
+    assert ell < 0.0  # cost = -reward, so negative
 
     phi = task.terminal_cost(state)
     assert phi.shape == ()
-    assert phi > 0.0
-    assert phi < 1.0
+    assert phi < 0.0
 
 
 if __name__ == "__main__":
