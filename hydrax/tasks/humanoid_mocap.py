@@ -13,19 +13,73 @@ from hydrax import ROOT
 from hydrax.task_base import Task
 
 
-def _yaw_quat(q: jax.Array) -> jax.Array:
-    """Extract the yaw (z-axis rotation) component of a quaternion.
+def _link_velocities(
+    cvel: jax.Array, subtree_com: jax.Array, xpos: jax.Array
+) -> tuple[jax.Array, jax.Array]:
+    """Compute world-frame link velocities from MuJoCo cvel.
+
+    MuJoCo's cvel stores (angular, linear) velocities in a frame centered at
+    subtree_com (world-aligned). This transfers the linear component to the
+    link origin (xpos) using the rigid-body velocity transfer formula.
 
     Args:
-        q: Quaternion in (w, x, y, z) format. Shape is (4,).
+        cvel: (nbody, 6) — [:, :3] angular, [:, 3:] linear at subtree_com.
+        subtree_com: (nbody, 3) — center of mass of each body's subtree.
+        xpos: (nbody, 3) — link frame origins in world frame.
 
     Returns:
-        A unit quaternion representing only the yaw rotation. Shape is (4,).
+        lin_vel: (nbody, 3) — linear velocity at link origin, world frame.
+        ang_vel: (nbody, 3) — angular velocity, world frame.
     """
-    w, x, y, z = q[0], q[1], q[2], q[3]
-    yaw = jnp.arctan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
-    half_yaw = yaw * 0.5
-    return jnp.array([jnp.cos(half_yaw), 0.0, 0.0, jnp.sin(half_yaw)])
+    ang_vel = cvel[:, :3]
+    lin_vel = cvel[:, 3:] - jnp.cross(ang_vel, subtree_com - xpos)
+    return lin_vel, ang_vel
+
+
+def _poses_in_anchor_frame(
+    xpos: jax.Array,
+    xquat: jax.Array,
+    anchor_pos: jax.Array,
+    anchor_quat: jax.Array,
+) -> tuple[jax.Array, jax.Array]:
+    """Transform body poses from world frame to anchor body frame.
+
+    Args:
+        xpos: (nbody, 3) — body positions in world frame.
+        xquat: (nbody, 4) — body quaternions in world frame (w, x, y, z).
+        anchor_pos: (3,) — anchor body position in world frame.
+        anchor_quat: (4,) — anchor body quaternion in world frame.
+
+    Returns:
+        pos_local: (nbody, 3) — body positions in anchor frame.
+        quat_local: (nbody, 4) — body orientations in anchor frame.
+    """
+    inv_q = quat_inv(anchor_quat)
+    pos_local = jax.vmap(lambda p: rotate(p - anchor_pos, inv_q))(xpos)
+    quat_local = jax.vmap(lambda q: quat_mul(inv_q, q))(xquat)
+    return pos_local, quat_local
+
+
+def _velocities_in_anchor_frame(
+    lin_vel: jax.Array,
+    ang_vel: jax.Array,
+    anchor_quat: jax.Array,
+) -> tuple[jax.Array, jax.Array]:
+    """Rotate world-frame velocities into the anchor body frame.
+
+    Args:
+        lin_vel: (nbody, 3) — linear velocities in world frame.
+        ang_vel: (nbody, 3) — angular velocities in world frame.
+        anchor_quat: (4,) — anchor body quaternion in world frame.
+
+    Returns:
+        lin_vel_local: (nbody, 3) — linear velocities in anchor frame.
+        ang_vel_local: (nbody, 3) — angular velocities in anchor frame.
+    """
+    inv_q = quat_inv(anchor_quat)
+    lin_vel_local = jax.vmap(lambda v: rotate(v, inv_q))(lin_vel)
+    ang_vel_local = jax.vmap(lambda v: rotate(v, inv_q))(ang_vel)
+    return lin_vel_local, ang_vel_local
 
 
 @dataclass
@@ -59,11 +113,11 @@ class HumanoidMocapOptions:
     body_ori_weight: float = 1.0
     body_ori_std: float = 0.4
 
-    # Global body linear velocity tracking
+    # Anchor-frame body linear velocity tracking
     body_lin_vel_weight: float = 1.0
     body_lin_vel_std: float = 1.0
 
-    # Global body angular velocity tracking
+    # Anchor-frame body angular velocity tracking
     body_ang_vel_weight: float = 1.0
     body_ang_vel_std: float = 3.14
 
@@ -166,8 +220,8 @@ class HumanoidMocap(Task):
         n_frames = len(reference)
         reference_xpos = np.zeros((n_frames - 1, mj_model.nbody, 3))
         reference_xquat = np.zeros((n_frames - 1, mj_model.nbody, 4))
-        reference_body_lin_vel = np.zeros((n_frames - 1, mj_model.nbody, 3))
-        reference_body_ang_vel = np.zeros((n_frames - 1, mj_model.nbody, 3))
+        reference_cvel = np.zeros((n_frames - 1, mj_model.nbody, 6))
+        reference_subtree_com = np.zeros((n_frames - 1, mj_model.nbody, 3))
         for i in range(n_frames - 1):
             mj_data.qpos[:] = reference[i]
 
@@ -183,35 +237,47 @@ class HumanoidMocap(Task):
 
             reference_xpos[i] = mj_data.xpos
             reference_xquat[i] = mj_data.xquat
-
-            # cvel has shape (nbody, 6): [:3] angular, [3:] linear,
-            # expressed in the world frame.
-            reference_body_ang_vel[i] = mj_data.cvel[:, :3]
-            reference_body_lin_vel[i] = mj_data.cvel[:, 3:]
+            reference_cvel[i] = mj_data.cvel
+            reference_subtree_com[i] = mj_data.subtree_com
 
         # Anchor (root) body index for global tracking
         self.anchor_body_index = mj_data.body(options.anchor_body_name).id
+        anchor_id = self.anchor_body_index
 
         # Tracked body indices for body-level tracking
         self.tracked_body_indices = jnp.array(
             [mj_data.body(body_name).id for body_name in options.tracked_bodies]
         )
-
-        # Convert reference data to jax arrays, indexed by tracked bodies
         bodies = [mj_data.body(name).id for name in options.tracked_bodies]
-        self.reference_xpos = jnp.array(reference_xpos[:, bodies])
-        self.reference_xquat = jnp.array(reference_xquat[:, bodies])
-        self.reference_body_lin_vel = jnp.array(
-            reference_body_lin_vel[:, bodies]
-        )
-        self.reference_body_ang_vel = jnp.array(
-            reference_body_ang_vel[:, bodies]
-        )
 
-        # Anchor body reference data (global frame)
-        anchor_id = self.anchor_body_index
+        # Anchor body reference data (global frame, for anchor tracking terms)
         self.reference_anchor_pos = jnp.array(reference_xpos[:, anchor_id])
         self.reference_anchor_quat = jnp.array(reference_xquat[:, anchor_id])
+
+        # Compute world-frame link velocities from cvel using the rigid-body
+        # velocity transfer formula (cvel linear component is at subtree_com).
+        body_lin_vel_world, body_ang_vel_world = jax.vmap(_link_velocities)(
+            jnp.array(reference_cvel[:, bodies]),
+            jnp.array(reference_subtree_com[:, bodies]),
+            jnp.array(reference_xpos[:, bodies]),
+        )
+
+        # Transform tracked body poses and velocities into the anchor frame.
+        self.reference_xpos, self.reference_xquat = jax.vmap(
+            _poses_in_anchor_frame
+        )(
+            jnp.array(reference_xpos[:, bodies]),
+            jnp.array(reference_xquat[:, bodies]),
+            self.reference_anchor_pos,
+            self.reference_anchor_quat,
+        )
+        self.reference_body_lin_vel, self.reference_body_ang_vel = jax.vmap(
+            _velocities_in_anchor_frame
+        )(
+            body_lin_vel_world,
+            body_ang_vel_world,
+            self.reference_anchor_quat,
+        )
 
         # Store reward weights and std values
         self.anchor_pos_weight = options.anchor_pos_weight
@@ -258,14 +324,14 @@ class HumanoidMocap(Task):
 
         This is the negative of the BeyondMimic reward, consisting of:
           - Global anchor position and orientation tracking
-          - Anchor-relative body position and orientation tracking
-          - Global body linear and angular velocity tracking
+          - Anchor-frame body position and orientation tracking
+          - Anchor-frame body linear and angular velocity tracking
 
         See https://github.com/mujocolab/mjlab/blob/main/src/mjlab/tasks/tracking/
         """
         t = state.time
 
-        # --- Reference data ---
+        # --- Reference data (body data is already in anchor frame) ---
         ref_anchor_pos, ref_anchor_quat = self._get_reference_anchor_pose(t)
         ref_body_pos, ref_body_quat = self._get_reference_body_poses(t)
         ref_body_lin_vel, ref_body_ang_vel = (
@@ -277,12 +343,21 @@ class HumanoidMocap(Task):
         robot_anchor_pos = state.xpos[anchor_idx]
         robot_anchor_quat = state.xquat[anchor_idx]
 
+        # Compute world-frame link velocities from cvel, then transform
+        # poses and velocities into the robot's anchor frame.
         bodies = self.tracked_body_indices
-        robot_body_pos = state.xpos[bodies]
-        robot_body_quat = state.xquat[bodies]
-        # cvel: (nbody, 6) where [:3]=angular, [3:]=linear in world frame
-        robot_body_lin_vel = state.cvel[bodies, 3:]
-        robot_body_ang_vel = state.cvel[bodies, :3]
+        robot_lin_vel_world, robot_ang_vel_world = _link_velocities(
+            state.cvel[bodies], state.subtree_com[bodies], state.xpos[bodies]
+        )
+        robot_body_pos, robot_body_quat = _poses_in_anchor_frame(
+            state.xpos[bodies],
+            state.xquat[bodies],
+            robot_anchor_pos,
+            robot_anchor_quat,
+        )
+        robot_body_lin_vel, robot_body_ang_vel = _velocities_in_anchor_frame(
+            robot_lin_vel_world, robot_ang_vel_world, robot_anchor_quat
+        )
 
         # =================================================================
         # 1. Global anchor position reward:
@@ -302,48 +377,27 @@ class HumanoidMocap(Task):
         r_anchor_ori = jnp.exp(-anchor_ori_err / self.anchor_ori_std**2)
 
         # =================================================================
-        # 3. Relative body position reward.
-        #    Reference body positions are transformed so the reference anchor
-        #    aligns with the robot's anchor (xy + yaw). Heights stay in the
-        #    reference frame.
-        #
-        #    delta_pos = robot_anchor_pos with z replaced by ref_anchor z
-        #    delta_ori = yaw_only(robot_anchor_quat * inv(ref_anchor_quat))
-        #    body_pos_relative = delta_pos + rotate(body_pos - anchor_pos,
-        #                                           delta_ori)
+        # 3. Body position in anchor frame:
+        #    exp(-mean_b(||ref_pos_b - robot_pos_b||^2) / std^2)
         # =================================================================
-        delta_pos = robot_anchor_pos.at[2].set(ref_anchor_pos[2])
-        delta_ori = _yaw_quat(
-            quat_mul(robot_anchor_quat, quat_inv(ref_anchor_quat))
-        )
-
-        ref_body_pos_relative = delta_pos[None, :] + jax.vmap(
-            lambda p: rotate(p - ref_anchor_pos, delta_ori)
-        )(ref_body_pos)
-
         body_pos_err = jnp.mean(
-            jnp.sum(jnp.square(ref_body_pos_relative - robot_body_pos), axis=-1)
+            jnp.sum(jnp.square(ref_body_pos - robot_body_pos), axis=-1)
         )
         r_body_pos = jnp.exp(-body_pos_err / self.body_pos_std**2)
 
         # =================================================================
-        # 4. Relative body orientation reward.
-        #    body_quat_relative = delta_ori * ref_body_quat
-        #    error = mean over bodies of angle^2
+        # 4. Body orientation in anchor frame:
+        #    exp(-mean_b(angle(ref_quat_b, robot_quat_b)^2) / std^2)
         # =================================================================
-        ref_body_quat_relative = jax.vmap(lambda q: quat_mul(delta_ori, q))(
-            ref_body_quat
-        )
-
         body_ori_err = jnp.mean(
             jax.vmap(lambda q1, q2: jnp.sum(jnp.square(quat_sub(q1, q2))))(
-                ref_body_quat_relative, robot_body_quat
+                ref_body_quat, robot_body_quat
             )
         )
         r_body_ori = jnp.exp(-body_ori_err / self.body_ori_std**2)
 
         # =================================================================
-        # 5. Global body linear velocity reward:
+        # 5. Body linear velocity in anchor frame:
         #    exp(-mean_b(||ref_lin_vel_b - robot_lin_vel_b||^2) / std^2)
         # =================================================================
         body_lin_vel_err = jnp.mean(
@@ -352,7 +406,7 @@ class HumanoidMocap(Task):
         r_body_lin_vel = jnp.exp(-body_lin_vel_err / self.body_lin_vel_std**2)
 
         # =================================================================
-        # 6. Global body angular velocity reward:
+        # 6. Body angular velocity in anchor frame:
         #    exp(-mean_b(||ref_ang_vel_b - robot_ang_vel_b||^2) / std^2)
         # =================================================================
         body_ang_vel_err = jnp.mean(
