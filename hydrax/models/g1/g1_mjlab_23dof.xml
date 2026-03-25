@@ -4,7 +4,7 @@
   <!--
   Adapted from mjlab v1.2.0, https://github.com/mujocolab/mjlab/
 
-    - Edited asset_zoo/robots/unitree_g1/g1_constraints.py to use 100 Hz natural
+    - Edited asset_zoo/robots/unitree_g1/g1_constraints.py to use 30 Hz natural
       frequency for actuators, instead of the default 10 Hz (stiffer PD gains)
     - Ran asset_zoo/robots/unitree_g1/g1_constraints.py
     - Converted the model to xml: robot.spec.to_xml()
@@ -33,19 +33,19 @@
       </default>
       <default class="act_25">
         <joint armature="0.00360972"/>
-        <position kp="1425.06" kv="9.07223" forcerange="-25 25"/>
+        <position kp="128.256" kv="2.72167" forcerange="-25 25"/>
       </default>
       <default class="act_50">
         <joint armature="0.00721945"/>
-        <position kp="2850.12" kv="18.1445" forcerange="-50 50"/>
+        <position kp="256.511" kv="5.44334" forcerange="-50 50"/>
       </default>
       <default class="act_88">
         <joint armature="0.0101775"/>
-        <position kp="4017.92" kv="25.5789" forcerange="-88 88"/>
+        <position kp="361.613" kv="7.67367" forcerange="-88 88"/>
       </default>
       <default class="act_139">
         <joint armature="0.0251019"/>
-        <position kp="9909.84" kv="63.088" forcerange="-139 139"/>
+        <position kp="891.886" kv="18.9264" forcerange="-139 139"/>
       </default>
     </default>
   </default>
