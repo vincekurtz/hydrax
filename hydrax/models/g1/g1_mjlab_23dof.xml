@@ -21,7 +21,6 @@
   <default>
     <default class="g1">
       <site group="5" rgba="1 0 0 1"/>
-      <general biastype="affine" ctrllimited="false" forcelimited="true"/>
       <default class="visual">
         <geom type="mesh" contype="0" conaffinity="0" group="2" density="0" material="silver"/>
       </default>
@@ -33,19 +32,19 @@
       </default>
       <default class="act_25">
         <joint armature="0.00360972"/>
-        <position kp="128.256" kv="2.72167" forcerange="-25 25"/>
+        <position kp="128.256" kv="2.72167" forcerange="-25 25" inheritrange="0"/>
       </default>
       <default class="act_50">
         <joint armature="0.00721945"/>
-        <position kp="256.511" kv="5.44334" forcerange="-50 50"/>
+        <position kp="256.511" kv="5.44334" forcerange="-50 50" inheritrange="0"/>
       </default>
       <default class="act_88">
         <joint armature="0.0101775"/>
-        <position kp="361.613" kv="7.67367" forcerange="-88 88"/>
+        <position kp="361.613" kv="7.67367" forcerange="-88 88" inheritrange="0"/>
       </default>
       <default class="act_139">
         <joint armature="0.0251019"/>
-        <position kp="891.886" kv="18.9264" forcerange="-139 139"/>
+        <position kp="891.886" kv="18.9264" forcerange="-139 139" inheritrange="0"/>
       </default>
     </default>
   </default>
