@@ -14,7 +14,7 @@
     - Reorder actuators to match the order of joints in qpos
   -->
 
-  <option integrator="implicitfast"/>
+  <option timestep="0.01" integrator="implicitfast"/>
 
   <size nkey="1"/>
 
