@@ -52,16 +52,16 @@ task = HumanoidMocap(
 # Set up the controller
 ctrl = CEM(
     task,
-    num_samples=512,
-    num_elites=20,
+    num_samples=1024,
+    num_elites=10,
     sigma_start=0.2,
-    sigma_min=0.01,
+    sigma_min=0.05,
     explore_fraction=0.5,
-    plan_horizon=0.6,
+    plan_horizon=0.8,
     num_randomizations=0,
     risk_strategy=AverageCost(),
     spline_type="zero",
-    num_knots=3,
+    num_knots=4,
     iterations=args.iterations,
 )
 
@@ -71,6 +71,7 @@ mj_model = deepcopy(task.mj_model)
 # Set the initial state
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = task.reference_qpos[0]
+initial_knots = task.reference_qpos[: ctrl.num_knots, 7:]
 
 if args.show_reference:
     reference = task.reference_qpos
@@ -81,8 +82,9 @@ run_interactive(
     ctrl,
     mj_model,
     mj_data,
-    frequency=100,
+    frequency=50,
     show_traces=False,
     reference=reference,
     reference_fps=task.reference_fps,
+    initial_knots=initial_knots,
 )

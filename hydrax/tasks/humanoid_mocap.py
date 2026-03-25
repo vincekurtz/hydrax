@@ -23,7 +23,7 @@ class HumanoidMocapOptions:
     configuration_cost_weight: float = 0.1
 
     # Generalized velocity (qvel) tracking
-    generalized_velocity_cost_weight: float = 0.0
+    generalized_velocity_cost_weight: float = 0.01
 
     # Body position tracking (xpos)
     body_position_cost_weight: float = 1.0
@@ -40,10 +40,10 @@ class HumanoidMocapOptions:
             "pelvis": 1.0,
             "left_hip_roll_link": 1.0,
             "left_knee_link": 1.0,
-            "left_ankle_roll_link": 2.0,
+            "left_ankle_roll_link": 1.0,
             "right_hip_roll_link": 1.0,
             "right_knee_link": 1.0,
-            "right_ankle_roll_link": 2.0,
+            "right_ankle_roll_link": 1.0,
             "torso_link": 1.0,
             "left_shoulder_roll_link": 1.0,
             "left_elbow_link": 1.0,
@@ -430,4 +430,4 @@ class HumanoidMocap(Task):
 
     def make_data(self) -> mjx.Data:
         """Create a new state object with extra constraints allocated."""
-        return super().make_data(naconmax=20000, njmax=200)
+        return super().make_data(naconmax=50000, njmax=200)
