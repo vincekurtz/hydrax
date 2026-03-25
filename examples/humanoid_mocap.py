@@ -25,7 +25,7 @@ parser.add_argument(
 parser.add_argument(
     "--reference_filename",
     type=str,
-    default="g1/walk1_subject1.csv",
+    default="Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
     help="Reference mocap file name, from https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.",
 )
 parser.add_argument(

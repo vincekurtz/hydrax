@@ -12,6 +12,7 @@ from mujoco.mjx._src.math import quat_sub
 from hydrax import ROOT
 from hydrax.task_base import Task
 
+
 @dataclass
 class HumanoidMocapOptions:
     """Configuration options for the HumanoidMocap task."""
@@ -34,22 +35,24 @@ class HumanoidMocapOptions:
     body_twist_cost_weight: float = 0.0
 
     # List of body names to track, and corresponding cost weights.
-    tracked_bodies: Dict[str, float] = field(default_factory=lambda: {
-        "pelvis": 1.0,
-        "left_hip_roll_link": 1.0,
-        "left_knee_link": 1.0,
-        "left_ankle_roll_link": 2.0,
-        "right_hip_roll_link": 1.0,
-        "right_knee_link": 1.0,
-        "right_ankle_roll_link": 2.0,
-        "torso_link": 1.0,
-        "left_shoulder_roll_link": 1.0,
-        "left_elbow_link": 1.0,
-        "left_wrist_yaw_link": 1.0,
-        "right_shoulder_roll_link": 1.0,
-        "right_elbow_link": 1.0,
-        "right_wrist_yaw_link": 1.0,
-    })
+    tracked_bodies: Dict[str, float] = field(
+        default_factory=lambda: {
+            "pelvis": 1.0,
+            "left_hip_roll_link": 1.0,
+            "left_knee_link": 1.0,
+            "left_ankle_roll_link": 2.0,
+            "right_hip_roll_link": 1.0,
+            "right_knee_link": 1.0,
+            "right_ankle_roll_link": 2.0,
+            "torso_link": 1.0,
+            "left_shoulder_roll_link": 1.0,
+            "left_elbow_link": 1.0,
+            "left_wrist_yaw_link": 1.0,
+            "right_shoulder_roll_link": 1.0,
+            "right_elbow_link": 1.0,
+            "right_wrist_yaw_link": 1.0,
+        }
+    )
 
     # --- Domain randomization ranges ---
 
@@ -102,9 +105,7 @@ class HumanoidMocap(Task):
             options: Task options controlling cost weights and domain
                      randomization ranges.
         """
-        mj_model = mujoco.MjModel.from_xml_path(
-            ROOT + "/models/g1/scene.xml"
-        )
+        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
         super().__init__(
             mj_model,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
@@ -112,21 +113,16 @@ class HumanoidMocap(Task):
         )
 
         # Download and load reference data
-        reference = np.loadtxt(
+        npz_file = np.load(
             hf_hub_download(
-                repo_id="lvhaidong/LAFAN1_Retargeting_Dataset",
+                repo_id="robfiras/loco-mujoco-datasets",
                 filename=reference_filename,
                 repo_type="dataset",
-            ),
-            delimiter=",",
+            )
         )
-        self.reference_fps = 30
 
-        # Fix the reference to use mujoco format with wxyz quaternions.
-        pos = reference[:, :3]
-        quat_xyzw = reference[:, 3:7]
-        quat_wxyz = quat_xyzw[:, [3, 0, 1, 2]]
-        reference = np.concatenate([pos, quat_wxyz, reference[:, 7:]], axis=1)
+        reference = npz_file["qpos"]
+        self.reference_fps = npz_file["frequency"]
 
         # Precompute the pose of each body throughout the reference trajectory.
         mj_data = mujoco.MjData(mj_model)
