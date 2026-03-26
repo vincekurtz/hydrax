@@ -5,11 +5,11 @@ import mujoco
 
 from hydrax.algs import CEM
 from hydrax.risk import AverageCost
-from hydrax.simulation.deterministic import run_interactive
+from hydrax.simulation.deterministic import run_headless, run_interactive
 from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
 
 """
-Run an interactive simulation of the humanoid motion capture tracking task.
+Run a simulation of the humanoid motion capture tracking task.
 """
 
 # Parse command-line arguments
@@ -38,6 +38,18 @@ parser.add_argument(
     type=int,
     default=1,
     help="Number of CEM iterations.",
+)
+parser.add_argument(
+    "--headless",
+    type=bool,
+    default=False,
+    help="Whether to run in headless mode (no GUI). (default: False)",
+)
+parser.add_argument(
+    "--duration",
+    type=float,
+    default=None,
+    help="Duration to run the simulation (seconds). Only used in headless mode.",
 )
 
 args = parser.parse_args()
@@ -72,17 +84,22 @@ mj_model = deepcopy(task.mj_model)
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = task.reference_qpos[0]
 
-if args.show_reference:
-    reference = task.reference_qpos
+if args.headless == True:
+    run_headless(
+        ctrl,
+        mj_model,
+        mj_data,
+        frequency=100,
+        duration=args.duration,
+    )
 else:
-    reference = None
-
-run_interactive(
-    ctrl,
-    mj_model,
-    mj_data,
-    frequency=100,
-    show_traces=False,
-    reference=reference,
-    reference_fps=task.reference_fps,
-)
+    reference = task.reference_qpos if args.show_reference else None
+    run_interactive(
+        ctrl,
+        mj_model,
+        mj_data,
+        frequency=100,
+        show_traces=False,
+        reference=reference,
+        reference_fps=task.reference_fps,
+    )
