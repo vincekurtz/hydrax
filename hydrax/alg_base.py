@@ -140,7 +140,10 @@ class SamplingBasedController(ABC):
         new_tk = (
             jnp.linspace(0.0, self.plan_horizon, self.num_knots) + state.time
         )
-        new_mean = self.interp_func(new_tk, tk, params.mean[None, ...])[0]
+        # Clamp query times to the old spline's domain to avoid extrapolation,
+        # which can produce wildly wrong values for linear/cubic splines.
+        clamped_tk = jnp.clip(new_tk, tk[0], tk[-1])
+        new_mean = self.interp_func(clamped_tk, tk, params.mean[None, ...])[0]
         params = params.replace(tk=new_tk, mean=new_mean)
 
         def _optimize_scan_body(params: Any, _: Any):

@@ -60,7 +60,7 @@ ctrl = CEM(
     plan_horizon=0.8,
     num_randomizations=0,
     risk_strategy=AverageCost(),
-    spline_type="zero",
+    spline_type="cubic",
     num_knots=4,
     iterations=args.iterations,
 )
