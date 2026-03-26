@@ -194,7 +194,9 @@ class HumanoidMocap(Task):
             options = HumanoidMocapOptions()
         self.options = options
 
-        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/g1/scene.xml")
+        mj_model = mujoco.MjModel.from_xml_path(
+            ROOT + "/models/g1/scene_hires.xml"
+        )
         super().__init__(
             mj_model,
             trace_sites=["imu_in_torso", "left_foot", "right_foot"],
@@ -430,7 +432,7 @@ class HumanoidMocap(Task):
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        return self.running_cost(state, jnp.zeros(self.model.nu)) * self.dt
+        return self.running_cost(state, jnp.zeros(self.model.nu))  # * self.dt
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize physical and contact modeling parameters."""

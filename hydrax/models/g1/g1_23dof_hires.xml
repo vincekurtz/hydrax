@@ -4,18 +4,21 @@
   <!--
   Adapted from mjlab v1.2.0, https://github.com/mujocolab/mjlab/
 
-    - Edited asset_zoo/robots/unitree_g1/g1_constraints.py to use 30 Hz natural
-      frequency for actuators, instead of the default 10 Hz (stiffer PD gains)
     - Ran asset_zoo/robots/unitree_g1/g1_constraints.py
     - Converted the model to xml: robot.spec.to_xml()
     - Saved the xml file
-    - Switched to the "implicitfast" integrator (better for high gains)
+    - Switched to the "implicitfast" integrator (better for large time steps)
+    - Increased timestep, limited iterations and linesearch iterations
     - Remove extra DoFs: "waist_roll", "waist_pitch", "wrist_yaw", "wrist_pitch"
     - Reorder actuators to match the order of joints in qpos
     - Add joint property shortcuts (without changing the underlying model)
   -->
 
-  <option timestep="0.002" integrator="implicitfast"/>
+  <option timestep="0.01" iterations="5" ls_iterations="10" integrator="implicitfast" />
+
+  <custom>
+    <numeric name="ls_parallel" data="0"/>
+  </custom>
 
   <size nkey="1"/>
 
@@ -33,19 +36,19 @@
       </default>
       <default class="act_25">
         <joint armature="0.00360972"/>
-        <position kp="128.256" kv="2.72167" forcerange="-25 25" inheritrange="0"/>
+        <position kp="14.2506" kv="0.907223" forcerange="-25 25" inheritrange="0"/>
       </default>
       <default class="act_50">
         <joint armature="0.00721945"/>
-        <position kp="256.511" kv="5.44334" forcerange="-50 50" inheritrange="0"/>
+        <position kp="28.5012" kv="1.81445" forcerange="-50 50" inheritrange="0"/>
       </default>
       <default class="act_88">
         <joint armature="0.0101775"/>
-        <position kp="361.613" kv="7.67367" forcerange="-88 88" inheritrange="0"/>
+        <position kp="40.1792" kv="2.55789" forcerange="-88 88" inheritrange="0"/>
       </default>
       <default class="act_139">
         <joint armature="0.0251019"/>
-        <position kp="891.886" kv="18.9264" forcerange="-139 139" inheritrange="0"/>
+        <position kp="99.0984" kv="6.3088" forcerange="-139 139" inheritrange="0"/>
       </default>
     </default>
   </default>
