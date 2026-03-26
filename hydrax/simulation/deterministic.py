@@ -256,3 +256,165 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     # Close the video recorder if recording was enabled
     if record_video and recorder is not None:
         recorder.stop()
+
+
+def run_headless(  # noqa: PLR0912, PLR0915
+    controller: SamplingBasedController,
+    mj_model: mujoco.MjModel,
+    mj_data: mujoco.MjData,
+    frequency: float,
+    initial_knots: jax.Array = None,
+    record_video: bool = False,
+    duration: float = None,
+) -> None:
+    """Run a headless simulation with the MPC controller.
+
+    This is a deterministic simulation without visualization, suitable for
+    headless/remote systems or batch experiments. The controller and simulation
+    run in the same thread.
+
+    Note: the actual control frequency may be slightly different than what is
+    requested, because the control period must be an integer multiple of the
+    simulation time step.
+
+    Args:
+        controller: The controller instance, which includes the task
+                    (e.g., model, cost) definition.
+        mj_model: The MuJoCo model for the system to use for simulation. Could
+                  be slightly different from the model used by the controller.
+        mj_data: A MuJoCo data object containing the initial system state.
+        frequency: The requested control frequency (Hz) for replanning.
+        initial_knots: The initial knot points for the control spline at t=0
+        record_video: Whether to record a video of the simulation.
+        duration: How long to run the simulation (seconds). If None, runs indefinitely.
+    """
+    # Report the planning horizon in seconds for debugging
+    print(
+        f"Planning with {controller.ctrl_steps} steps "
+        f"over a {controller.plan_horizon} second horizon "
+        f"with {controller.num_knots} knots."
+    )
+
+    # Figure out how many sim steps to run before replanning
+    replan_period = 1.0 / frequency
+    sim_steps_per_replan = int(replan_period / mj_model.opt.timestep)
+    sim_steps_per_replan = max(sim_steps_per_replan, 1)
+    step_dt = sim_steps_per_replan * mj_model.opt.timestep
+    actual_frequency = 1.0 / step_dt
+    print(
+        f"Planning at {actual_frequency} Hz, "
+        f"simulating at {1.0 / mj_model.opt.timestep} Hz"
+    )
+
+    # Create a data structure for the controller to run rollouts from.
+    mjx_data = controller.task.make_data()
+    mjx_data = mjx_data.replace(
+        qpos=mj_data.qpos,
+        qvel=mj_data.qvel,
+        mocap_pos=mj_data.mocap_pos,
+        mocap_quat=mj_data.mocap_quat,
+    )
+
+    # Initialize the controller
+    policy_params = controller.init_params(initial_knots=initial_knots)
+    jit_optimize = jax.jit(controller.optimize)
+    jit_interp_func = jax.jit(controller.interp_func)
+
+    # Warm-up the controller
+    print("Jitting the controller...")
+    st = time.time()
+    policy_params, _ = jit_optimize(mjx_data, policy_params)
+    policy_params, _ = jit_optimize(mjx_data, policy_params)
+
+    tq = jnp.arange(0, sim_steps_per_replan) * mj_model.opt.timestep
+    tk = policy_params.tk
+    knots = policy_params.mean[None, ...]
+    _ = jit_interp_func(tq, tk, knots)
+    _ = jit_interp_func(tq, tk, knots)
+    print(f"Time to jit: {time.time() - st:.3f} seconds")
+
+    # Initialize video recording if enabled
+    recorder = None
+    if record_video:
+        # Video dimensions
+        width, height = 720, 480
+        # Create the video recorder
+        recorder = VideoRecorder(
+            output_dir=os.path.join(ROOT, "recordings"),
+            width=width,
+            height=height,
+            fps=actual_frequency,
+        )
+        # Ensure model visual offscreen buffer is compatible with video
+        # recording
+        mj_model.vis.global_.offwidth = width
+        mj_model.vis.global_.offheight = height
+        if not recorder.start():
+            record_video = False
+        renderer = mujoco.Renderer(mj_model, height=height, width=width)
+
+    # Run the simulation
+    while True:
+        # Check if we should stop
+        if duration is not None:
+            elapsed = mj_data.time
+            if elapsed >= duration:
+                break
+
+        step_start_time = time.time()
+
+        # Set the start state for the controller
+        mjx_data = mjx_data.replace(
+            qpos=jnp.array(mj_data.qpos),
+            qvel=jnp.array(mj_data.qvel),
+            mocap_pos=jnp.array(mj_data.mocap_pos),
+            mocap_quat=jnp.array(mj_data.mocap_quat),
+            time=mj_data.time,
+        )
+
+        # Do a replanning step
+        plan_start = time.time()
+        policy_params, _ = jit_optimize(mjx_data, policy_params)
+        plan_time = time.time() - plan_start
+
+        # query the control spline at the sim frequency
+        # (we assume the sim freq is the same as the low-level ctrl freq)
+        sim_dt = mj_model.opt.timestep
+        t_curr = mj_data.time
+
+        tq = jnp.arange(0, sim_steps_per_replan) * sim_dt + t_curr
+        tk = policy_params.tk
+        knots = policy_params.mean[None, ...]
+        us = np.asarray(jit_interp_func(tq, tk, knots))[0]  # (ss, nu)
+
+        # simulate the system between spline replanning steps
+        for i in range(sim_steps_per_replan):
+            mj_data.ctrl[:] = np.array(us[i])
+            mujoco.mj_step(mj_model, mj_data)
+
+            # Capture frame if recording
+            if record_video and recorder.is_recording:
+                renderer.update_scene(mj_data)
+                frame = renderer.render()
+                recorder.add_frame(frame.tobytes())
+
+        # Try to run in roughly realtime
+        elapsed = time.time() - step_start_time
+        if elapsed < step_dt:
+            time.sleep(step_dt - elapsed)
+
+        # Print some timing information
+        rtr = step_dt / (time.time() - step_start_time)
+        print(
+            f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s"
+            f", Sim time: {mj_data.time:.3f}s",
+            end="\r",
+        )
+
+    # Preserve the last printout
+    print("")
+    print(f"Simulation finished. Total sim time: {mj_data.time:.3f}s")
+
+    # Close the video recorder if recording was enabled
+    if record_video and recorder is not None:
+        recorder.stop()
