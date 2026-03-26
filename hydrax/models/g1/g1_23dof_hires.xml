@@ -7,14 +7,13 @@
     - Ran asset_zoo/robots/unitree_g1/g1_constraints.py
     - Converted the model to xml: robot.spec.to_xml()
     - Saved the xml file
-    - Switched to the "implicitfast" integrator (better for large time steps)
     - Increased timestep, limited iterations and linesearch iterations
     - Remove extra DoFs: "waist_roll", "waist_pitch", "wrist_yaw", "wrist_pitch"
     - Reorder actuators to match the order of joints in qpos
     - Add joint property shortcuts (without changing the underlying model)
   -->
 
-  <option timestep="0.01" iterations="5" ls_iterations="10" integrator="implicitfast" />
+  <option timestep="0.005" iterations="2" ls_iterations="5" integrator="Euler" />
 
   <custom>
     <numeric name="ls_parallel" data="0"/>
