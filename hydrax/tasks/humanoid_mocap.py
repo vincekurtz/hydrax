@@ -432,7 +432,7 @@ class HumanoidMocap(Task):
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
-        return self.running_cost(state, jnp.zeros(self.model.nu))  # * self.dt
+        return self.running_cost(state, jnp.zeros(self.model.nu))
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize physical and contact modeling parameters."""
