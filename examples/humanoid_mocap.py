@@ -41,9 +41,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "--headless",
-    type=bool,
-    default=False,
-    help="Whether to run in headless mode (no GUI). (default: False)",
+    action="store_true",
+    help="Whether to run in headless mode (no GUI).",
 )
 parser.add_argument(
     "--duration",
@@ -84,7 +83,7 @@ mj_model = deepcopy(task.mj_model)
 mj_data = mujoco.MjData(mj_model)
 mj_data.qpos[:] = task.reference_qpos[0]
 
-if args.headless == True:
+if args.headless:
     run_headless(
         ctrl,
         mj_model,

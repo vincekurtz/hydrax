@@ -264,7 +264,6 @@ def run_headless(  # noqa: PLR0912, PLR0915
     mj_data: mujoco.MjData,
     frequency: float,
     initial_knots: jax.Array = None,
-    record_video: bool = False,
     duration: float = None,
 ) -> None:
     """Run a headless simulation with the MPC controller.
@@ -285,7 +284,6 @@ def run_headless(  # noqa: PLR0912, PLR0915
         mj_data: A MuJoCo data object containing the initial system state.
         frequency: The requested control frequency (Hz) for replanning.
         initial_knots: The initial knot points for the control spline at t=0
-        record_video: Whether to record a video of the simulation.
         duration: How long to run the simulation (seconds). If None, runs indefinitely.
     """
     # Report the planning horizon in seconds for debugging
@@ -333,26 +331,6 @@ def run_headless(  # noqa: PLR0912, PLR0915
     _ = jit_interp_func(tq, tk, knots)
     print(f"Time to jit: {time.time() - st:.3f} seconds")
 
-    # Initialize video recording if enabled
-    recorder = None
-    if record_video:
-        # Video dimensions
-        width, height = 720, 480
-        # Create the video recorder
-        recorder = VideoRecorder(
-            output_dir=os.path.join(ROOT, "recordings"),
-            width=width,
-            height=height,
-            fps=actual_frequency,
-        )
-        # Ensure model visual offscreen buffer is compatible with video
-        # recording
-        mj_model.vis.global_.offwidth = width
-        mj_model.vis.global_.offheight = height
-        if not recorder.start():
-            record_video = False
-        renderer = mujoco.Renderer(mj_model, height=height, width=width)
-
     # Run the simulation
     while True:
         # Check if we should stop
@@ -392,12 +370,6 @@ def run_headless(  # noqa: PLR0912, PLR0915
             mj_data.ctrl[:] = np.array(us[i])
             mujoco.mj_step(mj_model, mj_data)
 
-            # Capture frame if recording
-            if record_video and recorder.is_recording:
-                renderer.update_scene(mj_data)
-                frame = renderer.render()
-                recorder.add_frame(frame.tobytes())
-
         # Try to run in roughly realtime
         elapsed = time.time() - step_start_time
         if elapsed < step_dt:
@@ -414,7 +386,3 @@ def run_headless(  # noqa: PLR0912, PLR0915
     # Preserve the last printout
     print("")
     print(f"Simulation finished. Total sim time: {mj_data.time:.3f}s")
-
-    # Close the video recorder if recording was enabled
-    if record_video and recorder is not None:
-        recorder.stop()

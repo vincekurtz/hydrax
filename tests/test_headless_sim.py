@@ -1,16 +1,30 @@
-import glob
-import os
-import shutil
-
 import mujoco
 import numpy as np
 import pytest
 
-from hydrax import ROOT
 from hydrax.algs import CEM, MPPI, PredictiveSampling
 from hydrax.simulation.deterministic import run_headless
 from hydrax.tasks.cart_pole import CartPole
 from hydrax.tasks.pendulum import Pendulum
+
+
+def test_headless_pendulum_basic() -> None:
+    """Test basic headless simulation with pendulum task."""
+    task = Pendulum()
+    ctrl = PredictiveSampling(task, num_samples=8, noise_level=0.1)
+
+    mj_model = task.mj_model
+    mj_data = mujoco.MjData(mj_model)
+
+    initial_qpos = mj_data.qpos.copy()
+
+    # Run for 0.5 seconds
+    run_headless(ctrl, mj_model, mj_data, frequency=50, duration=0.5)
+
+    # Verify simulation time advanced
+    assert mj_data.time >= 0.5
+    # Verify state changed (pendulum should swing)
+    assert not np.allclose(mj_data.qpos, initial_qpos)
 
 
 def test_headless_cart_pole() -> None:
@@ -81,40 +95,9 @@ def test_headless_mppi() -> None:
     assert not np.allclose(mj_data.qvel, initial_qvel)
 
 
-def test_headless_video_recording() -> None:
-    """Test that video recording works in headless mode."""
-    recordings_dir = os.path.join(ROOT, "recordings")
-
-    # Clean up any existing recordings
-    if os.path.exists(recordings_dir):
-        shutil.rmtree(recordings_dir)
-
-    task = Pendulum()
-    ctrl = PredictiveSampling(task, num_samples=8, noise_level=0.1)
-
-    mj_model = task.mj_model
-    mj_data = mujoco.MjData(mj_model)
-
-    # Run with video recording enabled
-    run_headless(
-        ctrl, mj_model, mj_data, frequency=50, duration=0.2, record_video=True
-    )
-
-    # Verify recordings directory was created
-    assert os.path.exists(recordings_dir), "Recordings directory was not created"
-
-    # Check that at least one video file was created
-    video_files = glob.glob(os.path.join(recordings_dir, "*.mp4"))
-    assert len(video_files) > 0, "No video files were created"
-
-    # Verify video file has non-zero size
-    for video_file in video_files:
-        file_size = os.path.getsize(video_file)
-        assert file_size > 0, f"Video file {video_file} is empty"
-
-
 if __name__ == "__main__":
+    test_headless_pendulum_basic()
     test_headless_cart_pole()
     test_headless_duration_termination()
     test_headless_mppi()
-    test_headless_video_recording()
+    print("All tests passed!")
