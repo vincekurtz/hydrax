@@ -1,20 +1,19 @@
 import argparse
-from copy import deepcopy
 
-import mujoco
+from mujoco import mjx
 
 from hydrax.algs import CEM
 from hydrax.risk import AverageCost
-from hydrax.simulation.deterministic import run_interactive
+from hydrax.simulation.deterministic import run_headless
 from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
 
 """
-Run an interactive simulation of the humanoid motion capture tracking task.
+Run a headless simulation of the humanoid motion capture tracking task.
 """
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
-    description="Run an interactive simulation of mocap tracking with the G1."
+    description="Run a headless simulation of mocap tracking with the G1."
 )
 parser.add_argument(
     "--warp",
@@ -29,15 +28,10 @@ parser.add_argument(
     help="Reference mocap file name, from https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.",
 )
 parser.add_argument(
-    "--show_reference",
-    action="store_true",
-    help="Show the reference trajectory as a 'ghost' in the simulation.",
-)
-parser.add_argument(
-    "--iterations",
-    type=int,
-    default=1,
-    help="Number of CEM iterations.",
+    "--duration",
+    type=float,
+    required=True,
+    help="Duration to run the simulation (seconds).",
 )
 
 args = parser.parse_args()
@@ -62,27 +56,19 @@ ctrl = CEM(
     risk_strategy=AverageCost(),
     spline_type="zero",
     num_knots=3,
-    iterations=args.iterations,
+    iterations=1,
 )
 
-# Define the model used for simulation
-mj_model = deepcopy(task.mj_model)
+# Create the mjx model/data for simulation
+mjx_model_sim = mjx.put_model(task.mj_model)
+mjx_data_sim = mjx.make_data(task.mj_model)
+mjx_data_sim = mjx_data_sim.replace(qpos=task.reference_qpos[0])
 
-# Set the initial state
-mj_data = mujoco.MjData(mj_model)
-mj_data.qpos[:] = task.reference_qpos[0]
-
-if args.show_reference:
-    reference = task.reference_qpos
-else:
-    reference = None
-
-run_interactive(
+# Run the headless simulation
+result = run_headless(
     ctrl,
-    mj_model,
-    mj_data,
+    mjx_model_sim,
+    mjx_data_sim,
     frequency=100,
-    show_traces=False,
-    reference=reference,
-    reference_fps=task.reference_fps,
+    duration=args.duration,
 )

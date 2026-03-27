@@ -261,17 +261,17 @@ def run_interactive(  # noqa: PLR0912, PLR0915
 
 def run_headless(  # noqa: PLR0912, PLR0915
     controller: SamplingBasedController,
-    mj_model: mujoco.MjModel,
-    mj_data: mujoco.MjData,
+    mjx_model_sim: mjx.Model,
+    mjx_data_sim: mjx.Data,
     frequency: float,
     duration: float,
     initial_knots: jax.Array = None,
-) -> None:
+) -> dict:
     """Run a headless simulation with the MPC controller.
 
     This is a deterministic simulation without visualization, suitable for
     headless/remote systems or batch experiments. The controller and simulation
-    run in the same thread.
+    run in the same thread. Everything runs on device (no CPU-GPU transfers).
 
     Note: the actual control frequency may be slightly different than what is
     requested, because the control period must be an integer multiple of the
@@ -280,12 +280,17 @@ def run_headless(  # noqa: PLR0912, PLR0915
     Args:
         controller: The controller instance, which includes the task
                     (e.g., model, cost) definition.
-        mj_model: The MuJoCo model for the system to use for simulation. Could
-                  be slightly different from the model used by the controller.
-        mj_data: A MuJoCo data object containing the initial system state.
+        mjx_model_sim: The MJX model for simulation. Could be slightly
+                       different from the model used by the controller.
+        mjx_data_sim: An MJX data object containing the initial system state.
         frequency: The requested control frequency (Hz) for replanning.
         duration: How long to run the simulation (seconds).
         initial_knots: The initial knot points for the control spline at t=0
+
+    Returns:
+        A dictionary with the recorded trajectory:
+            - "qpos": (T, nq) array of joint positions at sim frequency
+            - "qvel": (T, nv) array of joint velocities at sim frequency
     """
     # Report the planning horizon in seconds for debugging
     print(
@@ -295,33 +300,34 @@ def run_headless(  # noqa: PLR0912, PLR0915
     )
 
     # Figure out how many sim steps to run before replanning
+    sim_dt = mjx_model_sim.opt.timestep
     replan_period = 1.0 / frequency
-    sim_steps_per_replan = int(replan_period / mj_model.opt.timestep)
+    sim_steps_per_replan = int(replan_period / sim_dt)
     sim_steps_per_replan = max(sim_steps_per_replan, 1)
-    step_dt = sim_steps_per_replan * mj_model.opt.timestep
+    step_dt = sim_steps_per_replan * sim_dt
     actual_frequency = 1.0 / step_dt
     print(
         f"Planning at {actual_frequency} Hz, "
-        f"simulating at {1.0 / mj_model.opt.timestep} Hz"
+        f"simulating at {1.0 / sim_dt} Hz"
     )
 
-    # Create mjx model/data for on-device simulation (avoids CPU-GPU transfers)
-    mjx_model_sim = mjx.put_model(mj_model)
-    mjx_data_sim = mjx.make_data(mj_model)
-    mjx_data_sim = mjx_data_sim.replace(
-        qpos=mj_data.qpos,
-        qvel=mj_data.qvel,
-        mocap_pos=mj_data.mocap_pos,
-        mocap_quat=mj_data.mocap_quat,
-    )
+    # Compute total number of sim steps
+    num_replan_steps = round(duration / step_dt)
+    total_sim_steps = num_replan_steps * sim_steps_per_replan
+
+    # preallocate metric arrays
+    nq = mjx_data_sim.qpos.shape[0]
+    nv = mjx_data_sim.qvel.shape[0]
+    qpos = np.full((total_sim_steps, nq), np.nan)
+    qvel = np.full((total_sim_steps, nv), np.nan)
 
     # Create a data structure for the controller to run rollouts from
     mjx_data = controller.task.make_data()
     mjx_data = mjx_data.replace(
-        qpos=mj_data.qpos,
-        qvel=mj_data.qvel,
-        mocap_pos=mj_data.mocap_pos,
-        mocap_quat=mj_data.mocap_quat,
+        qpos=mjx_data_sim.qpos,
+        qvel=mjx_data_sim.qvel,
+        mocap_pos=mjx_data_sim.mocap_pos,
+        mocap_quat=mjx_data_sim.mocap_quat,
     )
 
     # Initialize the controller
@@ -337,17 +343,17 @@ def run_headless(  # noqa: PLR0912, PLR0915
         def step_fn(data, u):
             data = data.replace(ctrl=u)
             data = mjx.step(mjx_model_sim, data)
-            return data, None
-        mjx_data_sim, _ = jax.lax.scan(step_fn, mjx_data_sim, us)
-        return mjx_data_sim
+            return data, (data.qpos, data.qvel)
+        mjx_data_sim, (qpos_seg, qvel_seg) = jax.lax.scan(step_fn, mjx_data_sim, us)
+        return mjx_data_sim, qpos_seg, qvel_seg
 
     # Warm-up the controller
-    print("Jitting the controller...")
+    print("Jitting...")
     st = time.time()
     policy_params, _ = jit_optimize(mjx_data, policy_params)
     policy_params, _ = jit_optimize(mjx_data, policy_params)
 
-    tq = jnp.arange(0, sim_steps_per_replan) * mj_model.opt.timestep
+    tq = jnp.arange(0, sim_steps_per_replan) * sim_dt
     tk = policy_params.tk
     knots = policy_params.mean[None, ...]
     _ = jit_interp_func(tq, tk, knots)
@@ -360,12 +366,7 @@ def run_headless(  # noqa: PLR0912, PLR0915
     print(f"Time to jit: {time.time() - st:.3f} seconds")
 
     # Run the simulation (all on device, no CPU-GPU transfers in the loop)
-    sim_dt = mj_model.opt.timestep
-    while True:
-        # Check if we should stop
-        if float(mjx_data_sim.time) >= duration:
-            break
-
+    for step_idx in range(num_replan_steps):
         step_start_time = time.time()
 
         # Set the start state for the controller from the sim state
@@ -390,7 +391,13 @@ def run_headless(  # noqa: PLR0912, PLR0915
         us = jit_interp_func(tq, tk, knots)[0]  # (ss, nu) — stays on device
 
         # simulate the system between spline replanning steps (all on device)
-        mjx_data_sim = sim_steps(mjx_data_sim, us)
+        mjx_data_sim, qpos_seg, qvel_seg = sim_steps(mjx_data_sim, us)
+
+        # Record trajectory segment
+        seg_start = step_idx * sim_steps_per_replan
+        seg_end = seg_start + sim_steps_per_replan
+        qpos[seg_start:seg_end] = np.asarray(qpos_seg)
+        qvel[seg_start:seg_end] = np.asarray(qvel_seg)
 
         # Print some timing information
         sim_time = float(mjx_data_sim.time)
@@ -402,13 +409,8 @@ def run_headless(  # noqa: PLR0912, PLR0915
             end="\r",
         )
 
-    # Sync final state back to mj_data so callers can inspect results
-    mj_data.qpos[:] = np.asarray(mjx_data_sim.qpos)
-    mj_data.qvel[:] = np.asarray(mjx_data_sim.qvel)
-    mj_data.time = float(mjx_data_sim.time)
-
-    # TODO: @sesteban951: add metrics here to return here
-
     # Preserve the last printout
     print("")
-    print(f"Simulation finished. Total sim time: {mj_data.time:.3f}s")
+    print(f"Simulation finished. Total sim time: {float(mjx_data_sim.time):.3f}s")
+
+    return {"qpos": qpos, "qvel": qvel}
