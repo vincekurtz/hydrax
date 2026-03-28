@@ -195,7 +195,8 @@ class HumanoidMocap(Task):
         self.options = options
 
         mj_model = mujoco.MjModel.from_xml_path(
-            ROOT + "/models/g1/scene_hires.xml"
+            # ROOT + "/models/g1/scene_hires.xml"
+            ROOT + "/models/g1/scene.xml"
         )
         super().__init__(
             mj_model,
