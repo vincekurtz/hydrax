@@ -288,9 +288,9 @@ def run_headless(  # noqa: PLR0912, PLR0915
         initial_knots: The initial knot points for the control spline at t=0
 
     Returns:
-        A dictionary with the recorded trajectory:
-            - "qpos": (T, nq) array of joint positions at sim frequency
-            - "qvel": (T, nv) array of joint velocities at sim frequency
+        A results dictionary with two sub-dictionaries:
+            - "trajectory"
+            - "metrics"
     """
     # Report the planning horizon in seconds for debugging
     print(
@@ -318,8 +318,10 @@ def run_headless(  # noqa: PLR0912, PLR0915
     # preallocate metric arrays
     nq = mjx_data_sim.qpos.shape[0]
     nv = mjx_data_sim.qvel.shape[0]
+    nu = mjx_data_sim.ctrl.shape[0]
     qpos = np.full((total_sim_steps, nq), np.nan)
     qvel = np.full((total_sim_steps, nv), np.nan)
+    ctrl = np.full((total_sim_steps, nu), np.nan)
 
     # Create a data structure for the controller to run rollouts from
     mjx_data = controller.task.make_data()
@@ -366,6 +368,7 @@ def run_headless(  # noqa: PLR0912, PLR0915
     print(f"Time to jit: {time.time() - st:.3f} seconds")
 
     # Run the simulation (all on device, no CPU-GPU transfers in the loop)
+    sim_wall_start = time.time()
     for step_idx in range(num_replan_steps):
         step_start_time = time.time()
 
@@ -398,6 +401,7 @@ def run_headless(  # noqa: PLR0912, PLR0915
         seg_end = seg_start + sim_steps_per_replan
         qpos[seg_start:seg_end] = np.asarray(qpos_seg)
         qvel[seg_start:seg_end] = np.asarray(qvel_seg)
+        ctrl[seg_start:seg_end] = np.asarray(us)
 
         # Print some timing information
         sim_time = float(mjx_data_sim.time)
@@ -409,8 +413,30 @@ def run_headless(  # noqa: PLR0912, PLR0915
             end="\r",
         )
 
-    # Preserve the last printout
-    print("")
-    print(f"Simulation finished. Total sim time: {float(mjx_data_sim.time):.3f}s")
+    sim_wall_time = time.time() - sim_wall_start
 
-    return {"qpos": qpos, "qvel": qvel}
+    # total sim and wall time
+    print("")
+    print(f"Simulation finished.")
+    print(f"Total sim time: {float(mjx_data_sim.time):.3f}s")
+    print(f"Total wall time: {sim_wall_time:.3f}s")
+
+    # make the trajectory and metrics dictionaries for return
+    trajectory = {
+        "sim_dt": float(sim_dt),
+        "ctrl_dt": float(step_dt),
+        "qpos": qpos,
+        "qvel": qvel,
+        "ctrl": ctrl,
+    }
+    metrics = {
+        "total_wall_time": sim_wall_time,
+    }
+
+    # results dictionary
+    results = {
+        "trajectory": trajectory,
+        "metrics": metrics,
+    }
+
+    return results
