@@ -26,6 +26,7 @@ dependencies = [
     "pytest>=8.3.3",
     "ruff==0.15.2",
     "warp-lang>=1.11.1",
+    "h5py>=3.16.0",
 ]
 
 [tool.ruff]

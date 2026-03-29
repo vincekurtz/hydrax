@@ -2,6 +2,7 @@ import argparse
 
 import os
 import h5py
+import numpy as np
 
 from mujoco import mjx
 
@@ -137,7 +138,7 @@ experiment_args = {
 }
 
 # save directory
-save_dir = "experiments/humanoid_mocap_headless"
+save_dir = "experiments/data"
 os.makedirs(save_dir, exist_ok=True)
 save_path = os.path.join(save_dir, "results.h5")
 
@@ -153,9 +154,13 @@ with h5py.File(save_path, "w") as f:
     for k, v in cem_options.items():
         cem_grp.attrs[k] = v
 
-    # metrics
+    # metrics (arrays as datasets, scalars as attrs)
     met_grp = f.create_group("metrics")
-    met_grp.attrs["total_wall_time"] = results["metrics"]["total_wall_time"]
+    for k, v in results["metrics"].items():
+        if isinstance(v, np.ndarray):
+            met_grp.create_dataset(k, data=v, compression="gzip")
+        else:
+            met_grp.attrs[k] = v
 
     # trajectory data
     traj_grp = f.create_group("trajectory")

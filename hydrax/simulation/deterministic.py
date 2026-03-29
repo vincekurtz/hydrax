@@ -319,9 +319,9 @@ def run_headless(  # noqa: PLR0912, PLR0915
     nq = mjx_data_sim.qpos.shape[0]
     nv = mjx_data_sim.qvel.shape[0]
     nu = mjx_data_sim.ctrl.shape[0]
-    qpos = np.full((total_sim_steps, nq), np.nan)
-    qvel = np.full((total_sim_steps, nv), np.nan)
-    ctrl = np.full((total_sim_steps, nu), np.nan)
+    qpos_hist = np.full((total_sim_steps, nq), np.nan)
+    qvel_hist = np.full((total_sim_steps, nv), np.nan)
+    ctrl_hist = np.full((total_sim_steps, nu), np.nan)
 
     # Create a data structure for the controller to run rollouts from
     mjx_data = controller.task.make_data()
@@ -345,9 +345,12 @@ def run_headless(  # noqa: PLR0912, PLR0915
         def step_fn(data, u):
             data = data.replace(ctrl=u)
             data = mjx.step(mjx_model_sim, data)
-            return data, (data.qpos, data.qvel)
-        mjx_data_sim, (qpos_seg, qvel_seg) = jax.lax.scan(step_fn, mjx_data_sim, us)
-        return mjx_data_sim, qpos_seg, qvel_seg
+            metrics = controller.task.compute_metrics(data, u)
+            return data, (data.qpos, data.qvel, metrics)
+        mjx_data_sim, (qpos_seg, qvel_seg, metrics_seg) = jax.lax.scan(
+            step_fn, mjx_data_sim, us
+        )
+        return mjx_data_sim, qpos_seg, qvel_seg, metrics_seg
 
     # Warm-up the controller
     print("Jitting...")
@@ -363,8 +366,15 @@ def run_headless(  # noqa: PLR0912, PLR0915
 
     # Warm-up the simulation stepping function
     us_warmup = jit_interp_func(tq, tk, knots)[0]
+    warmup_result = sim_steps(mjx_data_sim, us_warmup)
     _ = sim_steps(mjx_data_sim, us_warmup)
-    _ = sim_steps(mjx_data_sim, us_warmup)
+
+    # Preallocate metrics arrays from warmup result keys
+    metrics_seg_warmup = warmup_result[3]
+    metrics_hist = {
+        k: np.full((total_sim_steps,), np.nan)
+        for k in metrics_seg_warmup.keys()
+    }
     print(f"Time to jit: {time.time() - st:.3f} seconds")
 
     # Run the simulation (all on device, no CPU-GPU transfers in the loop)
@@ -394,22 +404,28 @@ def run_headless(  # noqa: PLR0912, PLR0915
         us = jit_interp_func(tq, tk, knots)[0]  # (ss, nu) — stays on device
 
         # simulate the system between spline replanning steps (all on device)
-        mjx_data_sim, qpos_seg, qvel_seg = sim_steps(mjx_data_sim, us)
+        mjx_data_sim, qpos_seg, qvel_seg, metrics_seg = sim_steps(mjx_data_sim, us)
 
         # Record trajectory segment
         seg_start = step_idx * sim_steps_per_replan
         seg_end = seg_start + sim_steps_per_replan
-        qpos[seg_start:seg_end] = np.asarray(qpos_seg)
-        qvel[seg_start:seg_end] = np.asarray(qvel_seg)
-        ctrl[seg_start:seg_end] = np.asarray(us)
+        qpos_hist[seg_start:seg_end] = np.asarray(qpos_seg)
+        qvel_hist[seg_start:seg_end] = np.asarray(qvel_seg)
+        ctrl_hist[seg_start:seg_end] = np.asarray(us)
+
+        # Record metrics segment
+        for k, v in metrics_seg.items():
+            metrics_hist[k][seg_start:seg_end] = np.asarray(v)
 
         # Print some timing information
         sim_time = float(mjx_data_sim.time)
         elapsed = time.time() - step_start_time
         rtr = step_dt / elapsed
+        wall_time = time.time() - sim_wall_start
         print(
             f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s"
-            f", Sim time: {sim_time:.3f}s",
+            f", Sim time: {sim_time:.3f}s"
+            f", Wall time: {wall_time:.3f}s",
             end="\r",
         )
 
@@ -423,14 +439,15 @@ def run_headless(  # noqa: PLR0912, PLR0915
 
     # make the trajectory and metrics dictionaries for return
     trajectory = {
-        "sim_dt": float(sim_dt),
-        "ctrl_dt": float(step_dt),
-        "qpos": qpos,
-        "qvel": qvel,
-        "ctrl": ctrl,
+        "sim_dt": round(float(sim_dt), 6),
+        "ctrl_dt": round(float(step_dt), 6),
+        "qpos": qpos_hist,
+        "qvel": qvel_hist,
+        "ctrl": ctrl_hist,
     }
     metrics = {
         "total_wall_time": sim_wall_time,
+        **metrics_hist,
     }
 
     # results dictionary

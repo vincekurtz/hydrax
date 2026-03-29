@@ -434,6 +434,91 @@ class HumanoidMocap(Task):
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""
         return self.running_cost(state, jnp.zeros(self.model.nu))
+    
+    def compute_metrics(self, state: mjx.Data, control: jax.Array) -> dict:
+        """Compute individual reward terms for logging.
+
+        Returns a dictionary of scalar reward terms:
+            r_anchor_pos, r_anchor_ori, r_body_pos, r_body_ori,
+            r_body_lin_vel, r_body_ang_vel, total_reward
+        """
+        t = state.time
+
+        # --- Reference data ---
+        ref_anchor_pos, ref_anchor_quat = self._get_reference_anchor_pose(t)
+        ref_body_pos, ref_body_quat = self._get_reference_body_poses(t)
+        ref_body_lin_vel, ref_body_ang_vel = (
+            self._get_reference_body_velocities(t)
+        )
+
+        # --- Robot data ---
+        anchor_idx = self.anchor_body_index
+        robot_anchor_pos = state.xpos[anchor_idx]
+        robot_anchor_quat = state.xquat[anchor_idx]
+
+        bodies = self.tracked_body_indices
+        robot_lin_vel_world, robot_ang_vel_world = _link_velocities(
+            state.cvel[bodies], state.subtree_com[bodies], state.xpos[bodies]
+        )
+        robot_body_pos, robot_body_quat = _poses_in_anchor_frame(
+            state.xpos[bodies],
+            state.xquat[bodies],
+            robot_anchor_pos,
+            robot_anchor_quat,
+        )
+        robot_body_lin_vel, robot_body_ang_vel = _velocities_in_anchor_frame(
+            robot_lin_vel_world, robot_ang_vel_world, robot_anchor_quat
+        )
+
+        # Individual reward terms
+        anchor_pos_err = jnp.sum(jnp.square(ref_anchor_pos - robot_anchor_pos))
+        r_anchor_pos = jnp.exp(-anchor_pos_err / self.anchor_pos_std**2)
+
+        anchor_ori_err = jnp.sum(
+            jnp.square(quat_sub(ref_anchor_quat, robot_anchor_quat))
+        )
+        r_anchor_ori = jnp.exp(-anchor_ori_err / self.anchor_ori_std**2)
+
+        body_pos_err = jnp.mean(
+            jnp.sum(jnp.square(ref_body_pos - robot_body_pos), axis=-1)
+        )
+        r_body_pos = jnp.exp(-body_pos_err / self.body_pos_std**2)
+
+        body_ori_err = jnp.mean(
+            jax.vmap(lambda q1, q2: jnp.sum(jnp.square(quat_sub(q1, q2))))(
+                ref_body_quat, robot_body_quat
+            )
+        )
+        r_body_ori = jnp.exp(-body_ori_err / self.body_ori_std**2)
+
+        body_lin_vel_err = jnp.mean(
+            jnp.sum(jnp.square(ref_body_lin_vel - robot_body_lin_vel), axis=-1)
+        )
+        r_body_lin_vel = jnp.exp(-body_lin_vel_err / self.body_lin_vel_std**2)
+
+        body_ang_vel_err = jnp.mean(
+            jnp.sum(jnp.square(ref_body_ang_vel - robot_body_ang_vel), axis=-1)
+        )
+        r_body_ang_vel = jnp.exp(-body_ang_vel_err / self.body_ang_vel_std**2)
+
+        total_reward = (
+            self.anchor_pos_weight * r_anchor_pos
+            + self.anchor_ori_weight * r_anchor_ori
+            + self.body_pos_weight * r_body_pos
+            + self.body_ori_weight * r_body_ori
+            + self.body_lin_vel_weight * r_body_lin_vel
+            + self.body_ang_vel_weight * r_body_ang_vel
+        )
+
+        return {
+            "r_anchor_pos": r_anchor_pos,
+            "r_anchor_ori": r_anchor_ori,
+            "r_body_pos": r_body_pos,
+            "r_body_ori": r_body_ori,
+            "r_body_lin_vel": r_body_lin_vel,
+            "r_body_ang_vel": r_body_ang_vel,
+            "total_reward": total_reward,
+        }
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize physical and contact modeling parameters."""
