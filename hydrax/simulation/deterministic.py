@@ -377,6 +377,13 @@ def run_headless(  # noqa: PLR0912, PLR0915
     }
     print(f"Time to jit: {time.time() - st:.3f} seconds")
 
+    # Fall detection parameters
+    fall_threshold = 0.3  # base z-position below this means the robot fell
+    base_z_index = 2      # index of z-position in qpos (standard free joint)
+    failure = 0
+    termination_time = duration  # default: survived the whole trajectory
+    actual_sim_steps = total_sim_steps
+
     # Run the simulation (all on device, no CPU-GPU transfers in the loop)
     sim_wall_start = time.time()
     for step_idx in range(num_replan_steps):
@@ -409,13 +416,27 @@ def run_headless(  # noqa: PLR0912, PLR0915
         # Record trajectory segment
         seg_start = step_idx * sim_steps_per_replan
         seg_end = seg_start + sim_steps_per_replan
-        qpos_hist[seg_start:seg_end] = np.asarray(qpos_seg)
-        qvel_hist[seg_start:seg_end] = np.asarray(qvel_seg)
+        qpos_seg_np = np.asarray(qpos_seg)
+        qvel_seg_np = np.asarray(qvel_seg)
+        qpos_hist[seg_start:seg_end] = qpos_seg_np
+        qvel_hist[seg_start:seg_end] = qvel_seg_np
         ctrl_hist[seg_start:seg_end] = np.asarray(us)
 
         # Record metrics segment
         for k, v in metrics_seg.items():
             metrics_hist[k][seg_start:seg_end] = np.asarray(v)
+
+        # Check for fall: find first sub-step where base z < threshold
+        base_z = qpos_seg_np[:, base_z_index]
+        fell_mask = base_z < fall_threshold
+        if np.any(fell_mask):
+            fell_substep = np.argmax(fell_mask)  # first True index
+            actual_sim_steps = seg_start + int(fell_substep)
+            termination_time = actual_sim_steps * float(sim_dt)
+            failure = 1
+            print(f"\nFall detected at t={termination_time:.3f}s "
+                  f"(base z={base_z[fell_substep]:.3f})")
+            break
 
         # Print some timing information
         sim_time = float(mjx_data_sim.time)
@@ -431,10 +452,17 @@ def run_headless(  # noqa: PLR0912, PLR0915
 
     sim_wall_time = time.time() - sim_wall_start
 
+    # Truncate histories to actual valid data
+    qpos_hist = qpos_hist[:actual_sim_steps]
+    qvel_hist = qvel_hist[:actual_sim_steps]
+    ctrl_hist = ctrl_hist[:actual_sim_steps]
+    for k in metrics_hist:
+        metrics_hist[k] = metrics_hist[k][:actual_sim_steps]
+
     # total sim and wall time
     print("")
     print(f"Simulation finished.")
-    print(f"Total sim time: {float(mjx_data_sim.time):.3f}s")
+    print(f"Total sim time: {termination_time:.3f}s")
     print(f"Total wall time: {sim_wall_time:.3f}s")
 
     # make the trajectory and metrics dictionaries for return
@@ -447,6 +475,8 @@ def run_headless(  # noqa: PLR0912, PLR0915
     }
     metrics = {
         "total_wall_time": sim_wall_time,
+        "termination_time": termination_time,
+        "failure": failure,
         **metrics_hist,
     }
 
