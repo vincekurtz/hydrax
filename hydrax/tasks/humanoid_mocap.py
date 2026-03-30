@@ -141,13 +141,19 @@ class HumanoidMocapOptions:
 
     # --- Domain randomization ranges ---
 
+    # Level of domain randomization: 0.0 = no randomization, 1.0 = full ranges
+    level_randomization: float = 1.0
+
     # Contact friction: uniform range for geom_friction[:, 0]
+    geom_friction_nom: float = 0.6  # from g1_23dof.xml
     geom_friction_range: Tuple[float, float] = (0.3, 1.6)
 
     # Contact time constant (geom_solref[:, 0]); MuJoCo default is 0.02
+    geom_solref_nom: float = 0.02  # MuJoCo default
     geom_solref_range: Tuple[float, float] = (0.01, 0.04)
 
     # Contact margin (geom_margin); MuJoCo default is 0.0
+    geom_margin_nom: float = 0.0  # MuJoCo default
     geom_margin_range: Tuple[float, float] = (0.0, 0.005)
 
     # Body mass: multiplicative scale drawn from [1-scale, 1+scale]
@@ -157,13 +163,19 @@ class HumanoidMocapOptions:
     body_ipos_offset: float = 0.005
 
     # Joint damping for actuated DOFs: uniform range (N·m·s/rad)
+    dof_damping_nom: float = 0.0  # from g1_23dof.xml
     dof_damping_range: Tuple[float, float] = (0.0, 5.0)
 
     # Joint friction loss for actuated DOFs: uniform range (N·m)
+    dof_frictionloss_nom: float = 0.0  # from g1_23dof.xml
     dof_frictionloss_range: Tuple[float, float] = (0.0, 1.0)
 
     # Actuator kP / kD gains: multiplicative scale drawn from [1-scale, 1+scale]
     actuator_gain_scale: float = 0.2
+
+    # Base state noise: std dev for position (qpos[0:7]) and velocity (qvel[0:6])
+    base_qpos_noise: float = 0.01
+    base_qvel_noise: float = 0.01
 
 
 class HumanoidMocap(Task):
@@ -529,88 +541,100 @@ class HumanoidMocap(Task):
         )
 
         # Friction coefficients (via geom_friction)
+        range_lb = opts.geom_friction_nom - opts.level_randomization * (opts.geom_friction_nom - opts.geom_friction_range[0])
+        range_ub = opts.geom_friction_nom + opts.level_randomization * (opts.geom_friction_range[1] - opts.geom_friction_nom)
         n_geoms = self.model.geom_friction.shape[0]
         geom_friction = self.model.geom_friction.at[:, 0].set(
             jax.random.uniform(
                 friction_rng,
                 (n_geoms,),
-                minval=opts.geom_friction_range[0],
-                maxval=opts.geom_friction_range[1],
+                minval=range_lb,
+                maxval=range_ub,
             )
         )
 
         # Contact stiffness (via geom_solref). We'll modify the time constant
-        # in particular (mujoco default is 0.02).
+        range_lb = opts.geom_solref_nom - opts.level_randomization * (opts.geom_solref_nom - opts.geom_solref_range[0])
+        range_ub = opts.geom_solref_nom + opts.level_randomization * (opts.geom_solref_range[1] - opts.geom_solref_nom)
         n_geoms = self.model.geom_solref.shape[0]
         geom_solref = self.model.geom_solref.at[:, 0].set(
             jax.random.uniform(
                 stiffness_rng,
                 (n_geoms,),
-                minval=opts.geom_solref_range[0],
-                maxval=opts.geom_solref_range[1],
+                minval=range_lb,
+                maxval=range_ub,
             )
         )
 
         # Contact margin (distance at which contact forces activate. Default is
         # zero.)
+        range_lb = opts.geom_margin_nom
+        range_ub = opts.geom_margin_nom + opts.level_randomization * (opts.geom_margin_range[1] - opts.geom_margin_nom)
         n_geoms = self.model.geom_margin.shape[0]
         geom_margin = self.model.geom_margin.at[:].set(
             jax.random.uniform(
                 margin_rng,
                 (n_geoms,),
-                minval=opts.geom_margin_range[0],
-                maxval=opts.geom_margin_range[1],
+                minval=range_lb,
+                maxval=range_ub,
             )
         )
 
         # Body masses: multiplicative noise ±body_mass_scale
+        effective_scale = opts.body_mass_scale * opts.level_randomization
         n_bodies = self.model.body_mass.shape[0]
         mass_scale = jax.random.uniform(
             mass_rng,
             (n_bodies,),
-            minval=1.0 - opts.body_mass_scale,
-            maxval=1.0 + opts.body_mass_scale,
+            minval=1.0 - effective_scale,
+            maxval=1.0 + effective_scale,
         )
         body_mass = self.model.body_mass * mass_scale
 
         # Center of mass positions: additive noise ±body_ipos_offset per axis
+        effective_offset = opts.body_ipos_offset * opts.level_randomization
         body_ipos = self.model.body_ipos + jax.random.uniform(
             ipos_rng,
             self.model.body_ipos.shape,
-            minval=-opts.body_ipos_offset,
-            maxval=opts.body_ipos_offset,
+            minval=-effective_offset,
+            maxval=effective_offset,
         )
 
         # Joint damping for actuated DOFs.
         # The first 6 DOFs belong to the free root joint and are left at 0.
+        range_lb = opts.dof_damping_nom
+        range_ub = opts.dof_damping_nom + opts.level_randomization * (opts.dof_damping_range[1] - opts.dof_damping_nom)
         n_dof = self.model.dof_damping.shape[0]
         dof_damping = self.model.dof_damping.at[6:].set(
             jax.random.uniform(
                 damping_rng,
                 (n_dof - 6,),
-                minval=opts.dof_damping_range[0],
-                maxval=opts.dof_damping_range[1],
+                minval=range_lb,
+                maxval=range_ub,
             )
         )
 
         # Joint friction loss for actuated DOFs.
+        range_lb = opts.dof_frictionloss_nom
+        range_ub = opts.dof_frictionloss_nom + opts.level_randomization * (opts.dof_frictionloss_range[1] - opts.dof_frictionloss_nom)
         dof_frictionloss = self.model.dof_frictionloss.at[6:].set(
             jax.random.uniform(
                 fric_rng,
                 (n_dof - 6,),
-                minval=opts.dof_frictionloss_range[0],
-                maxval=opts.dof_frictionloss_range[1],
+                minval=range_lb,
+                maxval=range_ub,
             )
         )
 
         # Actuator kP gains: multiplicative noise ±actuator_gain_scale.
         # gainprm[:, 0] = kP; biasprm[:, 1] = -kP (must stay consistent).
+        effective_gain_scale = opts.actuator_gain_scale * opts.level_randomization
         n_act = self.model.actuator_gainprm.shape[0]
         kp_scale = jax.random.uniform(
             kp_rng,
             (n_act,),
-            minval=1.0 - opts.actuator_gain_scale,
-            maxval=1.0 + opts.actuator_gain_scale,
+            minval=1.0 - effective_gain_scale,
+            maxval=1.0 + effective_gain_scale,
         )
         kp = self.model.actuator_gainprm[:, 0] * kp_scale
         actuator_gainprm = self.model.actuator_gainprm.at[:, 0].set(kp)
@@ -620,8 +644,8 @@ class HumanoidMocap(Task):
         kd_scale = jax.random.uniform(
             kd_rng,
             (n_act,),
-            minval=1.0 - opts.actuator_gain_scale,
-            maxval=1.0 + opts.actuator_gain_scale,
+            minval=1.0 - effective_gain_scale,
+            maxval=1.0 + effective_gain_scale,
         )
         actuator_biasprm = actuator_biasprm.at[:, 2].set(
             self.model.actuator_biasprm[:, 2] * kd_scale
@@ -644,8 +668,8 @@ class HumanoidMocap(Task):
     ) -> Dict[str, jax.Array]:
         """Randomly perturb the measured base position and velocities."""
         rng, q_rng, v_rng = jax.random.split(rng, 3)
-        q_err = 0.01 * jax.random.normal(q_rng, (7,))
-        v_err = 0.01 * jax.random.normal(v_rng, (6,))
+        q_err = self.options.base_qpos_noise * self.options.level_randomization * jax.random.normal(q_rng, (7,))
+        v_err = self.options.base_qvel_noise * self.options.level_randomization * jax.random.normal(v_rng, (6,))
 
         qpos = data.qpos.at[0:7].set(data.qpos[0:7] + q_err)
         qvel = data.qvel.at[0:6].set(data.qvel[0:6] + v_err)

@@ -24,10 +24,15 @@ parser = argparse.ArgumentParser(
     description="Run a headless simulation of mocap tracking with the G1."
 )
 parser.add_argument(
+    "--run_id",
+    type=str,
+    default=None,
+    help="Experiment run ID (e.g. '001'). Used for naming the output h5 file.",
+)
+parser.add_argument(
     "--warp",
     action="store_true",
     help="Whether to use the (experimental) MjWarp backend. (default: False)",
-    required=False,
 )
 parser.add_argument(
     "--duration",
@@ -50,8 +55,8 @@ parser.add_argument(
 parser.add_argument(
     "--level_randomization",
     type=float,
-    default=0.0,
-    help="Level of domain randomization, from 0.0 (none) to 1.0 (maximum). (default: 0.0)",
+    default=1.0,
+    help="Level of domain randomization, value is in (0.0, 1.0]. (default: 0.0)",
 )
 parser.add_argument(
     "--risk_strategy",
@@ -67,8 +72,11 @@ args = parser.parse_args()
 assert args.duration > 0.0, "duration must be a positive number."
 
 # check domain randomization values
+# num_randomizations <= 1 means no domain randomization (alg_base clamps to 1
+# and only randomizes when > 1), so level_randomization is only meaningful then.
 assert args.num_randomizations >= 0, "num_randomizations must be non-negative integer."
-assert 0.0 <= args.level_randomization <= 1.0, "level_randomization must be in [0.0, 1.0]."
+if args.num_randomizations > 1:
+    assert 0.0 < args.level_randomization <= 1.0, "level_randomization must be in (0.0, 1.0]."
 
 # select the risk strategy
 risk_strategies = {"average": AverageCost, "worst": WorstCase, "best": BestCase,
@@ -84,7 +92,7 @@ risk_strategy_ = risk_strategies[args.risk_strategy]()
 task = HumanoidMocap(
     reference_filename=args.reference_filename,
     impl="warp" if args.warp else "jax",
-    options=HumanoidMocapOptions(),
+    options=HumanoidMocapOptions(level_randomization=args.level_randomization),
 )
 
 # CEM options (saved as a dict so we can reuse for logging)
@@ -140,7 +148,8 @@ experiment_args = {
 # save directory
 save_dir = "experiments/data"
 os.makedirs(save_dir, exist_ok=True)
-save_path = os.path.join(save_dir, "results.h5")
+filename = f"results_{args.run_id}.h5" if args.run_id else "results.h5"
+save_path = os.path.join(save_dir, filename)
 
 # Save results to HDF5 file
 with h5py.File(save_path, "w") as f:
