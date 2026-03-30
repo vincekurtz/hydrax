@@ -7,7 +7,7 @@ import numpy as np
 from mujoco import mjx
 
 from hydrax.algs import CEM
-from hydrax.risk import AverageCost, WorstCase, BestCase, ValueAtRisk, ConditionalValueAtRisk
+from hydrax.risk import AverageCost, WorstCase, BestCase
 from hydrax.simulation.deterministic import run_headless
 from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
 
@@ -61,7 +61,7 @@ parser.add_argument(
 parser.add_argument(
     "--risk_strategy",
     type=str,
-    choices=["average", "worst", "best", "var", "cvar"],
+    choices=["average", "worst", "best"],
     default="average",
     help="Risk strategy to use, default: average).",
 )
@@ -79,8 +79,7 @@ if args.num_randomizations > 1:
     assert 0.0 < args.level_randomization <= 1.0, "level_randomization must be in (0.0, 1.0]."
 
 # select the risk strategy
-risk_strategies = {"average": AverageCost, "worst": WorstCase, "best": BestCase,
-                   "var": ValueAtRisk, "cvar": ConditionalValueAtRisk}
+risk_strategies = {"average": AverageCost, "worst": WorstCase, "best": BestCase}
 risk_strategy_ = risk_strategies[args.risk_strategy]()
 
 
@@ -148,7 +147,7 @@ experiment_args = {
 # save directory
 save_dir = "experiments/data"
 os.makedirs(save_dir, exist_ok=True)
-filename = f"run{args.run_id}.h5" if args.run_id else "results.h5"
+filename = f"run_{int(args.run_id):03d}.h5" if args.run_id else "results.h5"
 save_path = os.path.join(save_dir, filename)
 
 # Save results to HDF5 file
@@ -179,4 +178,4 @@ with h5py.File(save_path, "w") as f:
     traj_grp.attrs["sim_dt"] = results["trajectory"]["sim_dt"]
     traj_grp.attrs["ctrl_dt"] = results["trajectory"]["ctrl_dt"]
 
-print("Results saved to results.h5")
+print("Results saved to:", save_path)

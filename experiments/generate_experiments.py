@@ -15,17 +15,17 @@ import argparse
 motion = ["Lafan1/mocap/UnitreeG1/walk1_subject1.npz"]
 
 # how many times to randomize and level of randomization
-num_randomizations = [0, 2, 4, 6]
-level_randomization = [0.1, 0.4, 0.8]
+num_randomizations = [0, 2, 4, 6, 8]
+level_randomization = [0.2, 0.4, 0.6, 1.0]
 
 # list of risk strategies to try
-risk_strategy = ["average"]
-
-# use warp
-use_warp = True
+risk_strategy = ["average", "worst", "best"]
 
 # duration (seconds)
-duration = 60.0
+duration = 300.0
+
+# use warp by default since it's faster
+use_warp = True
 
 
 ##################################################################
@@ -37,17 +37,15 @@ parser = argparse.ArgumentParser(
     description="Parse experiment variables for the humanoid mocap."
 )
 parser.add_argument(
-    "--gpu_id",
-    type=str,
-    default="0",
-    help="GPU ID to use for the experiments, e.g., '0, 2, 7'.",
+    "--num_gpu",
+    type=int,
+    default=1,
+    help="Number of GPUs to round-robin experiments across.",
 )
 args = parser.parse_args()
 
-# parse GPU list
-gpu_list = [gpu.strip() for gpu in args.gpu_id.split(",")]
-gpu_count = len(gpu_list)
-assert all(gpu.isdigit() and int(gpu) >= 0 for gpu in gpu_list), "GPU IDs must be non-negative integers."
+num_gpus = args.num_gpu
+assert num_gpus >= 1, "num_gpu must be at least 1."
 
 # parse num_randomizations and level_randomization
 # level_randomization is only used when num_randomizations > 1 (alg_base clamps
@@ -61,9 +59,7 @@ if any(nr > 1 for nr in num_randomizations):
 # GENERATE EXPERIMENTS
 ##################################################################
 
-print(f"\nRequested GPU list:")
-print(f"  Number of GPUs: {gpu_count}")
-print(f"  GPU IDs: {gpu_list}")
+print(f"\nNumber of GPUs: {num_gpus}")
 
 print("\nExperiment variables:")
 print(f"  Motions: {motion}")
@@ -109,34 +105,34 @@ def experiment_to_args(exp, run_id):
             args.append(f"--{key} {val}")
     return " ".join(args)
 
-# assign IDs and GPUs
+# assign IDs and round-robin across GPU slots
 print(f"\nTotal experiments: {len(experiments)}")
-commands = {}  # run_id -> (gpu, command)
+gpu_commands = {i: [] for i in range(num_gpus)}  # gpu_slot -> list of commands
 for i, exp in enumerate(experiments):
-    run_id = f"{i + 1:03d}"         # 001, 002, etc.
-    gpu = gpu_list[i % gpu_count]   # round-robin assign GPUs
-    cmd = f"CUDA_VISIBLE_DEVICES={gpu} uv run examples/humanoid_mocap_headless.py {experiment_to_args(exp, run_id)}"
-    commands[run_id] = (gpu, cmd)
-    print(f"  [{run_id}] {cmd}")
+    run_id = f"{i + 1:03d}"               # 001, 002, etc.
+    gpu_slot = i % num_gpus               # round-robin assign GPU slots
+    cmd = f"CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py {experiment_to_args(exp, run_id)}"
+    gpu_commands[gpu_slot].append(cmd)
+    print(f"  [{run_id}] (GPU {gpu_slot:02d}) {cmd}")
 
 # write experiment registry .txt
-os.makedirs("experiments/setup", exist_ok=True)
-with open("experiments/setup/experiment_registry.txt", "w") as f:
-    for run_id, (_, cmd) in commands.items():
-        f.write(f"{cmd}\n")
+os.makedirs("experiments/run", exist_ok=True)
+with open("experiments/run/experiment_registry.txt", "w") as f:
+    for slot_cmds in gpu_commands.values():
+        for cmd in slot_cmds:
+            f.write(f"{cmd}\n")
 
-# write .sh grouped by GPU (each GPU's experiments run sequentially, GPUs in parallel)
-gpu_commands = {gpu: [] for gpu in gpu_list}
-for run_id, (gpu, cmd) in commands.items():
-    gpu_commands[gpu].append(cmd)
+# write one .sh per GPU slot, each takes GPU_ID as first argument
+os.makedirs("experiments/run", exist_ok=True)
+for slot, cmds in gpu_commands.items():
+    filename = f"experiments/run/run_experiments_{slot:02d}.sh"
+    with open(filename, "w") as f:
+        f.write("#!/bin/bash\n")
+        f.write('GPU_ID=${1:?\"Usage: bash $0 <GPU_ID>\"}\n')
+        f.write(f'echo "Running slot {slot:02d} on GPU $GPU_ID"\n\n')
+        f.write(" &&\n".join(cmd for cmd in cmds))
+        f.write("\n")
+    print(f"Wrote {filename}")
 
-with open("experiments/run_experiments.sh", "w") as f:
-    f.write("#!/bin/bash\n\n")
-    for gpu, cmds in gpu_commands.items():
-        f.write(f"# GPU {gpu}\n(\n")
-        f.write(" &&\n".join(f"  {cmd}" for cmd in cmds))
-        f.write("\n) &\n\n")
-    f.write("wait  # wait for all GPUs to finish\n")
-
-print(f"\nWrote experiments/setup/experiment_registry.txt")
-print(f"Wrote experiments/run_experiments.sh")
+print(f"\nWrote experiments/run/experiment_registry.txt")
+print(f"Usage: bash experiments/run/run_experiments_00.sh <GPU_ID>")
