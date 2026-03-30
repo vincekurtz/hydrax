@@ -148,7 +148,7 @@ experiment_args = {
 # save directory
 save_dir = "experiments/data"
 os.makedirs(save_dir, exist_ok=True)
-filename = f"results_{args.run_id}.h5" if args.run_id else "results.h5"
+filename = f"run{args.run_id}.h5" if args.run_id else "results.h5"
 save_path = os.path.join(save_dir, filename)
 
 # Save results to HDF5 file

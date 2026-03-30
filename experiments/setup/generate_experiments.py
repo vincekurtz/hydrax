@@ -15,8 +15,8 @@ import argparse
 motion = ["Lafan1/mocap/UnitreeG1/walk1_subject1.npz"]
 
 # how many times to randomize and level of randomization
-num_randomizations = [0, 2, 4]
-level_randomization = [0.1, 0.4]
+num_randomizations = [0, 2, 4, 6]
+level_randomization = [0.1, 0.4, 0.8]
 
 # list of risk strategies to try
 risk_strategy = ["average"]
@@ -25,7 +25,7 @@ risk_strategy = ["average"]
 use_warp = True
 
 # duration (seconds)
-duration = 30.0
+duration = 60.0
 
 
 ##################################################################
