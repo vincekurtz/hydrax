@@ -53,12 +53,6 @@ parser.add_argument(
     help="Number of randomizations to perform for risk-sensitive strategies (default: 0).",
 )
 parser.add_argument(
-    "--level_randomization",
-    type=float,
-    default=1.0,
-    help="Level of domain randomization, value is in (0.0, 1.0]. (default: 0.0)",
-)
-parser.add_argument(
     "--risk_strategy",
     type=str,
     choices=["average", "worst", "best"],
@@ -71,12 +65,7 @@ args = parser.parse_args()
 # check duration value
 assert args.duration > 0.0, "duration must be a positive number."
 
-# check domain randomization values
-# num_randomizations <= 1 means no domain randomization (alg_base clamps to 1
-# and only randomizes when > 1), so level_randomization is only meaningful then.
 assert args.num_randomizations >= 0, "num_randomizations must be non-negative integer."
-if args.num_randomizations > 1:
-    assert 0.0 < args.level_randomization <= 1.0, "level_randomization must be in (0.0, 1.0]."
 
 # select the risk strategy
 risk_strategies = {"average": AverageCost, "worst": WorstCase, "best": BestCase}
@@ -91,7 +80,7 @@ risk_strategy_ = risk_strategies[args.risk_strategy]()
 task = HumanoidMocap(
     reference_filename=args.reference_filename,
     impl="warp" if args.warp else "jax",
-    options=HumanoidMocapOptions(level_randomization=args.level_randomization),
+    options=HumanoidMocapOptions(),
 )
 
 # CEM options (saved as a dict so we can reuse for logging)
@@ -140,7 +129,6 @@ experiment_args = {
     "duration": args.duration,
     "reference_filename": args.reference_filename,
     "num_randomizations": args.num_randomizations,
-    "level_randomization": args.level_randomization,
     "risk_strategy": args.risk_strategy,
 }
 

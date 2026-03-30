@@ -14,9 +14,8 @@ import argparse
 # which motions G1 motions to test
 motion = ["Lafan1/mocap/UnitreeG1/walk1_subject1.npz"]
 
-# how many times to randomize and level of randomization
+# how many times to randomize
 num_randomizations = [0, 2, 4, 6, 8]
-level_randomization = [0.2, 0.4, 0.6, 1.0]
 
 # list of risk strategies to try
 risk_strategy = ["average", "worst", "best"]
@@ -47,12 +46,7 @@ args = parser.parse_args()
 num_gpus = args.num_gpu
 assert num_gpus >= 1, "num_gpu must be at least 1."
 
-# parse num_randomizations and level_randomization
-# level_randomization is only used when num_randomizations > 1 (alg_base clamps
-# to 1 and only randomizes when > 1), so only validate it in that case.
 assert all(isinstance(nr, int) and nr >= 0 for nr in num_randomizations), "num_randomizations must be non-negative integers."
-if any(nr > 1 for nr in num_randomizations):
-    assert all(isinstance(lr, float) and 0.0 < lr <= 1.0 for lr in level_randomization), "level_randomization must be in (0.0, 1.0]."
 
 
 ##################################################################
@@ -64,7 +58,6 @@ print(f"\nNumber of GPUs: {num_gpus}")
 print("\nExperiment variables:")
 print(f"  Motions: {motion}")
 print(f"  Number of randomizations: {num_randomizations}")
-print(f"  Levels of randomization: {level_randomization}")
 print(f"  Risk strategies: {risk_strategy}")
 
 # enumerate every combination of variables
@@ -72,25 +65,13 @@ experiments = []
 for m in motion:
     for rs in risk_strategy:
         for nr in num_randomizations:
-            if nr <= 1:
-                experiments.append({
-                    "reference_filename": m,
-                    "num_randomizations": nr,
-                    "level_randomization": None,
-                    "risk_strategy": rs,
-                    "warp": use_warp,
-                    "duration": duration,
-                })
-            else:
-                for lr in level_randomization:
-                    experiments.append({
-                        "reference_filename": m,
-                        "num_randomizations": nr,
-                        "level_randomization": lr,
-                        "risk_strategy": rs,
-                        "warp": use_warp,
-                        "duration": duration,
-                    })
+            experiments.append({
+                "reference_filename": m,
+                "num_randomizations": nr,
+                "risk_strategy": rs,
+                "warp": use_warp,
+                "duration": duration,
+            })
 
 # function to convert experiment dict to command-line arguments
 def experiment_to_args(exp, run_id):
@@ -99,7 +80,7 @@ def experiment_to_args(exp, run_id):
         if key == "warp":
             if val:
                 args.append("--warp")
-        elif key in ("num_randomizations", "level_randomization") and not val:
+        elif key == "num_randomizations" and not val:
             pass
         elif val is not None:
             args.append(f"--{key} {val}")

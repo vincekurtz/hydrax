@@ -1,0 +1,21 @@
+#!/bin/bash
+GPU_ID=${1:?"Usage: bash $0 <GPU_ID>"}
+echo "Running slot 02 on GPU $GPU_ID"
+
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 003 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 2 --level_randomization 0.4 --risk_strategy average --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 006 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 4 --level_randomization 0.2 --risk_strategy average --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 009 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 4 --level_randomization 1.0 --risk_strategy average --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 012 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 6 --level_randomization 0.6 --risk_strategy average --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 015 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 8 --level_randomization 0.4 --risk_strategy average --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 018 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --risk_strategy worst --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 021 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 2 --level_randomization 0.6 --risk_strategy worst --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 024 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 4 --level_randomization 0.4 --risk_strategy worst --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 027 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 6 --level_randomization 0.2 --risk_strategy worst --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 030 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 6 --level_randomization 1.0 --risk_strategy worst --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 033 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 8 --level_randomization 0.6 --risk_strategy worst --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 036 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 2 --level_randomization 0.2 --risk_strategy best --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 039 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 2 --level_randomization 1.0 --risk_strategy best --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 042 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 4 --level_randomization 0.6 --risk_strategy best --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 045 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 6 --level_randomization 0.4 --risk_strategy best --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 048 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 8 --level_randomization 0.2 --risk_strategy best --warp --duration 300.0 &&
+CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/humanoid_mocap_headless.py --run_id 051 --reference_filename Lafan1/mocap/UnitreeG1/walk1_subject1.npz --num_randomizations 8 --level_randomization 1.0 --risk_strategy best --warp --duration 300.0
