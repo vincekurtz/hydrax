@@ -8,4 +8,8 @@ __pycache__
 MUJOCO_LOG.TXT
 hydrax/recordings/
 .idea
+
+# experiment results
 *.h5
+experiments/setup/experiment_registry.txt
+experiments/run_experiments.sh
