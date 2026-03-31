@@ -1,6 +1,6 @@
 ##
 #
-# Plot data from the humanoid mocap headless example.
+# Plot data from the push-T headless example.
 #
 ##
 
@@ -18,7 +18,7 @@ import time
 ##################################################################
 
 parser = argparse.ArgumentParser(
-    description="Run a headless simulation of mocap tracking with the G1."
+    description="Evaluate a headless push-T simulation run."
 )
 parser.add_argument(
     "--file",
@@ -39,7 +39,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-file_path = "./experiments/humanoid/data/" + args.file
+file_path = "./experiments/pusht/data/" + args.file
 
 ##################################################################
 # LOAD DATA
@@ -49,7 +49,7 @@ with h5py.File(file_path, "r") as f:
     # Load experiment arguments
     experiment_args = dict(f["experiment_args"].attrs)
 
-    # Load CEM options
+    # Load PredictiveSampling options
     ctrl_options = dict(f["ctrl_options"].attrs)
 
     # Load trajectory data (read datasets into numpy, attrs into scalars)
@@ -69,35 +69,26 @@ print("\nExperiment Arguments:")
 for k, v in experiment_args.items():
     print(f"  {k}: {v}")
 
-print("\nCEM Options:")
+print("\nPredictiveSampling Options:")
 for k, v in ctrl_options.items():
     print(f"  {k}: {v}")
 
 print("\nMetrics:")
 total_wall_time = metrics["total_wall_time"]
-r_anchor_pos = metrics["r_anchor_pos"]
-r_anchor_ori = metrics["r_anchor_ori"]
-r_body_pos = metrics["r_body_pos"]
-r_body_ori = metrics["r_body_ori"]
-r_body_lin_vel = metrics["r_body_lin_vel"]
-r_body_ang_vel = metrics["r_body_ang_vel"]
-total_reward = metrics["total_reward"]
+position_cost = metrics["position_cost"]
+orientation_cost = metrics["orientation_cost"]
+close_to_block_cost = metrics["close_to_block_cost"]
+total_cost = metrics["total_cost"]
 print(f"  total_wall_time: {total_wall_time:.3f} seconds")
-print(f"  r_anchor_pos, shape={r_anchor_pos.shape} array, mean={r_anchor_pos.mean():.3f}, std={r_anchor_pos.std():.3f}")
-print(f"  r_anchor_ori, shape={r_anchor_ori.shape} array, mean={r_anchor_ori.mean():.3f}, std={r_anchor_ori.std():.3f}")
-print(f"  r_body_pos, shape={r_body_pos.shape} array, mean={r_body_pos.mean():.3f}, std={r_body_pos.std():.3f}")
-print(f"  r_body_ori, shape={r_body_ori.shape} array, mean={r_body_ori.mean():.3f}, std={r_body_ori.std():.3f}")
-print(f"  r_body_lin_vel, shape={r_body_lin_vel.shape} array, mean={r_body_lin_vel.mean():.3f}, std={r_body_lin_vel.std():.3f}")
-print(f"  r_body_ang_vel, shape={r_body_ang_vel.shape} array, mean={r_body_ang_vel.mean():.3f}, std={r_body_ang_vel.std():.3f}")
-print(f"  total_reward, shape={total_reward.shape} array, mean={total_reward.mean():.3f}, std={total_reward.std():.3f}")
-rewards = {
-    "r_anchor_pos": r_anchor_pos,
-    "r_anchor_ori": r_anchor_ori,
-    "r_body_pos": r_body_pos,
-    "r_body_ori": r_body_ori,
-    "r_body_lin_vel": r_body_lin_vel,
-    "r_body_ang_vel": r_body_ang_vel,
-    "total_reward": total_reward,
+print(f"  position_cost, shape={position_cost.shape} array, mean={position_cost.mean():.3f}, std={position_cost.std():.3f}")
+print(f"  orientation_cost, shape={orientation_cost.shape} array, mean={orientation_cost.mean():.3f}, std={orientation_cost.std():.3f}")
+print(f"  close_to_block_cost, shape={close_to_block_cost.shape} array, mean={close_to_block_cost.mean():.3f}, std={close_to_block_cost.std():.3f}")
+print(f"  total_cost, shape={total_cost.shape} array, mean={total_cost.mean():.3f}, std={total_cost.std():.3f}")
+costs = {
+    "position_cost": position_cost,
+    "orientation_cost": orientation_cost,
+    "close_to_block_cost": close_to_block_cost,
+    "total_cost": total_cost,
 }
 
 print("\nTrajectory Data:")
@@ -118,8 +109,8 @@ print(f"  ctrl shape: {ctrl.shape}")
 
 if args.viz:
 
-    # load G1 model and create data
-    xml_path = "./hydrax/models/g1/scene.xml"
+    # load push-T model and create data
+    xml_path = "./hydrax/models/pusht/scene.xml"
     mj_model = mujoco.MjModel.from_xml_path(xml_path)
     mj_data = mujoco.MjData(mj_model)
 
@@ -150,16 +141,16 @@ if args.viz:
 
 if args.plot:
 
-    # create time array for rewards
-    sim_time =np.arange(rewards["total_reward"].shape[0]) * sim_dt
+    # create time array for costs
+    sim_time = np.arange(costs["total_cost"].shape[0]) * sim_dt
 
-    # plot the rewards
+    # plot the costs
     plt.figure(figsize=(12, 8))
-    for label, reward in rewards.items():
-        plt.plot(sim_time, reward, label=label)
+    for label, cost in costs.items():
+        plt.plot(sim_time, cost, label=label)
     plt.xlabel("Time (s)")
-    plt.ylabel("Reward")
-    plt.title("Rewards over time")
+    plt.ylabel("Cost")
+    plt.title("Costs over time")
     plt.legend()
     plt.grid()
     plt.show()

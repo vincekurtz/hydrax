@@ -61,6 +61,28 @@ class PushT(Task):
         """The terminal cost ℓ_T(x_T)."""
         return self.running_cost(state, jnp.zeros(self.model.nu))
 
+    def compute_metrics(self, state: mjx.Data, control: jax.Array) -> dict:
+        """Compute individual cost terms for logging.
+
+        Returns a dictionary of scalar cost terms:
+            position_cost, orientation_cost, close_to_block_cost, total_cost
+        """
+        position_err = self._get_position_err(state)
+        orientation_err = self._get_orientation_err(state)
+        close_to_block_err = self._close_to_block_err(state)
+
+        position_cost = jnp.sum(jnp.square(position_err))
+        orientation_cost = jnp.sum(jnp.square(orientation_err))
+        close_to_block_cost = jnp.sum(jnp.square(close_to_block_err))
+        total_cost = position_cost + orientation_cost + 0.01 * close_to_block_cost
+
+        return {
+            "position_cost": position_cost,
+            "orientation_cost": orientation_cost,
+            "close_to_block_cost": close_to_block_cost,
+            "total_cost": total_cost,
+        }
+
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize the level of friction."""
         n_geoms = self.model.geom_friction.shape[0]

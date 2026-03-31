@@ -6,13 +6,13 @@ import numpy as np
 
 from mujoco import mjx
 
-from hydrax.algs import CEM
+from hydrax.algs import PredictiveSampling
 from hydrax.risk import AverageCost, WorstCase, BestCase
-from hydrax.simulation.deterministic import run_headless_humanoid_mocap
-from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
+from hydrax.simulation.deterministic import run_headless_pusht
+from hydrax.tasks.pusht import PushT
 
 """
-Run a headless simulation of the humanoid motion capture tracking task.
+Run a headless simulation of the push-T task.
 """
 
 ##################################################################
@@ -21,7 +21,7 @@ Run a headless simulation of the humanoid motion capture tracking task.
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
-    description="Run a headless simulation of mocap tracking with the G1."
+    description="Run a headless simulation of the push-T task."
 )
 parser.add_argument(
     "--run_id",
@@ -39,12 +39,6 @@ parser.add_argument(
     type=float,
     required=True,
     help="Duration to run the simulation (seconds).",
-)
-parser.add_argument(
-    "--reference_filename",
-    type=str,
-    default="Lafan1/mocap/UnitreeG1/walk1_subject1.npz",
-    help="Reference mocap file name, from https://huggingface.co/datasets/robfiras/loco-mujoco-datasets/tree/main.",
 )
 parser.add_argument(
     "--num_randomizations",
@@ -87,45 +81,43 @@ risk_strategy_ = risk_strategies[args.risk_strategy]()
 ##################################################################
 
 # Define the task (cost and dynamics)
-task = HumanoidMocap(
-    reference_filename=args.reference_filename,
-    impl="warp" if args.warp else "jax",
-    options=HumanoidMocapOptions(),
-)
+task = PushT(impl="warp" if args.warp else "jax")
 
-# CEM options (saved as a dict so we can reuse for logging)
+# PredictiveSampling options (saved as a dict so we can reuse for logging)
 ctrl_options = {
-    "num_samples": 1024,
-    "num_elites": 10,
-    "sigma_start": 0.3,
-    "sigma_min": 0.1,
-    "explore_fraction": 0.2,
-    "plan_horizon": 0.8,
+    "num_samples": 128,
+    "noise_level": 0.4,
     "num_randomizations": args.num_randomizations,
     "seed": args.seed,
     "risk_strategy": risk_strategy_,
-    "spline_type": "cubic",
-    "num_knots": 4,
-    "iterations": 1,
+    "plan_horizon": 0.5,
+    "spline_type": "zero",
+    "num_knots": 6,
 }
 
 # Set up the controller
-ctrl = CEM(task, **ctrl_options)
+ctrl = PredictiveSampling(task, **ctrl_options)
 
-# Replace risk_strategy object with string for saving dictionary 
+# Replace risk_strategy object with string for saving dictionary
 ctrl_options["risk_strategy"] = args.risk_strategy
 
 # Create the mjx model/data for simulation
-mjx_model_sim = mjx.put_model(task.mj_model)
-mjx_data_sim = mjx.make_data(task.mj_model)
-mjx_data_sim = mjx_data_sim.replace(qpos=task.reference_qpos[0])
+mj_model_sim = task.mj_model
+mj_model_sim.opt.timestep = 0.001
+mj_model_sim.opt.iterations = 100
+mj_model_sim.opt.ls_iterations = 50
+mjx_model_sim = mjx.put_model(mj_model_sim)
+mjx_data_sim = mjx.make_data(mj_model_sim)
+mjx_data_sim = mjx_data_sim.replace(
+    qpos=np.array([0.1, 0.1, 1.3, 0.0, 0.0]),
+)
 
 # Run the headless simulation
-results = run_headless_humanoid_mocap(
+results = run_headless_pusht(
     ctrl,
     mjx_model_sim,
     mjx_data_sim,
-    frequency=100,
+    frequency=50,
     duration=args.duration,
 )
 
@@ -138,14 +130,13 @@ results = run_headless_humanoid_mocap(
 experiment_args = {
     "warp": args.warp,
     "duration": args.duration,
-    "reference_filename": args.reference_filename,
     "num_randomizations": args.num_randomizations,
     "risk_strategy": args.risk_strategy,
     "seed": args.seed,
 }
 
 # save directory
-save_dir = "experiments/humanoid/data"
+save_dir = "experiments/pusht/data"
 os.makedirs(save_dir, exist_ok=True)
 filename = f"run_{int(args.run_id):03d}.h5" if args.run_id else "results.h5"
 save_path = os.path.join(save_dir, filename)
@@ -157,10 +148,10 @@ with h5py.File(save_path, "w") as f:
     for k, v in experiment_args.items():
         args_grp.attrs[k] = v
 
-    # CEM options
-    cem_grp = f.create_group("ctrl_options")
+    # PredictiveSampling options
+    ps_grp = f.create_group("ctrl_options")
     for k, v in ctrl_options.items():
-        cem_grp.attrs[k] = v
+        ps_grp.attrs[k] = v
 
     # metrics (arrays as datasets, scalars as attrs)
     met_grp = f.create_group("metrics")

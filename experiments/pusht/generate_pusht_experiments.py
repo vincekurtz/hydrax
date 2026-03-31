@@ -12,7 +12,7 @@ import argparse
 ##################################################################
 
 # how many times to randomize
-num_randomizations = [0, 2]
+num_randomizations = [0, 4, 8, 16]
 
 # seed for randomization (if num_randomizations > 0)
 seed = [0, 42, 123]
@@ -21,7 +21,7 @@ seed = [0, 42, 123]
 risk_strategy = ["average", "worst", "best"]
 
 # duration (seconds)
-duration = 30.0
+duration = 5.0
 
 
 ##################################################################

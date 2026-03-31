@@ -496,3 +496,202 @@ def run_headless_humanoid_mocap(  # noqa: PLR0912, PLR0915
 ###################################################################################
 # PUSH-T
 ###################################################################################
+
+def run_headless_pusht(  # noqa: PLR0912, PLR0915
+    controller: SamplingBasedController,
+    mjx_model_sim: mjx.Model,
+    mjx_data_sim: mjx.Data,
+    frequency: float,
+    duration: float,
+    initial_knots: jax.Array = None,
+) -> dict:
+    """Run a headless simulation of the push-T task.
+
+    This is a deterministic simulation without visualization, suitable for
+    headless/remote systems or batch experiments. The controller and simulation
+    run in the same thread. Everything runs on device (no CPU-GPU transfers).
+
+    Note: the actual control frequency may be slightly different than what is
+    requested, because the control period must be an integer multiple of the
+    simulation time step.
+
+    Args:
+        controller: The controller instance, which includes the task
+                    (e.g., model, cost) definition.
+        mjx_model_sim: The MJX model for simulation. Could be slightly
+                       different from the model used by the controller.
+        mjx_data_sim: An MJX data object containing the initial system state.
+        frequency: The requested control frequency (Hz) for replanning.
+        duration: How long to run the simulation (seconds).
+        initial_knots: The initial knot points for the control spline at t=0
+
+    Returns:
+        A results dictionary with two sub-dictionaries:
+            - "trajectory"
+            - "metrics"
+    """
+    # Report the planning horizon in seconds for debugging
+    print(
+        f"Planning with {controller.ctrl_steps} steps "
+        f"over a {controller.plan_horizon} second horizon "
+        f"with {controller.num_knots} knots."
+    )
+
+    # Figure out how many sim steps to run before replanning
+    sim_dt = mjx_model_sim.opt.timestep
+    replan_period = 1.0 / frequency
+    sim_steps_per_replan = int(replan_period / sim_dt)
+    sim_steps_per_replan = max(sim_steps_per_replan, 1)
+    step_dt = sim_steps_per_replan * sim_dt
+    actual_frequency = 1.0 / step_dt
+    print(
+        f"Planning at {actual_frequency} Hz, "
+        f"simulating at {1.0 / sim_dt} Hz"
+    )
+
+    # Compute total number of sim steps
+    num_replan_steps = round(duration / step_dt)
+    total_sim_steps = num_replan_steps * sim_steps_per_replan
+
+    # preallocate metric arrays
+    nq = mjx_data_sim.qpos.shape[0]
+    nv = mjx_data_sim.qvel.shape[0]
+    nu = mjx_data_sim.ctrl.shape[0]
+    qpos_hist = np.full((total_sim_steps, nq), np.nan)
+    qvel_hist = np.full((total_sim_steps, nv), np.nan)
+    ctrl_hist = np.full((total_sim_steps, nu), np.nan)
+
+    # Create a data structure for the controller to run rollouts from
+    mjx_data = controller.task.make_data()
+    mjx_data = mjx_data.replace(
+        qpos=mjx_data_sim.qpos,
+        qvel=mjx_data_sim.qvel,
+        mocap_pos=mjx_data_sim.mocap_pos,
+        mocap_quat=mjx_data_sim.mocap_quat,
+    )
+
+    # Initialize the controller
+    policy_params = controller.init_params(initial_knots=initial_knots)
+    jit_optimize = jax.jit(controller.optimize)
+    jit_interp_func = jax.jit(controller.interp_func)
+
+    # JIT-compile the simulation stepping function.
+    # Uses lax.scan to step mjx_data_sim forward sim_steps_per_replan times
+    # and applies the interpolated controls at each sub-step.
+    @jax.jit
+    def sim_steps(mjx_data_sim, us):
+        def step_fn(data, u):
+            data = data.replace(ctrl=u)
+            data = mjx.step(mjx_model_sim, data)
+            metrics = controller.task.compute_metrics(data, u)
+            return data, (data.qpos, data.qvel, metrics)
+        mjx_data_sim, (qpos_seg, qvel_seg, metrics_seg) = jax.lax.scan(
+            step_fn, mjx_data_sim, us
+        )
+        return mjx_data_sim, qpos_seg, qvel_seg, metrics_seg
+
+    # Warm-up the controller
+    print("Jitting...")
+    st = time.time()
+    policy_params, _ = jit_optimize(mjx_data, policy_params)
+    policy_params, _ = jit_optimize(mjx_data, policy_params)
+
+    tq = jnp.arange(0, sim_steps_per_replan) * sim_dt
+    tk = policy_params.tk
+    knots = policy_params.mean[None, ...]
+    _ = jit_interp_func(tq, tk, knots)
+    _ = jit_interp_func(tq, tk, knots)
+
+    # Warm-up the simulation stepping function
+    us_warmup = jit_interp_func(tq, tk, knots)[0]
+    warmup_result = sim_steps(mjx_data_sim, us_warmup)
+    _ = sim_steps(mjx_data_sim, us_warmup)
+
+    # Preallocate metrics arrays from warmup result keys
+    metrics_seg_warmup = warmup_result[3]
+    metrics_hist = {
+        k: np.full((total_sim_steps,), np.nan)
+        for k in metrics_seg_warmup.keys()
+    }
+    print(f"Time to jit: {time.time() - st:.3f} seconds")
+
+    # Run the simulation (all on device, no CPU-GPU transfers in the loop)
+    sim_wall_start = time.time()
+    for step_idx in range(num_replan_steps):
+        step_start_time = time.time()
+
+        # Set the start state for the controller from the sim state
+        mjx_data = mjx_data.replace(
+            qpos=mjx_data_sim.qpos,
+            qvel=mjx_data_sim.qvel,
+            mocap_pos=mjx_data_sim.mocap_pos,
+            mocap_quat=mjx_data_sim.mocap_quat,
+            time=mjx_data_sim.time,
+        )
+
+        # Do a replanning step
+        plan_start = time.time()
+        policy_params, _ = jit_optimize(mjx_data, policy_params)
+        plan_time = time.time() - plan_start
+
+        # query the control spline at the sim frequency
+        tq = jnp.arange(0, sim_steps_per_replan) * sim_dt + mjx_data_sim.time
+        tk = policy_params.tk
+        knots = policy_params.mean[None, ...]
+        us = jit_interp_func(tq, tk, knots)[0]  # (ss, nu) — stays on device
+
+        # simulate the system between spline replanning steps (all on device)
+        mjx_data_sim, qpos_seg, qvel_seg, metrics_seg = sim_steps(mjx_data_sim, us)
+
+        # Record trajectory segment
+        seg_start = step_idx * sim_steps_per_replan
+        seg_end = seg_start + sim_steps_per_replan
+        qpos_hist[seg_start:seg_end] = np.asarray(qpos_seg)
+        qvel_hist[seg_start:seg_end] = np.asarray(qvel_seg)
+        ctrl_hist[seg_start:seg_end] = np.asarray(us)
+
+        # Record metrics segment
+        for k, v in metrics_seg.items():
+            metrics_hist[k][seg_start:seg_end] = np.asarray(v)
+
+        # Print some timing information
+        sim_time = float(mjx_data_sim.time)
+        elapsed = time.time() - step_start_time
+        rtr = step_dt / elapsed
+        wall_time = time.time() - sim_wall_start
+        print(
+            f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s"
+            f", Sim time: {sim_time:.3f}s"
+            f", Wall time: {wall_time:.3f}s",
+            end="\r",
+        )
+
+    sim_wall_time = time.time() - sim_wall_start
+
+    # total sim and wall time
+    print("")
+    print(f"Simulation finished.")
+    print(f"Total sim time: {duration:.3f}s")
+    print(f"Total wall time: {sim_wall_time:.3f}s")
+
+    # make the trajectory and metrics dictionaries for return
+    trajectory = {
+        "sim_dt": round(float(sim_dt), 6),
+        "ctrl_dt": round(float(step_dt), 6),
+        "qpos": qpos_hist,
+        "qvel": qvel_hist,
+        "ctrl": ctrl_hist,
+    }
+    metrics = {
+        "total_wall_time": sim_wall_time,
+        "termination_time": duration,
+        **metrics_hist,
+    }
+
+    # results dictionary
+    results = {
+        "trajectory": trajectory,
+        "metrics": metrics,
+    }
+
+    return results
