@@ -14,6 +14,16 @@ from hydrax.task_base import Task
 class PushTOptions:
     """Configuration options for the PushT task."""
 
+    # --- Initial state ranges ---
+
+    # Block spawn: center (x, y) and radius for uniform disk sampling, orientation range
+    init_block_center: Tuple[float, float] = (0.1, 0.1)
+    init_block_radius: float = 0.1
+    init_block_ori_range: Tuple[float, float] = (-3.14, 3.14)
+
+    # Pusher spawn: fixed position (x, y) in world frame
+    init_pusher_pos: Tuple[float, float] = (0.0, 0.0)
+
     # --- Cost weights ---
 
     # Block position tracking weight
@@ -210,6 +220,37 @@ class PushT(Task):
             "actuator_gainprm": actuator_gainprm,
             "actuator_biasprm": actuator_biasprm,
         }
+
+    def sample_initial_position(self, rng: jax.Array) -> jax.Array:
+        """Sample a random initial qpos from the configured ranges.
+
+        Block position is sampled uniformly within a disk. Pusher is fixed.
+        qpos layout: [block_x, block_y, block_theta, pusher_x, pusher_y]
+        """
+        opts = self.options
+        rng, angle_rng, radius_rng, theta_rng = jax.random.split(rng, 4)
+
+        # Block: uniform sample in a disk
+        angle = jax.random.uniform(
+            angle_rng, (), minval=0.0, maxval=2.0 * jnp.pi
+        )
+        r = opts.init_block_radius * jnp.sqrt(
+            jax.random.uniform(radius_rng, (), minval=0.0, maxval=1.0)
+        )
+        center = jnp.array(opts.init_block_center)
+        block_xy = center + r * jnp.array([jnp.cos(angle), jnp.sin(angle)])
+
+        block_theta = jax.random.uniform(
+            theta_rng, (),
+            minval=opts.init_block_ori_range[0],
+            maxval=opts.init_block_ori_range[1],
+        )
+
+        # Pusher: fixed position (qpos is offset from body origin at (0, 0.1))
+        pusher_world = jnp.array(opts.init_pusher_pos)
+        pusher_xy = pusher_world - jnp.array([0.0, 0.1])
+
+        return jnp.concatenate([block_xy, block_theta[None], pusher_xy])
 
     def make_data(self) -> mjx.Data:
         """Create a new state object with extra constraints allocated."""

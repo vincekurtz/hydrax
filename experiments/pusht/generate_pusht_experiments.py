@@ -12,11 +12,11 @@ import argparse
 ##################################################################
 
 # how many times to randomize
-num_randomizations = [0, 4, 16]
+num_randomizations = [0, 4, 32, 128]
 
 # seeds for DR of the sim model and the controller
-sim_seed  = [100, 101, 102] # seed for simulation DR
-ctrl_seed = [0, 1, 2]       # seed for control DR (if num_randomizations >= 2)
+sim_seed  = [100, 101, 102, 103, 104] # seed for simulation DR
+ctrl_seed = [0, 1, 2, 3, 4]       # seed for control DR (if num_randomizations >= 2)
 
 # list of risk strategies to try
 risk_strategy = ["average", "worst", "best"]
