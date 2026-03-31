@@ -6,10 +6,10 @@ import numpy as np
 
 from mujoco import mjx
 
-from hydrax.algs import PredictiveSampling
+from hydrax.algs import PredictiveSampling, CEM
 from hydrax.risk import AverageCost, WorstCase, BestCase
 from hydrax.simulation.deterministic import run_headless_pusht
-from hydrax.tasks.pusht import PushT
+from hydrax.tasks.pusht import PushT, PushTOptions
 
 """
 Run a headless simulation of the push-T task.
@@ -81,7 +81,10 @@ risk_strategy_ = risk_strategies[args.risk_strategy]()
 ##################################################################
 
 # Define the task (cost and dynamics)
-task = PushT(impl="warp" if args.warp else "jax")
+task = PushT(
+    impl="warp" if args.warp else "jax",
+    options=PushTOptions(),
+)
 
 # PredictiveSampling options (saved as a dict so we can reuse for logging)
 ctrl_options = {
@@ -94,9 +97,24 @@ ctrl_options = {
     "spline_type": "zero",
     "num_knots": 6,
 }
-
-# Set up the controller
 ctrl = PredictiveSampling(task, **ctrl_options)
+
+# # CEM options (saved as a dict so we can reuse for logging)
+# ctrl_options = {
+#     "num_samples": 128,
+#     "num_elites": 5,
+#     "sigma_start": 0.3,
+#     "sigma_min": 0.1,
+#     "explore_fraction": 0.2,
+#     "plan_horizon": 0.5,
+#     "num_randomizations": args.num_randomizations,
+#     "seed": args.seed,
+#     "risk_strategy": risk_strategy_,
+#     "spline_type": "zero",
+#     "num_knots": 6,
+#     "iterations": 1,
+# }
+# ctrl = CEM(task, **ctrl_options)
 
 # Replace risk_strategy object with string for saving dictionary
 ctrl_options["risk_strategy"] = args.risk_strategy
