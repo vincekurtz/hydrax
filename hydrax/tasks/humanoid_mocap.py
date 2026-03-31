@@ -142,7 +142,7 @@ class HumanoidMocapOptions:
     # --- Domain randomization ranges ---
 
     # Contact friction: uniform range for geom_friction[:, 0]
-    geom_friction_range: Tuple[float, float] = (0.3, 1.6)
+    geom_friction_range: Tuple[float, float] = (0.4, 1.2)
 
     # Contact time constant (geom_solref[:, 0]); MuJoCo default is 0.02
     geom_solref_range: Tuple[float, float] = (0.01, 0.04)
@@ -154,16 +154,16 @@ class HumanoidMocapOptions:
     body_mass_scale: float = 0.2
 
     # Center-of-mass position: additive noise drawn from [-offset, +offset] (m)
-    body_ipos_offset: float = 0.005
+    body_ipos_offset: float = 0.02
 
     # Joint damping for actuated DOFs: uniform range (N·m·s/rad)
-    dof_damping_range: Tuple[float, float] = (0.0, 5.0)
+    dof_damping_range: Tuple[float, float] = (0.0, 1.0)
 
     # Joint friction loss for actuated DOFs: uniform range (N·m)
     dof_frictionloss_range: Tuple[float, float] = (0.3, 1.0)
 
     # Actuator kP / kD gains: multiplicative scale drawn from [1-scale, 1+scale]
-    actuator_gain_scale: float = 0.2
+    actuator_gain_scale: float = 0.1
 
     # Base state noise: std dev for position (qpos[0:7]) and velocity (qvel[0:6])
     base_qpos_noise: float = 0.01
@@ -249,6 +249,9 @@ class HumanoidMocap(Task):
 
         # Anchor (root) body index for global tracking
         self.anchor_body_index = mj_data.body(options.anchor_body_name).id
+
+        # Torso body index for mass/COM randomization
+        self.torso_body_index = mj_data.body("torso_link").id
         anchor_id = self.anchor_body_index
 
         # Tracked body indices for body-level tracking
@@ -566,22 +569,27 @@ class HumanoidMocap(Task):
             )
         )
 
-        # Body masses: multiplicative noise ±body_mass_scale
-        n_bodies = self.model.body_mass.shape[0]
+        # Body mass: multiplicative noise ±body_mass_scale (torso only)
+        torso_idx = self.torso_body_index
         mass_scale = jax.random.uniform(
             mass_rng,
-            (n_bodies,),
+            (),
             minval=1.0 - opts.body_mass_scale,
             maxval=1.0 + opts.body_mass_scale,
         )
-        body_mass = self.model.body_mass * mass_scale
+        body_mass = self.model.body_mass.at[torso_idx].set(
+            self.model.body_mass[torso_idx] * mass_scale
+        )
 
-        # Center of mass positions: additive noise ±body_ipos_offset per axis
-        body_ipos = self.model.body_ipos + jax.random.uniform(
+        # Center of mass position: additive noise ±body_ipos_offset (torso only)
+        ipos_noise = jax.random.uniform(
             ipos_rng,
-            self.model.body_ipos.shape,
+            (3,),
             minval=-opts.body_ipos_offset,
             maxval=opts.body_ipos_offset,
+        )
+        body_ipos = self.model.body_ipos.at[torso_idx].set(
+            self.model.body_ipos[torso_idx] + ipos_noise
         )
 
         # Joint damping for actuated DOFs.
