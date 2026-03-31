@@ -80,9 +80,9 @@ orientation_cost = metrics["orientation_cost"]
 close_to_block_cost = metrics["close_to_block_cost"]
 total_cost = metrics["total_cost"]
 print(f"  total_wall_time: {total_wall_time:.3f} seconds")
-print(f"  position_cost, shape={position_cost.shape} array, mean={position_cost.mean():.3f}, std={position_cost.std():.3f}")
-print(f"  orientation_cost, shape={orientation_cost.shape} array, mean={orientation_cost.mean():.3f}, std={orientation_cost.std():.3f}")
-print(f"  close_to_block_cost, shape={close_to_block_cost.shape} array, mean={close_to_block_cost.mean():.3f}, std={close_to_block_cost.std():.3f}")
+print(f"  position_cost, shape={position_cost.shape} array, mean={position_cost.mean():.3f}")
+print(f"  orientation_cost, shape={orientation_cost.shape} array, mean={orientation_cost.mean():.3f}")
+print(f"  close_to_block_cost, shape={close_to_block_cost.shape} array, mean={close_to_block_cost.mean():.3f}")
 print(f"  total_cost, shape={total_cost.shape} array, mean={total_cost.mean():.3f}, std={total_cost.std():.3f}")
 costs = {
     "position_cost": position_cost,

@@ -12,17 +12,17 @@ import argparse
 ##################################################################
 
 # how many times to randomize
-num_randomizations = [0, 4, 8, 16]
+num_randomizations = [0, 4, 16]
 
-# seed for randomization (if num_randomizations > 0)
-seed = [0, 42, 123]
+# seeds for DR of the sim model and the controller
+sim_seed  = [100, 101, 102] # seed for simulation DR
+ctrl_seed = [0, 1, 2]       # seed for control DR (if num_randomizations >= 2)
 
 # list of risk strategies to try
 risk_strategy = ["average", "worst", "best"]
 
 # duration (seconds)
-duration = 5.0
-
+duration = 7.0
 
 ##################################################################
 # EXPERIMENT SETUP
@@ -44,6 +44,7 @@ num_gpus = args.num_gpu
 assert num_gpus >= 1, "num_gpu must be at least 1."
 
 assert all(isinstance(nr, int) and nr >= 0 for nr in num_randomizations), "num_randomizations must be non-negative integers."
+assert not set(sim_seed) & set(ctrl_seed), "sim_seed and ctrl_seed must not overlap, otherwise the sim model will be exactly one of the control models."
 
 
 ##################################################################
@@ -54,21 +55,24 @@ print(f"\nNumber of GPUs: {num_gpus}")
 
 print("\nExperiment variables:")
 print(f"  Number of randomizations: {num_randomizations}")
-print(f"  Seeds: {seed}")
+print(f"  Sim seeds: {sim_seed}")
+print(f"  Ctrl seeds: {ctrl_seed}")
 print(f"  Risk strategies: {risk_strategy}")
 
 # enumerate every combination of variables
 experiments = []
 for rs in risk_strategy:
     for nr in num_randomizations:
-        seeds = seed if nr > 0 else [0]
-        for s in seeds:
-            experiments.append({
-                "num_randomizations": nr,
-                "seed": s,
-                "risk_strategy": rs,
-                "duration": duration,
-            })
+        ctrl_seeds = ctrl_seed if nr >= 2 else [0]
+        for ss in sim_seed:
+            for cs in ctrl_seeds:
+                experiments.append({
+                    "num_randomizations": nr,
+                    "ctrl_seed": cs,
+                    "sim_seed": ss,
+                    "risk_strategy": rs,
+                    "duration": duration,
+                })
 
 # function to convert experiment dict to command-line arguments
 def experiment_to_args(exp, run_id):
@@ -76,7 +80,7 @@ def experiment_to_args(exp, run_id):
     for key, val in exp.items():
         if key == "num_randomizations" and not val:
             pass
-        elif key == "seed" and not exp.get("num_randomizations"):
+        elif key == "ctrl_seed" and exp.get("num_randomizations", 0) < 2:
             pass
         elif val is not None:
             args.append(f"--{key} {val}")
@@ -89,15 +93,15 @@ for i, exp in enumerate(experiments):
     run_id = f"{i + 1:03d}"               # 001, 002, etc.
     gpu_slot = i % num_gpus               # round-robin assign GPU slots
     cmd = f"CUDA_VISIBLE_DEVICES=$GPU_ID uv run examples/pusht_headless.py {experiment_to_args(exp, run_id)}"
-    gpu_commands[gpu_slot].append(cmd)
+    gpu_commands[gpu_slot].append((run_id, cmd))
     print(f"  [{run_id}] (GPU {gpu_slot:02d}) {cmd}")
 
 # write experiment registry .txt
 os.makedirs("experiments/pusht/run", exist_ok=True)
 with open("experiments/pusht/run/experiment_registry.txt", "w") as f:
     for slot_cmds in gpu_commands.values():
-        for cmd in slot_cmds:
-            f.write(f"{cmd}\n")
+        for run_id, cmd in slot_cmds:
+            f.write(f"[{run_id}] {cmd}\n")
 
 # write one .sh per GPU slot, each takes GPU_ID as first argument
 os.makedirs("experiments/pusht/run", exist_ok=True)
@@ -107,7 +111,7 @@ for slot, cmds in gpu_commands.items():
         f.write("#!/bin/bash\n")
         f.write('GPU_ID=${1:?\"Usage: bash $0 <GPU_ID>\"}\n')
         f.write(f'echo "Running slot {slot:02d} on GPU $GPU_ID"\n\n')
-        f.write(" &&\n".join(cmd for cmd in cmds))
+        f.write(" &&\n".join(f'echo ">>> [{run_id}] {cmd}" &&\n{cmd}' for run_id, cmd in cmds))
         f.write("\n")
     print(f"Wrote {filename}")
 
