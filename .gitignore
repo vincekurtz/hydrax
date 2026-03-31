@@ -11,5 +11,5 @@ hydrax/recordings/
 
 # experiment results
 *.h5
-experiments/setup/experiment_registry.txt
-experiments/run_experiments.sh
+experiments/*/run/*.txt
+experiments/*/run/*.sh

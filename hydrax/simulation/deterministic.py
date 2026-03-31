@@ -259,7 +259,11 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         recorder.stop()
 
 
-def run_headless(  # noqa: PLR0912, PLR0915
+###################################################################################
+# HUMANOID MOCAP
+###################################################################################
+
+def run_headless_humanoid_mocap(  # noqa: PLR0912, PLR0915
     controller: SamplingBasedController,
     mjx_model_sim: mjx.Model,
     mjx_data_sim: mjx.Data,
@@ -487,3 +491,8 @@ def run_headless(  # noqa: PLR0912, PLR0915
     }
 
     return results
+
+
+###################################################################################
+# PUSH-T
+###################################################################################

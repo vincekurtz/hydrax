@@ -15,13 +15,16 @@ import argparse
 motion = ["Lafan1/mocap/UnitreeG1/walk1_subject1.npz"]
 
 # how many times to randomize
-num_randomizations = [0, 2, 4, 6, 8]
+num_randomizations = [0, 2]
+
+# seed for randomization (if num_randomizations > 0)
+seed = [0, 42, 123]
 
 # list of risk strategies to try
 risk_strategy = ["average", "worst", "best"]
 
 # duration (seconds)
-duration = 300.0
+duration = 30.0
 
 # use warp by default since it's faster
 use_warp = True
@@ -58,6 +61,7 @@ print(f"\nNumber of GPUs: {num_gpus}")
 print("\nExperiment variables:")
 print(f"  Motions: {motion}")
 print(f"  Number of randomizations: {num_randomizations}")
+print(f"  Seeds: {seed}")
 print(f"  Risk strategies: {risk_strategy}")
 
 # enumerate every combination of variables
@@ -65,13 +69,16 @@ experiments = []
 for m in motion:
     for rs in risk_strategy:
         for nr in num_randomizations:
-            experiments.append({
-                "reference_filename": m,
-                "num_randomizations": nr,
-                "risk_strategy": rs,
-                "warp": use_warp,
-                "duration": duration,
-            })
+            seeds = seed if nr > 0 else [0]
+            for s in seeds:
+                experiments.append({
+                    "reference_filename": m,
+                    "num_randomizations": nr,
+                    "seed": s,
+                    "risk_strategy": rs,
+                    "warp": use_warp,
+                    "duration": duration,
+                })
 
 # function to convert experiment dict to command-line arguments
 def experiment_to_args(exp, run_id):
@@ -81,6 +88,8 @@ def experiment_to_args(exp, run_id):
             if val:
                 args.append("--warp")
         elif key == "num_randomizations" and not val:
+            pass
+        elif key == "seed" and not exp.get("num_randomizations"):
             pass
         elif val is not None:
             args.append(f"--{key} {val}")
@@ -97,16 +106,16 @@ for i, exp in enumerate(experiments):
     print(f"  [{run_id}] (GPU {gpu_slot:02d}) {cmd}")
 
 # write experiment registry .txt
-os.makedirs("experiments/run", exist_ok=True)
-with open("experiments/run/experiment_registry.txt", "w") as f:
+os.makedirs("experiments/humanoid/run", exist_ok=True)
+with open("experiments/humanoid/run/experiment_registry.txt", "w") as f:
     for slot_cmds in gpu_commands.values():
         for cmd in slot_cmds:
             f.write(f"{cmd}\n")
 
 # write one .sh per GPU slot, each takes GPU_ID as first argument
-os.makedirs("experiments/run", exist_ok=True)
+os.makedirs("experiments/humanoid/run", exist_ok=True)
 for slot, cmds in gpu_commands.items():
-    filename = f"experiments/run/run_experiments_{slot:02d}.sh"
+    filename = f"experiments/humanoid/run/run_experiments_{slot:02d}.sh"
     with open(filename, "w") as f:
         f.write("#!/bin/bash\n")
         f.write('GPU_ID=${1:?\"Usage: bash $0 <GPU_ID>\"}\n')
@@ -115,5 +124,5 @@ for slot, cmds in gpu_commands.items():
         f.write("\n")
     print(f"Wrote {filename}")
 
-print(f"\nWrote experiments/run/experiment_registry.txt")
-print(f"Usage: bash experiments/run/run_experiments_00.sh <GPU_ID>")
+print(f"\nWrote experiments/humanoid/run/experiment_registry.txt")
+print(f"Usage: bash experiments/humanoid/run/run_experiments_00.sh <GPU_ID>")

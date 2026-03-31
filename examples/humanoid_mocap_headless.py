@@ -8,7 +8,7 @@ from mujoco import mjx
 
 from hydrax.algs import CEM
 from hydrax.risk import AverageCost, WorstCase, BestCase
-from hydrax.simulation.deterministic import run_headless
+from hydrax.simulation.deterministic import run_headless_humanoid_mocap
 from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
 
 """
@@ -59,13 +59,23 @@ parser.add_argument(
     default="average",
     help="Risk strategy to use, default: average).",
 )
+parser.add_argument(
+    "--seed",
+    type=int,
+    default=0,
+    help="Random seed for domain randomization (default: 0).",
+)
 
 args = parser.parse_args()
 
 # check duration value
 assert args.duration > 0.0, "duration must be a positive number."
 
+# check num_randomizations value
 assert args.num_randomizations >= 0, "num_randomizations must be non-negative integer."
+
+# check seed value
+assert type(args.seed) == int and args.seed >= 0, "seed must be a non-negative integer."
 
 # select the risk strategy
 risk_strategies = {"average": AverageCost, "worst": WorstCase, "best": BestCase}
@@ -92,6 +102,7 @@ cem_options = {
     "explore_fraction": 0.2,
     "plan_horizon": 0.8,
     "num_randomizations": args.num_randomizations,
+    "seed": args.seed,
     "risk_strategy": risk_strategy_,
     "spline_type": "cubic",
     "num_knots": 4,
@@ -110,7 +121,7 @@ mjx_data_sim = mjx.make_data(task.mj_model)
 mjx_data_sim = mjx_data_sim.replace(qpos=task.reference_qpos[0])
 
 # Run the headless simulation
-results = run_headless(
+results = run_headless_humanoid_mocap(
     ctrl,
     mjx_model_sim,
     mjx_data_sim,
@@ -130,10 +141,11 @@ experiment_args = {
     "reference_filename": args.reference_filename,
     "num_randomizations": args.num_randomizations,
     "risk_strategy": args.risk_strategy,
+    "seed": args.seed,
 }
 
 # save directory
-save_dir = "experiments/data"
+save_dir = "experiments/humanoid/data"
 os.makedirs(save_dir, exist_ok=True)
 filename = f"run_{int(args.run_id):03d}.h5" if args.run_id else "results.h5"
 save_path = os.path.join(save_dir, filename)

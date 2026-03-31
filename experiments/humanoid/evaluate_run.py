@@ -39,7 +39,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-file_path = "./experiments/data/" + args.file
+file_path = "./experiments/humanoid/data/" + args.file
 
 ##################################################################
 # LOAD DATA
