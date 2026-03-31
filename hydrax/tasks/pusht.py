@@ -36,14 +36,11 @@ class PushTOptions:
     # Contact time constant (geom_solref[:, 0]); MuJoCo default is 0.02
     geom_solref_range: Tuple[float, float] = (0.01, 0.03)
 
-    # Contact margin (geom_margin); MuJoCo default is 0.0
-    geom_margin_range: Tuple[float, float] = (0.0, 0.005)
-
     # Body mass: multiplicative scale range for all bodies
-    body_mass_range: Tuple[float, float] = (0.9, 1.1)
+    body_mass_range: Tuple[float, float] = (0.8, 1.2)
 
     # Actuator kv gain: multiplicative scale range
-    actuator_kv_range: Tuple[float, float] = (0.9, 1.1)
+    actuator_kv_range: Tuple[float, float] = (0.8, 1.2)
 
 
 class PushT(Task):
@@ -158,8 +155,8 @@ class PushT(Task):
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomize friction, contact parameters, body masses, and kv."""
         opts = self.options
-        rng, friction_rng, solref_rng, margin_rng, mass_rng, kv_rng = (
-            jax.random.split(rng, 6)
+        rng, friction_rng, solref_rng, mass_rng, kv_rng = (
+            jax.random.split(rng, 5)
         )
 
         # Friction coefficient (tangential)
@@ -180,16 +177,6 @@ class PushT(Task):
                 (n_geoms,),
                 minval=opts.geom_solref_range[0],
                 maxval=opts.geom_solref_range[1],
-            )
-        )
-
-        # Contact margin
-        geom_margin = self.model.geom_margin.at[:].set(
-            jax.random.uniform(
-                margin_rng,
-                (n_geoms,),
-                minval=opts.geom_margin_range[0],
-                maxval=opts.geom_margin_range[1],
             )
         )
 
@@ -219,7 +206,6 @@ class PushT(Task):
         return {
             "geom_friction": geom_friction,
             "geom_solref": geom_solref,
-            "geom_margin": geom_margin,
             "body_mass": body_mass,
             "actuator_gainprm": actuator_gainprm,
             "actuator_biasprm": actuator_biasprm,
