@@ -3,10 +3,11 @@ import argparse
 import os
 import h5py
 import numpy as np
+from copy import deepcopy
 
 from mujoco import mjx
 
-from hydrax.algs import PredictiveSampling, CEM
+from hydrax.algs import PredictiveSampling
 from hydrax.risk import AverageCost, WorstCase, BestCase
 from hydrax.simulation.deterministic import run_headless_pusht
 from hydrax.tasks.pusht import PushT, PushTOptions
@@ -54,10 +55,16 @@ parser.add_argument(
     help="Risk strategy to use, default: average).",
 )
 parser.add_argument(
-    "--seed",
+    "--ctrl_seed",
     type=int,
     default=0,
-    help="Random seed for domain randomization (default: 0).",
+    help="Random seed for controller domain randomization (default: 0).",
+)
+parser.add_argument(
+    "--sim_seed",
+    type=int,
+    default=0,
+    help="Random seed for simulation model domain randomization (default: 0).",
 )
 
 args = parser.parse_args()
@@ -68,8 +75,9 @@ assert args.duration > 0.0, "duration must be a positive number."
 # check num_randomizations value
 assert args.num_randomizations >= 0, "num_randomizations must be non-negative integer."
 
-# check seed value
-assert type(args.seed) == int and args.seed >= 0, "seed must be a non-negative integer."
+# check seed values
+assert type(args.ctrl_seed) == int and args.ctrl_seed >= 0, "ctrl_seed must be a non-negative integer."
+assert type(args.sim_seed) == int and args.sim_seed >= 0, "sim_seed must be a non-negative integer."
 
 # select the risk strategy
 risk_strategies = {"average": AverageCost, "worst": WorstCase, "best": BestCase}
@@ -91,7 +99,7 @@ ctrl_options = {
     "num_samples": 128,
     "noise_level": 0.4,
     "num_randomizations": args.num_randomizations,
-    "seed": args.seed,
+    "seed": args.ctrl_seed,
     "risk_strategy": risk_strategy_,
     "plan_horizon": 0.5,
     "spline_type": "zero",
@@ -99,28 +107,11 @@ ctrl_options = {
 }
 ctrl = PredictiveSampling(task, **ctrl_options)
 
-# # CEM options (saved as a dict so we can reuse for logging)
-# ctrl_options = {
-#     "num_samples": 128,
-#     "num_elites": 5,
-#     "sigma_start": 0.3,
-#     "sigma_min": 0.1,
-#     "explore_fraction": 0.2,
-#     "plan_horizon": 0.5,
-#     "num_randomizations": args.num_randomizations,
-#     "seed": args.seed,
-#     "risk_strategy": risk_strategy_,
-#     "spline_type": "zero",
-#     "num_knots": 6,
-#     "iterations": 1,
-# }
-# ctrl = CEM(task, **ctrl_options)
-
 # Replace risk_strategy object with string for saving dictionary
 ctrl_options["risk_strategy"] = args.risk_strategy
 
 # Create the mjx model/data for simulation
-mj_model_sim = task.mj_model
+mj_model_sim = deepcopy(task.mj_model)
 mj_model_sim.opt.timestep = 0.001
 mj_model_sim.opt.iterations = 100
 mj_model_sim.opt.ls_iterations = 50
@@ -137,6 +128,7 @@ results = run_headless_pusht(
     mjx_data_sim,
     frequency=50,
     duration=args.duration,
+    sim_seed=args.sim_seed,
 )
 
 
@@ -150,7 +142,8 @@ experiment_args = {
     "duration": args.duration,
     "num_randomizations": args.num_randomizations,
     "risk_strategy": args.risk_strategy,
-    "seed": args.seed,
+    "ctrl_seed": args.ctrl_seed,
+    "sim_seed": args.sim_seed,
 }
 
 # save directory

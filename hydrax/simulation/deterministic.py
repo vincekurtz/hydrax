@@ -503,6 +503,7 @@ def run_headless_pusht(  # noqa: PLR0912, PLR0915
     mjx_data_sim: mjx.Data,
     frequency: float,
     duration: float,
+    sim_seed: int = 0,
     initial_knots: jax.Array = None,
 ) -> dict:
     """Run a headless simulation of the push-T task.
@@ -523,6 +524,7 @@ def run_headless_pusht(  # noqa: PLR0912, PLR0915
         mjx_data_sim: An MJX data object containing the initial system state.
         frequency: The requested control frequency (Hz) for replanning.
         duration: How long to run the simulation (seconds).
+        sim_seed: Random seed for domain-randomizing the simulation model.
         initial_knots: The initial knot points for the control spline at t=0
 
     Returns:
@@ -530,6 +532,11 @@ def run_headless_pusht(  # noqa: PLR0912, PLR0915
             - "trajectory"
             - "metrics"
     """
+    # Domain-randomize the simulation model
+    dr_rng = jax.random.key(sim_seed)
+    dr_params = controller.task.domain_randomize_model(dr_rng)
+    mjx_model_sim = mjx_model_sim.tree_replace(dr_params)
+    
     # Report the planning horizon in seconds for debugging
     print(
         f"Planning with {controller.ctrl_steps} steps "
