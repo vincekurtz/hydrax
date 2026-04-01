@@ -84,11 +84,10 @@ for i, rs in enumerate(risk_strategies):
         matrix[i, j] = np.mean(values)
         matrix_std[i, j] = np.std(values)
 
-# Plot the matrix
+# Plot the matrix (heatmap)
 fig, ax = plt.subplots(figsize=(8, 4))
 im = ax.imshow(matrix, cmap="viridis")
 
-# Labels
 ax.set_xticks(range(len(num_randomizations)))
 ax.set_xticklabels(num_randomizations)
 ax.set_yticks(range(len(risk_strategies)))
@@ -97,7 +96,6 @@ ax.set_xlabel("num_randomizations")
 ax.set_ylabel("risk_strategy")
 ax.set_title("Mean Total Cost (averaged across ctrl_seed and sim_seed)")
 
-# Annotate each cell with the value
 for i in range(len(risk_strategies)):
     for j in range(len(num_randomizations)):
         ax.text(j, i, f"{matrix[i, j]:.3f}\n±{matrix_std[i, j]:.3f}", ha="center", va="center", color="w")
@@ -111,7 +109,7 @@ plt.show()
 # PLOT: Individual cost terms over time
 ##################################################################
 
-cost_terms = ["position_cost", "orientation_cost", "close_to_block_cost", "control_cost", "total_cost"]
+cost_terms = ["position_cost", "orientation_cost", "close_to_block_cost", "total_cost"]
 
 # Group runs by (risk_strategy, num_randomizations) and average time series
 # across all seeds.
@@ -122,19 +120,17 @@ for run in runs:
     for term in cost_terms:
         grouped_ts[key][term].append(run[term])
 
-# One figure per cost term: each subplot has lines for each
-# (risk_strategy, num_randomizations) combo.
-for term in cost_terms:
-    fig, axes = plt.subplots(1, len(num_randomizations), figsize=(5 * len(num_randomizations), 4), sharey=True)
-    if len(num_randomizations) == 1:
-        axes = [axes]
+# Single figure: rows = cost_terms, cols = num_randomizations
+nrows = len(cost_terms)
+ncols = len(num_randomizations)
+fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows), sharey="row")
 
+for i, term in enumerate(cost_terms):
     for j, nr in enumerate(num_randomizations):
-        ax = axes[j]
+        ax = axes[i, j]
         for rs in risk_strategies:
             key = (rs, nr)
             if key in grouped_ts:
-                # Stack all runs and compute mean/std over time
                 all_traces = np.array(grouped_ts[key][term])
                 sim_dt = runs[0]["sim_dt"]
                 t = np.arange(all_traces.shape[1]) * sim_dt
@@ -142,13 +138,15 @@ for term in cost_terms:
                 std_trace = all_traces.std(axis=0)
                 ax.plot(t, mean_trace, label=rs)
                 ax.fill_between(t, mean_trace - std_trace, mean_trace + std_trace, alpha=0.2)
-        ax.set_title(f"nr={nr}")
-        ax.set_xlabel("Time (s)")
+        if i == 0:
+            ax.set_title(f"nr={nr}")
+        if i == nrows - 1:
+            ax.set_xlabel("Time (s)")
         if j == 0:
             ax.set_ylabel(term)
         ax.legend()
         ax.grid(True, alpha=0.3)
 
-    fig.suptitle(f"{term} over time (mean ± std across seeds)")
-    plt.tight_layout()
-    plt.show()
+fig.suptitle("Cost terms over time (mean ± std across seeds)")
+plt.tight_layout()
+plt.show()

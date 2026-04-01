@@ -12,17 +12,17 @@ import argparse
 ##################################################################
 
 # how many times to randomize
-num_randomizations = [0, 4, 32, 128]
+num_randomizations = [0, 4, 16, 32]
 
 # seeds for DR of the sim model and the controller
-sim_seed  = [100, 101, 102, 103, 104] # seed for simulation DR
-ctrl_seed = [0, 1, 2, 3, 4]       # seed for control DR (if num_randomizations >= 2)
+sim_seed  = [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115] 
+ctrl_seed = [0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15]
 
 # list of risk strategies to try
 risk_strategy = ["average", "worst", "best"]
 
 # duration (seconds)
-duration = 7.0
+duration = 5.0
 
 ##################################################################
 # EXPERIMENT SETUP
@@ -44,6 +44,7 @@ num_gpus = args.num_gpu
 assert num_gpus >= 1, "num_gpu must be at least 1."
 
 assert all(isinstance(nr, int) and nr >= 0 for nr in num_randomizations), "num_randomizations must be non-negative integers."
+assert len(sim_seed) == len(ctrl_seed), "sim_seed and ctrl_seed must have the same length (paired)."
 assert not set(sim_seed) & set(ctrl_seed), "sim_seed and ctrl_seed must not overlap, otherwise the sim model will be exactly one of the control models."
 
 
@@ -59,28 +60,24 @@ print(f"  Sim seeds: {sim_seed}")
 print(f"  Ctrl seeds: {ctrl_seed}")
 print(f"  Risk strategies: {risk_strategy}")
 
-# enumerate every combination of variables
+# enumerate experiments: paired seeds (sim_seed[i], ctrl_seed[i])
 experiments = []
 for rs in risk_strategy:
     for nr in num_randomizations:
-        ctrl_seeds = ctrl_seed if nr >= 2 else [0]
-        for ss in sim_seed:
-            for cs in ctrl_seeds:
-                experiments.append({
-                    "num_randomizations": nr,
-                    "ctrl_seed": cs,
-                    "sim_seed": ss,
-                    "risk_strategy": rs,
-                    "duration": duration,
-                })
+        for ss, cs in zip(sim_seed, ctrl_seed):
+            experiments.append({
+                "num_randomizations": nr,
+                "ctrl_seed": cs,
+                "sim_seed": ss,
+                "risk_strategy": rs,
+                "duration": duration,
+            })
 
 # function to convert experiment dict to command-line arguments
 def experiment_to_args(exp, run_id):
     args = [f"--run_id {run_id}"]
     for key, val in exp.items():
         if key == "num_randomizations" and not val:
-            pass
-        elif key == "ctrl_seed" and exp.get("num_randomizations", 0) < 2:
             pass
         elif val is not None:
             args.append(f"--{key} {val}")
