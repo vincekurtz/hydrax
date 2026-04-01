@@ -72,7 +72,10 @@ for run in runs:
     grouped[key].append(run["total_cost"].mean())
 
 # Extract unique axes (sorted)
-risk_strategies = sorted(set(k[0] for k in grouped))
+risk_order = ["worst", "average", "best"]
+risk_strategies = [r for r in risk_order if r in set(k[0] for k in grouped)]
+# Include any strategies not in the predefined order
+risk_strategies += sorted(set(k[0] for k in grouped) - set(risk_order))
 num_randomizations = sorted(set(k[1] for k in grouped))
 
 # Build matrix: rows = risk_strategy, cols = num_randomizations
