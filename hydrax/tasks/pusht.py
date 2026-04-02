@@ -4,6 +4,7 @@ from typing import Dict, Tuple
 import jax
 import jax.numpy as jnp
 import mujoco
+import numpy as np
 from mujoco import mjx
 
 from hydrax import ROOT
@@ -16,13 +17,16 @@ class PushTOptions:
 
     # --- Initial state ranges ---
 
-    # Block spawn: center (x, y) and radius for uniform disk sampling, orientation range
-    init_block_center: Tuple[float, float] = (0.1, 0.1)
-    init_block_radius: float = 0.1
+    # initial pose for T block
+    init_block_px_range:  Tuple[float, float] = (-0.1, 0.1)
+    init_block_py_range:  Tuple[float, float] = (-0.1, 0.1)
     init_block_ori_range: Tuple[float, float] = (-3.14, 3.14)
+    block_radius: float = 0.05
 
-    # Pusher spawn: fixed position (x, y) in world frame
-    init_pusher_pos: Tuple[float, float] = (0.0, 0.0)
+    # initial pos for the pusher
+    init_pusher_px:     Tuple[float, float] = (-0.1, 0.1)
+    init_pusher_py:     Tuple[float, float] = (-0.2, 0.0) # pusher is offset from body origin at (0, 0.1)
+    pusher_radius: float = 0.01
 
     # --- Cost weights ---
 
@@ -221,36 +225,33 @@ class PushT(Task):
             "actuator_biasprm": actuator_biasprm,
         }
 
-    def sample_initial_position(self, rng: jax.Array) -> jax.Array:
-        """Sample a random initial qpos from the configured ranges.
+    def sample_initial_position(self, seed: int) -> np.ndarray:
+        """Sample a random initial qpos via rejection sampling.
 
-        Block position is sampled uniformly within a disk. Pusher is fixed.
+        Block and pusher positions are sampled uniformly from their respective
+        ranges. Samples are rejected if the bounding circles of the block and
+        pusher overlap (distance < block_radius + pusher_radius).
+
         qpos layout: [block_x, block_y, block_theta, pusher_x, pusher_y]
         """
         opts = self.options
-        rng, angle_rng, radius_rng, theta_rng = jax.random.split(rng, 4)
+        rng = np.random.RandomState(seed)
+        min_dist = opts.block_radius + opts.pusher_radius
 
-        # Block: uniform sample in a disk
-        angle = jax.random.uniform(
-            angle_rng, (), minval=0.0, maxval=2.0 * jnp.pi
-        )
-        r = opts.init_block_radius * jnp.sqrt(
-            jax.random.uniform(radius_rng, (), minval=0.0, maxval=1.0)
-        )
-        center = jnp.array(opts.init_block_center)
-        block_xy = center + r * jnp.array([jnp.cos(angle), jnp.sin(angle)])
+        while True:
+            block_x = rng.uniform(*opts.init_block_px_range)
+            block_y = rng.uniform(*opts.init_block_py_range)
+            block_theta = rng.uniform(*opts.init_block_ori_range)
 
-        block_theta = jax.random.uniform(
-            theta_rng, (),
-            minval=opts.init_block_ori_range[0],
-            maxval=opts.init_block_ori_range[1],
-        )
+            # Pusher qpos is offset from body origin at (0, 0.1)
+            pusher_qx = rng.uniform(*opts.init_pusher_px)
+            pusher_qy = rng.uniform(*opts.init_pusher_py)
+            pusher_world_x = pusher_qx
+            pusher_world_y = pusher_qy + 0.1
 
-        # Pusher: fixed position (qpos is offset from body origin at (0, 0.1))
-        pusher_world = jnp.array(opts.init_pusher_pos)
-        pusher_xy = pusher_world - jnp.array([0.0, 0.1])
-
-        return jnp.concatenate([block_xy, block_theta[None], pusher_xy])
+            dist = np.sqrt((block_x - pusher_world_x)**2 + (block_y - pusher_world_y)**2)
+            if dist >= min_dist:
+                return np.array([block_x, block_y, block_theta, pusher_qx, pusher_qy])
 
     def make_data(self) -> mjx.Data:
         """Create a new state object with extra constraints allocated."""

@@ -9,19 +9,12 @@ from hydrax.tasks.pusht import PushT
 
 """
 Run an interactive simulation of the push-T task with predictive sampling.
-
-q0_T = [0.0    0.1   0.0    0.0   0.1]  # translate
-q0_T = [0.0    0.0   3.14  -0.1  -0.1]  # rotate
-q0_T = [0.1    0.1   1.57   0.0   0.0]  # translate and rotate 1
-q0_T = [-0.1  -0.1   3.14   0.0  -0.1]  # translate and rotate 2
-
 """
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--initial_pos", type=float, nargs=5, default=[0.1, 0.1, 1.3, 0.0, 0.0],
-                    help="Initial positions: tx ty ttheta px py")
+parser.add_argument("--sim_seed", type=int, default=0,
+                    help="Random seed for initial condition sampling (default: 0).")
 args = parser.parse_args()
-q0 = list(args.initial_pos)
 
 # Define the task (cost and dynamics)
 task = PushT()
@@ -36,6 +29,10 @@ ctrl = PredictiveSampling(
     spline_type="zero",
     num_knots=6,
 )
+
+# Sample initial condition from seed
+q0 = task.sample_initial_position(args.sim_seed)
+print(f"sim_seed={args.sim_seed}, q0={q0}")
 
 # Define the model used for simulation
 mj_model = deepcopy(task.mj_model)

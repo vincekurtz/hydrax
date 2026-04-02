@@ -11,28 +11,22 @@ import argparse
 # EXPERIMENT VARIABLES
 ##################################################################
 
-# initial conditions: T_posx, T_posy, T_theta, p_posx, p_posy
-initial_positions = [
-    [0.0 ,  0.1, 0.0 ,  0.0,  0.1],  # translate
-    [0.0 ,  0.0, 3.14, -0.1, -0.1],  # rotate
-    [0.1 ,  0.1, 1.57,  0.0,  0.0],  # translate and rotate 1
-    [-0.1, -0.1, 3.14,  0.0, -0.1],  # translate and rotate 2
-]
-
 # how many times to randomize
 num_randomizations = [0, 4, 16, 32, 64]
 
 # seeds for DR of the sim model and the controller
 sim_seed  = [100, 101, 102, 103, 104, 105, 106, 107, 
-             108, 109, 110, 111, 112, 113, 114, 115] 
+             108, 109, 110, 111, 112, 113, 114, 115,
+             116, 117, 118, 119] 
 ctrl_seed = [0,   1,   2,   3,   4,   5,   6,   7,
-             8,   9,   10,  11,  12,  13,  14,  15]
+             8,   9,   10,  11,  12,  13,  14,  15,
+             16,  17,  18,  19]
 
 # list of risk strategies to try
 risk_strategy = ["average", "worst", "best"]
 
 # duration (seconds)
-duration = 5.0
+duration = 7.0
 
 ##################################################################
 # EXPERIMENT SETUP
@@ -72,32 +66,25 @@ print(f"  Risk strategies: {risk_strategy}")
 
 # enumerate experiments: paired seeds (sim_seed[i], ctrl_seed[i])
 experiments = []
-for ip in initial_positions:
-    for rs in risk_strategy:
-        for nr in num_randomizations:
-            for ss, cs in zip(sim_seed, ctrl_seed):
-                experiments.append({
-                    "initial_pos": ip,
-                    "num_randomizations": nr,
-                    "ctrl_seed": cs,
-                    "sim_seed": ss,
-                    "risk_strategy": rs,
-                    "duration": duration,
-                })
+for rs in risk_strategy:
+    for nr in num_randomizations:
+        for ss, cs in zip(sim_seed, ctrl_seed):
+            experiments.append({
+                "num_randomizations": nr,
+                "ctrl_seed": cs,
+                "sim_seed": ss,
+                "risk_strategy": rs,
+                "duration": duration,
+            })
 
 # function to convert experiment dict to command-line arguments
 def experiment_to_args(exp, run_id):
     args = [f"--run_id {run_id}"]
-    initial_pos = None
     for key, val in exp.items():
-        if key == "initial_pos":
-            initial_pos = val
-        elif key == "num_randomizations" and not val:
+        if key == "num_randomizations" and not val:
             pass
         elif val is not None:
             args.append(f"--{key} {val}")
-    if initial_pos is not None:
-        args.append(f"--initial_pos {' '.join(str(v) for v in initial_pos)}")
     return " ".join(args)
 
 # assign IDs and round-robin across GPU slots

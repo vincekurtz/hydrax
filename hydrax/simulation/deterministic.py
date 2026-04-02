@@ -532,6 +532,10 @@ def run_headless_pusht(  # noqa: PLR0912, PLR0915
             - "trajectory"
             - "metrics"
     """
+    # Sample initial condition from sim_seed via rejection sampling
+    q0 = controller.task.sample_initial_position(sim_seed)
+    mjx_data_sim = mjx_data_sim.replace(qpos=q0)
+
     # Domain-randomize the simulation model
     sim_rng = jax.random.key(sim_seed)
     dr_params = controller.task.domain_randomize_model(sim_rng)
