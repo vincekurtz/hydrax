@@ -66,6 +66,13 @@ parser.add_argument(
     default=0,
     help="Random seed for simulation model domain randomization (default: 0).",
 )
+parser.add_argument(
+    "--initial_pos",
+    type=float,
+    nargs=5,
+    default=[0.1, 0.1, 1.3, 0.0, 0.0],
+    help="Initial positions: tx ty ttheta px py",
+)
 
 args = parser.parse_args()
 
@@ -110,6 +117,9 @@ ctrl = PredictiveSampling(task, **ctrl_options)
 # Replace risk_strategy object with string for saving dictionary
 ctrl_options["risk_strategy"] = args.risk_strategy
 
+# initial condition
+q0 = np.array(args.initial_pos)
+
 # Create the mjx model/data for simulation
 mj_model_sim = deepcopy(task.mj_model)
 mj_model_sim.opt.timestep = 0.001
@@ -118,7 +128,7 @@ mj_model_sim.opt.ls_iterations = 50
 mjx_model_sim = mjx.put_model(mj_model_sim)
 mjx_data_sim = mjx.make_data(mj_model_sim)
 mjx_data_sim = mjx_data_sim.replace(
-    qpos=np.array([0.1, 0.1, 1.3, 0.0, 0.0]),
+    qpos=q0
 )
 
 # Run the headless simulation
@@ -144,6 +154,7 @@ experiment_args = {
     "risk_strategy": args.risk_strategy,
     "ctrl_seed": args.ctrl_seed,
     "sim_seed": args.sim_seed,
+    "initial_pos": args.initial_pos,
 }
 
 # save directory
