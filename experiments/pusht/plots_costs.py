@@ -11,8 +11,14 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 
 plt.rcParams.update({
-    "mathtext.fontset": "cm",
+    "text.usetex": True,
     "font.family": "serif",
+    "font.size": 14,
+    "axes.titlesize": 16,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
+    "legend.fontsize": 12,
 })
 
 ##################################################################
@@ -51,7 +57,7 @@ for run in runs:
     key = (args["risk_strategy"], args["num_randomizations"])
     grouped[key].append(run["position_cost"])
 
-fig, axes = plt.subplots(2, 2, figsize=(10, 8), sharey=True)
+fig, axes = plt.subplots(2, 2, figsize=(7, 5), sharey=True)
 
 for idx, nr in enumerate(nr_values):
     ax = axes[idx // 2, idx % 2]
@@ -66,15 +72,15 @@ for idx, nr in enumerate(nr_values):
             ax.plot(t, mean_trace, label=risk_labels[rs])
             ax.fill_between(t, mean_trace - se_trace, mean_trace + se_trace, alpha=0.2)
     ax.set_title(rf"$R ={nr}$")
-    if idx >= 2:  # bottom row only
+    if idx < 2:  # top row: hide x-axis tick labels
+        ax.set_xticklabels([])
+    else:  # bottom row only
         ax.set_xlabel(r"Time (s)")
     if idx % 2 == 0:  # left column only
-        ax.set_ylabel(r"Position Error, $\|\mathbf{p}_{b}^{\rm des} - \mathbf{p}_{b}\|$, [m]")
+        ax.set_ylabel(r"$\|\mathbf{p}_{b}^{\rm des} - \mathbf{p}_{b}\|$")
     if idx == 1:  # top-right only
         ax.legend()
     ax.grid(True, alpha=0.3)
 
-fig.suptitle(r"Position Cost vs Time")
 plt.tight_layout()
-
 plt.show()
