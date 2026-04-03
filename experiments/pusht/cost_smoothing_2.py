@@ -1,6 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.size": 14,
+    "axes.titlesize": 16,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
+    "legend.fontsize": 14,
+})
+
 def original_cost(x, func='exp'):
     """The original "spiky" cost function."""
     if func == 'exp':
@@ -12,7 +23,7 @@ def original_cost(x, func='exp'):
     elif func == 'vshape':
         return np.abs(x - 0.7)
     elif func == 'double_well':
-        return -0.8 * np.exp(-np.square(x - 0.62) / 5e-4) \
+        return -0.6 * np.exp(-np.square(x - 0.62) / 5e-4) \
                -1.0 * np.exp(-np.square(x - 0.78) / 2e-3)
     else:
         raise ValueError("Unsupported cost function type")
@@ -76,16 +87,20 @@ for ax, sr in zip(axes, shift_ranges):
     y_worst = np.array([worst_case_randomization(xi, dx=dx, func=cost_func) for xi in x])
     y_best = np.array([best_case_randomization(xi, dx=dx, func=cost_func) for xi in x])
 
-    ax.plot(x, y, label='Original Cost', color='black', linestyle='--')
-    ax.plot(x, y_avg, label='Average')
-    ax.plot(x, y_worst, label='Worst Case')
-    ax.plot(x, y_best, label='Best Case')
-    ax.set_title(f"shift_range = {sr}")
-    ax.set_ylabel('J(x)')
+    ax.plot(x, y, label=r'$J(u)$', color='black', linestyle='--')
+    ax.plot(x, y_worst, label=r'$\bar{J}_{\mathrm{pes}}$', color=np.array([216, 27, 96]) / 255)
+    ax.plot(x, y_avg, label=r'$\bar{J}_{\mathrm{avg}}$', color=np.array([30, 136, 229]) / 255)
+    ax.plot(x, y_best, label=r'$\bar{J}_{\mathrm{opt}}$', color=np.array([255, 193, 7]) / 255)
+    title_labels = {0.01: r"Small $\delta$", 0.04: r"Moderate $\delta$", 0.08: r"Large $\delta$"}
+    ax.set_title(title_labels[sr])
+    ax.set_ylabel(r'$J(u)$')
+    if ax is not axes[-1]:
+        ax.set_xticklabels([])
+    ax.set_xlim(0.5, 0.9)
     if ax is axes[0]:
-        ax.legend()
+        ax.legend(ncol=4, draggable=True, columnspacing=1.0, handletextpad=0.4)
     ax.grid(True, alpha=0.3)
 
-axes[-1].set_xlabel('x')
+axes[-1].set_xlabel(r'$u$', fontsize=18)
 plt.tight_layout()
 plt.show()
