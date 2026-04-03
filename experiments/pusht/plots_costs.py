@@ -49,6 +49,11 @@ risk_order = ["worst", "average", "best"]
 all_risk = set(run["experiment_args"]["risk_strategy"] for run in runs)
 risk_strategies = [r for r in risk_order if r in all_risk]
 risk_labels = {"worst": "Pessimistic", "average": "Average", "best": "Optimistic"}
+risk_colors = {
+    "worst":   np.array([216,  27,  96]) / 255,  # red
+    "average": np.array([ 30, 136, 229]) / 255,  # blue
+    "best":    np.array([255, 193,   7]) / 255,   # yellow
+}
 
 
 grouped = defaultdict(list)
@@ -69,8 +74,9 @@ for idx, nr in enumerate(nr_values):
             t = np.arange(all_traces.shape[1]) * sim_dt
             mean_trace = all_traces.mean(axis=0)
             se_trace = all_traces.std(axis=0) / np.sqrt(all_traces.shape[0])
-            ax.plot(t, mean_trace, label=risk_labels[rs])
-            ax.fill_between(t, mean_trace - se_trace, mean_trace + se_trace, alpha=0.2)
+            c = risk_colors[rs]
+            ax.plot(t, mean_trace, label=risk_labels[rs], color=c)
+            ax.fill_between(t, mean_trace - se_trace, mean_trace + se_trace, alpha=0.2, color=c)
     ax.set_title(rf"$R ={nr}$")
     if idx < 2:  # top row: hide x-axis tick labels
         ax.set_xticklabels([])
