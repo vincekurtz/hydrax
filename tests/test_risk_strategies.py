@@ -36,8 +36,11 @@ def test_risk() -> None:
     cvar = ConditionalValueAtRisk(0.1).combine_costs(costs)
     assert cvar.shape == (m,)
 
-    assert jnp.all(ConditionalValueAtRisk(0.0).combine_costs(costs) == worst)
-    assert jnp.all(ConditionalValueAtRisk(1.0).combine_costs(costs) == avg)
+    cvar_0 = ConditionalValueAtRisk(0.0).combine_costs(costs)
+    assert jnp.allclose(cvar_0, worst)
+
+    cvar_1 = ConditionalValueAtRisk(1.0).combine_costs(costs)
+    assert jnp.allclose(cvar_1, avg)
 
     assert jnp.all(avg <= worst)
     assert jnp.all(avg >= best)
