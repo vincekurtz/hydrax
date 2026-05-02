@@ -1,4 +1,4 @@
-from typing import Literal, Tuple
+from typing import Literal, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -17,15 +17,12 @@ class MppiCmaParams(SamplingParams):
         tk: The knot times of the control spline.
         mean: The mean of the control spline knot distribution, μ = [u₀, ...],
               with shape (num_knots, control_dim).
+        rng: The pseudo-random number generator key.
         covariance: The covariance of the control spline knot distribution, with
                     shape (num_knots, control_dim, control_dim).
-        rng: The pseudo-random number generator key.
     """
 
-    tk: jax.Array
-    mean: jax.Array
     covariance: jax.Array
-    rng: jax.Array
 
 
 class MppiCma(SamplingBasedController):
@@ -44,10 +41,10 @@ class MppiCma(SamplingBasedController):
         num_samples: int,
         temperature: float,
         initial_noise_level: float,
-        minimum_noise_level: float = None,
+        minimum_noise_level: Optional[float] = None,
         covariance_adaptation_rate: float = 0.1,
         num_randomizations: int = 1,
-        risk_strategy: RiskStrategy = None,
+        risk_strategy: Optional[RiskStrategy] = None,
         seed: int = 0,
         plan_horizon: float = 1.0,
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
