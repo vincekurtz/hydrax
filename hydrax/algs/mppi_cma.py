@@ -123,7 +123,7 @@ class MppiCma(SamplingBasedController):
         """Initialize the policy parameters."""
         _params = super().init_params(initial_knots, seed)
 
-        cov = jnp.eye(self.task.model.nu) * self.initial_noise_level
+        cov = jnp.eye(self.task.model.nu) * self.initial_noise_level**2
         cov = jnp.tile(cov[None], (self.num_knots, 1, 1))
 
         return MppiCmaParams(
