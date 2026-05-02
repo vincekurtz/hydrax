@@ -3,7 +3,7 @@ import argparse
 import mujoco
 import numpy as np
 
-from hydrax.algs import MPPI, PredictiveSampling, MPPI_CMA
+from hydrax.algs import MPPI, MppiCma, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.pendulum import Pendulum
 
@@ -56,7 +56,7 @@ elif args.algorithm == "mppi":
     )
 elif args.algorithm == "mppi_cma":
     print("Running MPPICMA")
-    ctrl = MPPI_CMA(
+    ctrl = MppiCma(
         task,
         num_samples=32,
         initial_noise_level=0.2,

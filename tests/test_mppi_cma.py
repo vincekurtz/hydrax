@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from mujoco import mjx
 
-from hydrax.algs.mppi_cma import MPPI_CMA
+from hydrax.algs.mppi_cma import MppiCma
 from hydrax.tasks.pendulum import Pendulum
 
 
@@ -11,7 +11,7 @@ def test_params_update() -> None:
     """Test that the MPPICMA parameter update works."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = MPPI_CMA(
+    opt = MppiCma(
         task,
         num_samples=32,
         initial_noise_level=0.1,
@@ -45,7 +45,7 @@ def test_open_loop() -> None:
     """Use MPPICMA for open-loop pendulum swingup."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = MPPI_CMA(
+    opt = MppiCma(
         task,
         num_samples=32,
         initial_noise_level=0.1,

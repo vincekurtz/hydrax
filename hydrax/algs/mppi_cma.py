@@ -10,7 +10,7 @@ from hydrax.task_base import Task
 
 
 @dataclass
-class MPPI_CMA_Params(SamplingParams):
+class MppiCmaParams(SamplingParams):
     """Policy parameters for MPPI with Covariance Matrix Adaptation (CMA).
 
     Attributes:
@@ -28,7 +28,7 @@ class MPPI_CMA_Params(SamplingParams):
     rng: jax.Array
 
 
-class MPPI_CMA(SamplingBasedController):
+class MppiCma(SamplingBasedController):
     """Model-predictive path integral control with covariance matrix adaptation.
 
     Implements the block-diagonal variant of MPPI-CMA, as described in
@@ -119,20 +119,20 @@ class MPPI_CMA(SamplingBasedController):
 
     def init_params(
         self, initial_knots: jax.Array = None, seed: int = 0
-    ) -> MPPI_CMA_Params:
+    ) -> MppiCmaParams:
         """Initialize the policy parameters."""
         _params = super().init_params(initial_knots, seed)
 
         cov = jnp.eye(self.task.model.nu) * self.initial_noise_level
         cov = jnp.tile(cov[None], (self.num_knots, 1, 1))
 
-        return MPPI_CMA_Params(
+        return MppiCmaParams(
             tk=_params.tk, mean=_params.mean, covariance=cov, rng=_params.rng
         )
 
     def sample_knots(
-        self, params: MPPI_CMA_Params
-    ) -> Tuple[jax.Array, MPPI_CMA_Params]:
+        self, params: MppiCmaParams
+    ) -> Tuple[jax.Array, MppiCmaParams]:
         """Sample a control sequence."""
         rng, sample_rng = jax.random.split(params.rng)
         noise = jax.random.multivariate_normal(
@@ -145,8 +145,8 @@ class MPPI_CMA(SamplingBasedController):
         return controls, params.replace(rng=rng)
 
     def update_params(
-        self, params: MPPI_CMA_Params, rollouts: Trajectory
-    ) -> MPPI_CMA_Params:
+        self, params: MppiCmaParams, rollouts: Trajectory
+    ) -> MppiCmaParams:
         """Update the mean with MPPI and the covariance with CMA."""
         costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
         # N.B. jax.nn.softmax takes care of details like baseline subtraction.
