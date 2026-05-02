@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import mujoco
 
-from hydrax.algs import MPPI
+from hydrax.algs import MppiCma
 from hydrax.simulation.asynchronous import run_interactive as run_async
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid_standup import HumanoidStandup
@@ -37,10 +37,11 @@ if __name__ == "__main__":
     task = HumanoidStandup(impl="warp" if args.warp else "jax")
 
     # Set up the controller
-    ctrl = MPPI(
+    ctrl = MppiCma(
         task,
         num_samples=128,
-        noise_level=0.3,
+        initial_noise_level=0.3,
+        minimum_noise_level=0.3,
         temperature=0.1,
         num_randomizations=4,
         plan_horizon=0.6,
