@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from mujoco import mjx
 
-from hydrax.algs.mppi_cma import MPPICMA
+from hydrax.algs.mppi_cma import MPPI_CMA
 from hydrax.tasks.pendulum import Pendulum
 
 
@@ -11,7 +11,7 @@ def test_params_update() -> None:
     """Test that the MPPICMA parameter update works."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = MPPICMA(
+    opt = MPPI_CMA(
         task,
         num_samples=32,
         initial_noise_level=0.1,
@@ -26,7 +26,11 @@ def test_params_update() -> None:
     params = opt.init_params()
 
     assert params.mean.shape == (opt.num_knots, task.model.nu)
-    assert params.cov.shape == (opt.num_knots, task.model.nu, task.model.nu)
+    assert params.covariance.shape == (
+        opt.num_knots,
+        task.model.nu,
+        task.model.nu,
+    )
 
     # Sample from the action distribution, check shapes
     knots, params = opt.sample_knots(params)
@@ -41,10 +45,11 @@ def test_open_loop() -> None:
     """Use MPPICMA for open-loop pendulum swingup."""
     # Task and optimizer setup
     task = Pendulum()
-    opt = MPPICMA(
+    opt = MPPI_CMA(
         task,
         num_samples=32,
         initial_noise_level=0.1,
+        minimum_noise_level=0.05,
         covariance_adaptation_rate=0.1,
         temperature=0.01,
         plan_horizon=1.0,

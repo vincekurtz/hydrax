@@ -10,28 +10,32 @@ from hydrax.task_base import Task
 
 
 @dataclass
-class MPPICMAParams(SamplingParams):
+class MPPI_CMA_Params(SamplingParams):
     """Policy parameters for MPPI with Covariance Matrix Adaptation (CMA).
 
     Attributes:
         tk: The knot times of the control spline.
         mean: The mean of the control spline knot distribution, μ = [u₀, ...],
               with shape (num_knots, control_dim).
-        cov: The covariance of the control spline knot distribution, with shape
-             (num_knots, control_dim, control_dim).
+        covariance: The covariance of the control spline knot distribution, with
+                    shape (num_knots, control_dim, control_dim).
         rng: The pseudo-random number generator key.
     """
+
     tk: jax.Array
     mean: jax.Array
-    cov: jax.Array
+    covariance: jax.Array
     rng: jax.Array
 
 
-class MPPICMA(SamplingBasedController):
+class MPPI_CMA(SamplingBasedController):
     """Model-predictive path integral control with covariance matrix adaptation.
 
     Implements the block-diagonal variant of MPPI-CMA, as described in
-    https://arxiv.org/abs/2506.22087.
+    https://arxiv.org/abs/2506.22087, with the addition of a noise level floor.
+
+    This minimum noise level is important for avoiding mode collapse in a
+    predictive control setting, where the cost landscape is constantly shifting.
     """
 
     def __init__(
@@ -40,6 +44,7 @@ class MPPICMA(SamplingBasedController):
         num_samples: int,
         temperature: float,
         initial_noise_level: float,
+        minimum_noise_level: float = None,
         covariance_adaptation_rate: float = 0.1,
         num_randomizations: int = 1,
         risk_strategy: RiskStrategy = None,
@@ -58,6 +63,8 @@ class MPPICMA(SamplingBasedController):
                          even average over the samples.
             initial_noise_level: The initial covariance of the control
                          distribution.
+            minimum_noise_level: The minimum covariance of the control
+                         distribution. Defaults to initial_noise_level.
             covariance_adaptation_rate: The learning rate for covariance
                                         adaptation.
             num_randomizations: The number of domain randomizations to use.
@@ -81,41 +88,66 @@ class MPPICMA(SamplingBasedController):
             iterations=iterations,
         )
         self.initial_noise_level = initial_noise_level
+        self.minimum_noise_level = (
+            minimum_noise_level
+            if minimum_noise_level is not None
+            else initial_noise_level
+        )
         self.alpha = covariance_adaptation_rate
         self.num_samples = num_samples
         self.temperature = temperature
 
+    def _clamp_eigenvalues(
+        self, cov: jax.Array, min_eig: jax.Array
+    ) -> jax.Array:
+        """Impose a minimum eigenvalue on a covariance matrix.
+
+        This allows us to impose a minimum noise level, which is important to
+        avoid collapse of the covariance and loss of exploration during MPC.
+
+        Args:
+            cov: A covariance matrix, shape (control_dim, control_dim).
+            min_eig: The minimum eigenvalue to impose (scalar).
+
+        Returns:
+            The clamped covariance matrix, with eigenvalues at least min_eig.
+        """
+        eigvals, eigvecs = jnp.linalg.eigh(cov)
+        clamped_eigvals = jnp.maximum(eigvals, min_eig)
+        clamped_cov = (eigvecs * clamped_eigvals) @ eigvecs.T
+        return clamped_cov
+
     def init_params(
         self, initial_knots: jax.Array = None, seed: int = 0
-    ) -> MPPICMAParams:
+    ) -> MPPI_CMA_Params:
         """Initialize the policy parameters."""
         _params = super().init_params(initial_knots, seed)
 
         cov = jnp.eye(self.task.model.nu) * self.initial_noise_level
         cov = jnp.tile(cov[None], (self.num_knots, 1, 1))
 
-        return MPPICMAParams(
-            tk=_params.tk, mean=_params.mean, cov=cov, rng=_params.rng
+        return MPPI_CMA_Params(
+            tk=_params.tk, mean=_params.mean, covariance=cov, rng=_params.rng
         )
 
     def sample_knots(
-        self, params: MPPICMAParams
-    ) -> Tuple[jax.Array, MPPICMAParams]:
+        self, params: MPPI_CMA_Params
+    ) -> Tuple[jax.Array, MPPI_CMA_Params]:
         """Sample a control sequence."""
         rng, sample_rng = jax.random.split(params.rng)
         noise = jax.random.multivariate_normal(
             sample_rng,
             mean=jnp.zeros(self.task.model.nu),
-            cov=params.cov,
+            cov=params.covariance,
             shape=(self.num_samples, self.num_knots),
         )  # shape (num_samples, num_knots, control_dim)
-        controls = params.mean + self.initial_noise_level * noise
+        controls = params.mean + noise
         return controls, params.replace(rng=rng)
 
     def update_params(
-        self, params: MPPICMAParams, rollouts: Trajectory
-    ) -> MPPICMAParams:
-        """Update the mean with an exponentially weighted average."""
+        self, params: MPPI_CMA_Params, rollouts: Trajectory
+    ) -> MPPI_CMA_Params:
+        """Update the mean with MPPI and the covariance with CMA."""
         costs = jnp.sum(rollouts.costs, axis=1)  # sum over time steps
         # N.B. jax.nn.softmax takes care of details like baseline subtraction.
         weights = jax.nn.softmax(-costs / self.temperature, axis=0)
@@ -124,15 +156,18 @@ class MPPICMA(SamplingBasedController):
         # shape (num_samples, num_knots, control_dim)
         delta = rollouts.knots - params.mean
 
-        # Outer product of deltas, 
+        # Outer product of deltas,
         # shape (num_samples, num_knots, control_dim, control_dim)
         outer_product = jnp.einsum("ijk,ijl->ijkl", delta, delta)
 
-        # CMA update
+        # CMA update, plus a minimum noise level
         new_cov = jnp.einsum("i,ijkl->jkl", weights, outer_product)
-        new_cov = (1 - self.alpha) * params.cov + self.alpha * new_cov
+        new_cov = (1 - self.alpha) * params.covariance + self.alpha * new_cov
+        new_cov = jax.vmap(self._clamp_eigenvalues, in_axes=(0, None))(
+            new_cov, self.minimum_noise_level**2
+        )
 
         # Mean update (same as standard MPPI)
         mean = jnp.sum(weights[:, None, None] * rollouts.knots, axis=0)
 
-        return params.replace(mean=mean, cov=new_cov)
+        return params.replace(mean=mean, covariance=new_cov)
