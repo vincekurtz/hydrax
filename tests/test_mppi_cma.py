@@ -39,7 +39,15 @@ def test_params_update() -> None:
 
     # Collect some rollouts
     state = mjx.make_data(task.model)
-    params, rollouts = opt.optimize(state, params)
+    new_params, rollouts = opt.optimize(state, params)
+
+    assert new_params.mean.shape == (opt.num_knots, task.model.nu)
+    assert new_params.covariance.shape == (
+        opt.num_knots,
+        task.model.nu,
+        task.model.nu,
+    )
+    assert not jnp.allclose(new_params.covariance, params.covariance)
 
 
 def test_open_loop() -> None:

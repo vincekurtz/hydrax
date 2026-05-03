@@ -39,8 +39,8 @@ class MppiCma(SamplingBasedController):
         self,
         task: Task,
         num_samples: int,
-        temperature: float,
         initial_noise_level: float,
+        temperature: float,
         minimum_noise_level: Optional[float] = None,
         covariance_adaptation_rate: float = 0.1,
         num_randomizations: int = 1,
@@ -56,12 +56,13 @@ class MppiCma(SamplingBasedController):
         Args:
             task: The dynamics and cost for the system we want to control.
             num_samples: The number of control sequences to sample.
+            initial_noise_level: The initial standard deviation of the control
+                         distribution.
             temperature: The temperature parameter λ. Higher values take a more
                          even average over the samples.
-            initial_noise_level: The initial covariance of the control
-                         distribution.
-            minimum_noise_level: The minimum covariance of the control
-                         distribution. Defaults to initial_noise_level.
+            minimum_noise_level: The minimum noise level, enforced by bounding
+                         the eigenvalues of the covariance matrix. Defaults to
+                         initial_noise_level.
             covariance_adaptation_rate: The learning rate for covariance
                                         adaptation.
             num_randomizations: The number of domain randomizations to use.
