@@ -55,7 +55,7 @@ elif args.algorithm == "mppi":
         num_knots=11,
     )
 elif args.algorithm == "mppi_cma":
-    print("Running MPPICMA")
+    print("Running MPPI-CMA")
     ctrl = MppiCma(
         task,
         num_samples=32,
