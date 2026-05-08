@@ -64,6 +64,8 @@ class SamplingBasedController(ABC):
         spline_type: Literal["zero", "linear", "cubic"] = "zero",
         num_knots: int = 4,
         iterations: int = 1,
+        clip_control_limits: bool = True,
+        control_penalty_weight: float = 100.0,
     ) -> None:
         """Initialize the MPC controller.
 
@@ -77,6 +79,10 @@ class SamplingBasedController(ABC):
                          Defaults to "zero" (zero-order hold).
             num_knots: The number of knots in the control spline.
             iterations: The number of optimization iterations to perform.
+            clip_control_limits: Whether to clip controls to u_min/u_max (True)
+                                 or penalize violations (False).
+            control_penalty_weight: Weight for penalizing control limit
+                                    violations.
         """
         self.task = task
         self.num_randomizations = max(num_randomizations, 1)
@@ -108,6 +114,10 @@ class SamplingBasedController(ABC):
             raise ValueError("iterations must be greater than 0!")
 
         self.iterations = iterations
+
+        # Control limit handling
+        self.clip_control_limits = clip_control_limits
+        self.control_penalty_weight = control_penalty_weight
 
         if self.num_randomizations > 1:
             # Make domain randomized models
@@ -151,9 +161,10 @@ class SamplingBasedController(ABC):
         def _optimize_scan_body(params: Any, _: Any):
             # Sample random control sequences from spline knots
             knots, params = self.sample_knots(params)
-            knots = jnp.clip(
-                knots, self.task.u_min, self.task.u_max
-            )  # (num_rollouts, num_knots, nu)
+            if self.clip_control_limits:
+                knots = jnp.clip(
+                    knots, self.task.u_min, self.task.u_max
+                )  # (num_rollouts, num_knots, nu)
 
             # Roll out the control sequences, applying domain randomizations and
             # combining costs using self.risk_strategy.
@@ -256,6 +267,16 @@ class SamplingBasedController(ABC):
             x = x.replace(ctrl=u)
             x = mjx.step(model, x)  # step model + compute site positions
             cost = self.dt * self.task.running_cost(x, u)
+            
+            if not self.clip_control_limits:
+                # Add penalty for control limit violations
+                lower_violation = jnp.maximum(0.0, self.task.u_min - u)
+                upper_violation = jnp.maximum(0.0, u - self.task.u_max)
+                violation_penalty = self.control_penalty_weight * self.dt * (
+                    jnp.sum(lower_violation**2) + jnp.sum(upper_violation**2)
+                )
+                cost = cost + violation_penalty
+            
             sites = self.task.get_trace_sites(x)
             return x, (x, cost, sites)
 

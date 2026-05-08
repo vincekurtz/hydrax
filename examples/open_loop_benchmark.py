@@ -103,7 +103,7 @@ def main() -> None:
     shared = {
         "plan_horizon": 1.0,
         "spline_type": "zero",
-        "num_knots": 8,
+        "num_knots": 200,
     }
 
     task = make_task(args.env, args.warp)
