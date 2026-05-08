@@ -4,6 +4,7 @@ from typing import Tuple
 import jax
 import jax.numpy as jnp
 import mujoco
+import pytest
 from mujoco import mjx
 
 from hydrax import ROOT
@@ -50,11 +51,10 @@ def test_mjx_model() -> None:
     assert not jnp.any(jnp.isnan(data.qvel))
 
 
-def test_task() -> None:
+@pytest.mark.parametrize("impl", ["jax", "warp"])
+def test_task(impl: str) -> None:
     """Set up the cube rotation task."""
-    # TODO(vincekurtz): Fully support warp for the cube task. For now it looks
-    # like we need to do some model refinement to be fully MjWarp compatible.
-    task = CubeRotation(impl="jax")
+    task = CubeRotation(impl=impl)
 
     state = task.make_data()
     assert isinstance(state, mjx.Data)
@@ -73,4 +73,5 @@ def test_task() -> None:
 
 if __name__ == "__main__":
     test_mjx_model()
-    test_task()
+    test_task("jax")
+    test_task("warp")
