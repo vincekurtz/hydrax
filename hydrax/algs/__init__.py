@@ -4,5 +4,14 @@ from .evosax import Evosax
 from .mppi import MPPI
 from .mppi_cma import MppiCma
 from .predictive_sampling import PredictiveSampling
+from .er_cma import ErCma
 
-__all__ = ["CEM", "MPPI", "PredictiveSampling", "Evosax", "DIAL", "MppiCma"]
+__all__ = [
+    "CEM",
+    "MPPI",
+    "PredictiveSampling",
+    "Evosax",
+    "DIAL",
+    "MppiCma",
+    "ErCma",
+]
