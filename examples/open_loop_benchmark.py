@@ -22,7 +22,7 @@ import time
 
 import matplotlib.pyplot as plt
 
-from hydrax.algs import MPPI, MppiCma, PredictiveSampling
+from hydrax.algs import CEM, DIAL, MPPI, MppiCma, PredictiveSampling
 from hydrax.benchmarking import run_open_loop_benchmark
 from hydrax.task_base import Task
 from hydrax.tasks.cart_pole import CartPole
@@ -123,23 +123,23 @@ def main() -> None:
             temperature=0.1,
             **shared,
         ),
-        # "CEM": CEM(
-        #     task,
-        #     num_samples=num_samples,
-        #     num_elites=max(4, num_samples // 8),
-        #     sigma_start=0.3,
-        #     sigma_min=0.05,
-        #     **shared,
-        # ),
-        # "DIAL": DIAL(
-        #     task,
-        #     num_samples=num_samples,
-        #     noise_level=0.3,
-        #     beta_opt_iter=1.0,
-        #     beta_horizon=2.0,
-        #     temperature=0.1,
-        #     **shared,
-        # ),
+        "CEM": CEM(
+            task,
+            num_samples=num_samples,
+            num_elites=max(4, num_samples // 8),
+            sigma_start=0.3,
+            sigma_min=0.05,
+            **shared,
+        ),
+        "DIAL": DIAL(
+            task,
+            num_samples=num_samples,
+            noise_level=0.3,
+            beta_opt_iter=1.0,
+            beta_horizon=2.0,
+            temperature=0.1,
+            **shared,
+        ),
         "MPPI-CMA": MppiCma(
             task,
             num_samples=num_samples,
