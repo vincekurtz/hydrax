@@ -112,6 +112,7 @@ class MppiCma(SamplingBasedController):
         """
         eigvals, eigvecs = jnp.linalg.eigh(cov)
         clamped_eigvals = jnp.maximum(eigvals, min_eig)
+        clamped_eigvals = jnp.minimum(clamped_eigvals, 0.1)
         clamped_cov = (eigvecs * clamped_eigvals) @ eigvecs.T
         return clamped_cov
 
@@ -159,7 +160,19 @@ class MppiCma(SamplingBasedController):
         outer_product = jnp.einsum("ijk,ijl->ijkl", delta, delta)
 
         # CMA update, plus a minimum noise level
+
+
+
         new_cov = jnp.einsum("i,ijkl->jkl", weights, outer_product)
+
+        # covariance multipliers, shape (horizon,). Go from 1.0 at t=0 to 2.0 at
+        # t=plan_horizon, to encourage more exploration later in the trajectory.
+        # time_multipliers = 1.0 + 1.0 * (params.tk / self.plan_horizon)
+        beta = jnp.linspace(0.1, 0.5, self.num_knots)
+
+        new_cov = jnp.einsum("j,jkl->jkl", 1.0 / (1.0 - beta), new_cov)
+
+
         new_cov = (1 - self.alpha) * params.covariance + self.alpha * new_cov
         new_cov = jax.vmap(self._clamp_eigenvalues, in_axes=(0, None))(
             new_cov, self.minimum_noise_level**2

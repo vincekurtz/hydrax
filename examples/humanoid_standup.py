@@ -41,11 +41,12 @@ if __name__ == "__main__":
         task,
         num_samples=128,
         initial_noise_level=0.3,
-        temperature=0.1,
-        minimum_noise_level=0.3,
-        num_randomizations=4,
-        plan_horizon=0.6,
-        spline_type="zero",
+        temperature=1.0,
+        minimum_noise_level=0.01,
+        num_randomizations=1,
+        covariance_adaptation_rate=0.1,
+        plan_horizon=1.0,
+        spline_type="cubic",
         num_knots=4,
     )
 
