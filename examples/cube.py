@@ -14,12 +14,14 @@ Double click on the floating target cube, then change the goal orientation with
 [ctrl + left click].
 """
 
-# Define the task (cost and dynamics)
-task = CubeRotation()
-
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
     description="Run an interactive simulation of the cube rotation task."
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
 )
 subparsers = parser.add_subparsers(
     dest="algorithm", help="Sampling algorithm (choose one)"
@@ -29,6 +31,9 @@ subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
 subparsers.add_parser("cmaes", help="CMA-ES")
 args = parser.parse_args()
+
+# Define the task (cost and dynamics)
+task = CubeRotation(impl="warp" if args.warp else "jax")
 
 # Set the controller based on command-line arguments
 if args.algorithm == "ps" or args.algorithm is None:

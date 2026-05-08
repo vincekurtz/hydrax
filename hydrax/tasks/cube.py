@@ -81,3 +81,7 @@ class CubeRotation(Task):
         """Randomly shift the measured configurations."""
         shift = 0.005 * jax.random.normal(rng, (self.model.nq,))
         return {"qpos": data.qpos + shift}
+
+    def make_data(self) -> mjx.Data:
+        """Create a new state object with extra constraints allocated."""
+        return super().make_data(naconmax=30000, njmax=200)

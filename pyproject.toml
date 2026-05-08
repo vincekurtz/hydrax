@@ -19,13 +19,13 @@ dependencies = [
     "huggingface_hub>=0.29.3",
     "interpax>=0.3.12",
     "jax[cuda13]>=0.8.0",
-    "mujoco>=3.5.0",
-    "mujoco-mjx>=3.5.0",
+    "mujoco>=3.8.0",
+    "mujoco-mjx>=3.8.0",
     "matplotlib>=3.10.0",
     "pre-commit>=4.0.1",
     "pytest>=8.3.3",
     "ruff==0.15.2",
-    "warp-lang>=1.11.1",
+    "warp-lang>=1.12.1,<1.13.0",
 ]
 
 [tool.ruff]
