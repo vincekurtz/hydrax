@@ -1,3 +1,5 @@
+import argparse
+
 import mujoco
 
 from hydrax.algs import PredictiveSampling
@@ -9,8 +11,18 @@ Run an interactive simulation of a double pendulum on a cart. Only the cart
 is actuated, and the goal is to swing up the pendulum and balance it upright.
 """
 
+parser = argparse.ArgumentParser(
+    description="Run an interactive simulation of a double pendulum on a cart."
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
+)
+args = parser.parse_args()
+
 # Define the task (cost and dynamics)
-task = DoubleCartPole()
+task = DoubleCartPole(impl="warp" if args.warp else "jax")
 
 # Set up the controller
 ctrl = PredictiveSampling(

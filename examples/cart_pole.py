@@ -10,12 +10,14 @@ from hydrax.tasks.cart_pole import CartPole
 Run an interactive simulation of a cart-pole swingup
 """
 
-# Define the task (cost and dynamics)
-task = CartPole()
-
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
-    description="Run an interactive simulation of the cube rotation task."
+    description="Run an interactive simulation of a cart-pole swingup"
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
 )
 subparsers = parser.add_subparsers(
     dest="algorithm", help="Sampling algorithm (choose one)"
@@ -24,6 +26,9 @@ subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
 args = parser.parse_args()
+
+# Define the task (cost and dynamics)
+task = CartPole(impl="warp" if args.warp else "jax")
 
 # Set up the controller
 if args.algorithm == "ps" or args.algorithm is None:

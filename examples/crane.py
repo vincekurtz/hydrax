@@ -1,3 +1,4 @@
+import argparse
 from copy import deepcopy
 
 import mujoco
@@ -11,8 +12,18 @@ from hydrax.tasks.crane import Crane
 Run an interactive simulation of crane payload tracking
 """
 
+parser = argparse.ArgumentParser(
+    description="Run an interactive simulation of crane payload tracking"
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
+)
+args = parser.parse_args()
+
 # Define the task (cost and dynamics)
-task = Crane()
+task = Crane(impl="warp" if args.warp else "jax")
 
 # Set up the controller
 ctrl = PredictiveSampling(

@@ -1,3 +1,4 @@
+import argparse
 from copy import deepcopy
 
 import mujoco
@@ -10,8 +11,18 @@ from hydrax.tasks.pusht import PushT
 Run an interactive simulation of the push-T task with predictive sampling.
 """
 
+parser = argparse.ArgumentParser(
+    description="Run an interactive simulation of the push-T task."
+)
+parser.add_argument(
+    "--warp",
+    action="store_true",
+    help="Whether to use the (experimental) MjWarp backend. (default: False)",
+)
+args = parser.parse_args()
+
 # Define the task (cost and dynamics)
-task = PushT()
+task = PushT(impl="warp" if args.warp else "jax")
 
 # Set up the controller
 ctrl = PredictiveSampling(
