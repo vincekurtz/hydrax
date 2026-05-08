@@ -51,25 +51,15 @@ def test_output_shape_and_type(ctrl: MPPI, initial_state: mjx.Data) -> None:
     result = run_open_loop_benchmark(ctrl, initial_state, iterations=N, seed=0)
 
     assert isinstance(result, BenchmarkResult)
-    assert result.mean_costs.shape == (N,)
-    assert result.best_costs.shape == (N,)
-    assert result.mean_costs.dtype in (jnp.float32, jnp.float64)
-    assert result.best_costs.dtype in (jnp.float32, jnp.float64)
+    assert result.costs.shape == (N,)
+    assert result.costs.dtype in (jnp.float32, jnp.float64)
 
 
 def test_values_finite(ctrl: MPPI, initial_state: mjx.Data) -> None:
     """All returned cost values must be finite."""
     result = run_open_loop_benchmark(ctrl, initial_state, iterations=5, seed=0)
 
-    assert jnp.all(jnp.isfinite(result.mean_costs))
-    assert jnp.all(jnp.isfinite(result.best_costs))
-
-
-def test_best_leq_mean(ctrl: MPPI, initial_state: mjx.Data) -> None:
-    """Best cost must be <= mean cost at every iteration."""
-    result = run_open_loop_benchmark(ctrl, initial_state, iterations=5, seed=0)
-
-    assert jnp.all(result.best_costs <= result.mean_costs)
+    assert jnp.all(jnp.isfinite(result.costs))
 
 
 def test_determinism(ctrl: MPPI, initial_state: mjx.Data) -> None:
@@ -77,8 +67,7 @@ def test_determinism(ctrl: MPPI, initial_state: mjx.Data) -> None:
     r1 = run_open_loop_benchmark(ctrl, initial_state, iterations=5, seed=42)
     r2 = run_open_loop_benchmark(ctrl, initial_state, iterations=5, seed=42)
 
-    assert jnp.allclose(r1.mean_costs, r2.mean_costs)
-    assert jnp.allclose(r1.best_costs, r2.best_costs)
+    assert jnp.allclose(r1.costs, r2.costs)
 
 
 def test_different_seeds_differ(ctrl: MPPI, initial_state: mjx.Data) -> None:
@@ -87,13 +76,13 @@ def test_different_seeds_differ(ctrl: MPPI, initial_state: mjx.Data) -> None:
     r2 = run_open_loop_benchmark(ctrl, initial_state, iterations=5, seed=99)
 
     # It is astronomically unlikely for all values to match by chance
-    assert not jnp.allclose(r1.mean_costs, r2.mean_costs)
+    assert not jnp.allclose(r1.costs, r2.costs)
 
 
 def test_parity_with_manual_loop(
     task: Pendulum, initial_state: mjx.Data
 ) -> None:
-    """lax.scan benchmark must be equivalent to a manual optimize loop."""
+    """lax.scan benchmark must match manual params.mean rollout costs."""
     ctrl = MPPI(
         task,
         num_samples=16,
@@ -114,15 +103,21 @@ def test_parity_with_manual_loop(
     # --- manual Python loop (equivalent) ---
     params = ctrl.init_params(seed=seed)
     jit_optimize = jax.jit(ctrl.optimize)
-    manual_mean_costs = []
+    manual_costs = []
     for _ in range(N):
-        params, rollouts = jit_optimize(initial_state, params)
-        rollout_costs = jnp.sum(rollouts.costs, axis=-1)
-        manual_mean_costs.append(jnp.mean(rollout_costs))
-    manual_mean_costs = jnp.stack(manual_mean_costs)
+        params, _ = jit_optimize(initial_state, params)
+        mean_knots = jnp.clip(params.mean, ctrl.task.u_min, ctrl.task.u_max)
+        mean_rollout = ctrl.rollout_with_randomizations(
+            initial_state,
+            params.tk,
+            mean_knots[None, ...],
+            params.rng,
+        )
+        manual_costs.append(jnp.sum(mean_rollout.costs[0], axis=-1))
+    manual_costs = jnp.stack(manual_costs)
 
     assert jnp.allclose(
-        result.mean_costs, manual_mean_costs, rtol=1e-5, atol=1e-5
+        result.costs, manual_costs, rtol=1e-5, atol=1e-5
     )
 
 
@@ -140,8 +135,8 @@ def test_custom_algorithm(task: Pendulum, initial_state: mjx.Data) -> None:
     )
     result = run_open_loop_benchmark(ctrl, initial_state, iterations=3, seed=0)
 
-    assert result.mean_costs.shape == (3,)
-    assert jnp.all(jnp.isfinite(result.mean_costs))
+    assert result.costs.shape == (3,)
+    assert jnp.all(jnp.isfinite(result.costs))
 
 
 def test_preinitialized_params(ctrl: MPPI, initial_state: mjx.Data) -> None:
@@ -155,7 +150,7 @@ def test_preinitialized_params(ctrl: MPPI, initial_state: mjx.Data) -> None:
         ctrl, initial_state, iterations=3, seed=99, params=params
     )
 
-    assert jnp.allclose(r1.mean_costs, r2.mean_costs)
+    assert jnp.allclose(r1.costs, r2.costs)
 
 
 def test_invalid_iterations(ctrl: MPPI, initial_state: mjx.Data) -> None:
@@ -178,7 +173,6 @@ if __name__ == "__main__":
     )
     test_output_shape_and_type(_ctrl, _state)
     test_values_finite(_ctrl, _state)
-    test_best_leq_mean(_ctrl, _state)
     test_determinism(_ctrl, _state)
     test_different_seeds_differ(_ctrl, _state)
     test_parity_with_manual_loop(_task, _state)

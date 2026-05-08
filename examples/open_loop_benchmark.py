@@ -1,7 +1,7 @@
 """Generic open-loop convergence benchmark for Hydrax tasks.
 
 Each algorithm is run for a fixed number of iterations from the same initial
-state and random seed. The mean rollout cost is recorded at every iteration
+state and random seed. The rollout cost is recorded at every iteration
 and plotted as a convergence curve.
 
 Usage::
@@ -162,13 +162,13 @@ def main() -> None:
         result = run_open_loop_benchmark(
             ctrl, initial_state, iterations=iterations, seed=seed
         )
-        result.mean_costs.block_until_ready()
+        result.costs.block_until_ready()
         elapsed = time.perf_counter() - t0
 
         results[name] = (result, elapsed)
         print(
-            f"  {name:20s} final mean: {float(result.mean_costs[-1]):.4f}"
-            f"  best: {float(result.best_costs.min()):.4f}"
+            f"  {name:20s} cost: "
+            f"{float(result.costs[-1]):.4f}"
             f"  time: {elapsed:.2f}s"
         )
 
@@ -176,7 +176,7 @@ def main() -> None:
     iterations_axis = range(1, iterations + 1)
 
     for name, (result, _) in results.items():
-        ax.plot(iterations_axis, result.mean_costs, label=name, linewidth=1.5)
+        ax.plot(iterations_axis, result.costs, label=name, linewidth=1.5)
 
     ax.set_xlabel("Optimization iteration")
     ax.set_ylabel("Cost")

@@ -19,15 +19,13 @@ class BenchmarkResult(NamedTuple):
     """Result of an open-loop benchmark run.
 
     Attributes:
-        mean_costs: Mean rollout cost at each optimization iteration,
-            shape ``(iterations,)``.
-        best_costs: Minimum rollout cost at each optimization iteration,
+        costs: Cost of explicitly rolling out the mean control tape
+            (``params.mean``) at each optimization iteration,
             shape ``(iterations,)``.
         final_params: Policy parameters after the last optimization iteration.
     """
 
-    mean_costs: jax.Array
-    best_costs: jax.Array
+    costs: jax.Array
     final_params: Any
 
 
@@ -41,7 +39,8 @@ def run_open_loop_benchmark(
     """Run an open-loop optimization benchmark, tracking cost convergence.
 
     Executes *iterations* calls to ``ctrl.optimize`` from the fixed
-    *initial_state*, recording the mean and best rollout cost after each call.
+    *initial_state*, explicitly rolling out the updated mean control tape
+    (``params.mean``) after each call and recording that trajectory cost.
     The entire compute path runs inside a single ``jax.jit``-compiled
     ``jax.lax.scan``: no MuJoCo CPU stepping, no NumPy conversions, and no
     host/device transfers occur during the optimization loop.
@@ -60,9 +59,8 @@ def run_open_loop_benchmark(
     Returns:
         A :class:`BenchmarkResult` with:
 
-        * ``mean_costs`` – mean rollout cost per iteration,
-          shape ``(iterations,)``.
-        * ``best_costs`` – minimum rollout cost per iteration,
+                * ``costs`` – explicit rollout cost of ``params.mean`` per
+                    iteration,
           shape ``(iterations,)``.
         * ``final_params`` – policy parameters after the final iteration.
     """
@@ -73,21 +71,29 @@ def run_open_loop_benchmark(
         params = ctrl.init_params(seed=seed)
 
     def _body(carry: Any, _: Any):
-        new_carry, rollouts = ctrl.optimize(initial_state, carry)
-        # rollouts.costs: (num_rollouts, H+1); sum over horizon axis
-        rollout_costs = jnp.sum(rollouts.costs, axis=-1)  # (num_rollouts,)
-        return new_carry, (jnp.mean(rollout_costs), jnp.min(rollout_costs))
+        new_carry, _ = ctrl.optimize(initial_state, carry)
+
+        # Evaluate exactly one trajectory: the control tape defined by
+        # params.mean, rather than statistics over sampled rollouts.
+        mean_knots = jnp.clip(new_carry.mean, ctrl.task.u_min, ctrl.task.u_max)
+        mean_rollout = ctrl.rollout_with_randomizations(
+            initial_state,
+            new_carry.tk,
+            mean_knots[None, ...],
+            new_carry.rng,
+        )
+        mean_cost = jnp.sum(mean_rollout.costs[0], axis=-1)
+        return new_carry, mean_cost
 
     @jax.jit
     def _run(carry: Any):
-        final_carry, (mean_costs, best_costs) = jax.lax.scan(
+        final_carry, costs = jax.lax.scan(
             _body, carry, None, length=iterations
         )
-        return final_carry, mean_costs, best_costs
+        return final_carry, costs
 
-    final_params, mean_costs, best_costs = _run(params)
+    final_params, costs = _run(params)
     return BenchmarkResult(
-        mean_costs=mean_costs,
-        best_costs=best_costs,
+        costs=costs,
         final_params=final_params,
     )
