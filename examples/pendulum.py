@@ -3,7 +3,7 @@ import argparse
 import mujoco
 import numpy as np
 
-from hydrax.algs import MPPI, MppiCma, PredictiveSampling, ErCma
+from hydrax.algs import MPPI, ErCma, MppiCma, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.pendulum import Pendulum
 
@@ -76,9 +76,9 @@ elif args.algorithm == "er_cma":
         initial_noise_level=0.2,
         minimum_noise_level=1e-3,
         maximum_noise_level=1e3,
-        initial_entropy_bonus=0.5,
+        initial_entropy_bonus=0.3,
         final_entropy_bonus=0.5,
-        covariance_adaptation_rate=1.0,
+        covariance_adaptation_rate=0.1,
         temperature=0.1,
         plan_horizon=1.0,
         spline_type="zero",

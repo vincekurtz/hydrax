@@ -2,7 +2,7 @@ import argparse
 
 import mujoco
 
-from hydrax.algs import CEM, ErCma, MPPI, PredictiveSampling
+from hydrax.algs import CEM, MPPI, ErCma, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.cart_pole import CartPole
 
@@ -73,7 +73,7 @@ elif args.algorithm == "er_cma":
         initial_noise_level=0.3,
         minimum_noise_level=1e-3,
         maximum_noise_level=1e3,
-        initial_entropy_bonus=0.5,
+        initial_entropy_bonus=0.1,
         final_entropy_bonus=0.5,
         covariance_adaptation_rate=0.1,
         temperature=0.1,

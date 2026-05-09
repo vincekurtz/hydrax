@@ -47,11 +47,11 @@ elif args.algorithm == "er_cma":
     print("Running ER-CMA")
     ctrl = ErCma(
         task,
-        num_samples=128,
+        num_samples=32,
         initial_noise_level=0.05,
-        minimum_noise_level=0.01,
-        maximum_noise_level=0.1,
-        initial_entropy_bonus=0.1,
+        minimum_noise_level=1e-3,
+        maximum_noise_level=1e3,
+        initial_entropy_bonus=0.3,
         final_entropy_bonus=0.5,
         covariance_adaptation_rate=0.1,
         temperature=0.1,

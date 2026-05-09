@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import mujoco
 
-from hydrax.algs import ErCma, MPPI, PredictiveSampling
+from hydrax.algs import MPPI, ErCma, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.walker import Walker
 
@@ -60,12 +60,14 @@ elif args.algorithm == "er_cma":
         task,
         num_samples=128,
         initial_noise_level=0.5,
-        minimum_noise_level=0.1,
-        maximum_noise_level=0.8,
+        minimum_noise_level=1e-3,
+        maximum_noise_level=1e3,
+        initial_entropy_bonus=0.1,
+        final_entropy_bonus=0.5,
         covariance_adaptation_rate=0.1,
-        temperature=0.1,
+        temperature=1.0,
         plan_horizon=0.6,
-        spline_type="zero",
+        spline_type="cubic",
         num_knots=5,
     )
 else:

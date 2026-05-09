@@ -34,7 +34,9 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(
         dest="algorithm", help="Sampling algorithm (choose one)"
     )
-    subparsers.add_parser("mppi_cma", help="MPPI with Covariance Matrix Adaptation")
+    subparsers.add_parser(
+        "mppi_cma", help="MPPI with Covariance Matrix Adaptation"
+    )
     subparsers.add_parser("er_cma", help="Entropy-Regularized CMA")
     args = parser.parse_args()
 
@@ -61,13 +63,15 @@ if __name__ == "__main__":
             task,
             num_samples=128,
             initial_noise_level=0.3,
-            minimum_noise_level=0.3,
-            maximum_noise_level=0.6,
+            minimum_noise_level=1e-2,
+            maximum_noise_level=0.3,
+            initial_entropy_bonus=0.3,
+            final_entropy_bonus=0.5,
             covariance_adaptation_rate=0.1,
-            temperature=0.1,
+            temperature=1.0,
             num_randomizations=4,
-            plan_horizon=0.6,
-            spline_type="zero",
+            plan_horizon=1.0,
+            spline_type="cubic",
             num_knots=4,
         )
     else:

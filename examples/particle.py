@@ -11,7 +11,7 @@ from evosax.algorithms.distribution_based import (
     xNES,
 )
 
-from hydrax.algs import CEM, DIAL, ErCma, MPPI, Evosax, PredictiveSampling
+from hydrax.algs import CEM, DIAL, MPPI, ErCma, Evosax, PredictiveSampling
 from hydrax.risk import WorstCase
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.particle import Particle
@@ -97,10 +97,12 @@ elif args.algorithm == "er_cma":
     print("Running ER-CMA")
     ctrl = ErCma(
         task,
-        num_samples=16,
+        num_samples=32,
         initial_noise_level=0.3,
-        minimum_noise_level=0.05,
-        maximum_noise_level=0.5,
+        minimum_noise_level=1e-1,
+        maximum_noise_level=1e3,
+        initial_entropy_bonus=0.3,
+        final_entropy_bonus=0.5,
         covariance_adaptation_rate=0.1,
         temperature=0.01,
         plan_horizon=0.25,
@@ -205,6 +207,6 @@ run_interactive(
     mj_model,
     mj_data,
     frequency=50,
-    show_traces=False,
+    show_traces=True,
     max_traces=5,
 )

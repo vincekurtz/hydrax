@@ -3,7 +3,7 @@ import argparse
 import mujoco
 from evosax.algorithms.distribution_based.cma_es import CMA_ES
 
-from hydrax.algs import CEM, ErCma, MPPI, Evosax, PredictiveSampling
+from hydrax.algs import CEM, MPPI, ErCma, Evosax, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.cube import CubeRotation
 
@@ -90,10 +90,12 @@ elif args.algorithm == "er_cma":
         task,
         num_samples=128,
         initial_noise_level=0.2,
-        minimum_noise_level=0.05,
-        maximum_noise_level=0.5,
+        minimum_noise_level=1e-3,
+        maximum_noise_level=1e3,
+        initial_entropy_bonus=0.3,
+        final_entropy_bonus=0.5,
         covariance_adaptation_rate=0.1,
-        temperature=0.001,
+        temperature=0.01,
         num_randomizations=8,
         plan_horizon=0.25,
         spline_type="zero",
