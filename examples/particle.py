@@ -11,7 +11,7 @@ from evosax.algorithms.distribution_based import (
     xNES,
 )
 
-from hydrax.algs import CEM, DIAL, MPPI, Evosax, PredictiveSampling
+from hydrax.algs import CEM, DIAL, ErCma, MPPI, Evosax, PredictiveSampling
 from hydrax.risk import WorstCase
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.particle import Particle
@@ -38,6 +38,7 @@ subparsers = parser.add_subparsers(
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
+subparsers.add_parser("er_cma", help="Entropy-Regularized CMA")
 subparsers.add_parser("cmaes", help="CMA-ES")
 subparsers.add_parser("openes", help="OpenAI-ES")
 subparsers.add_parser("sa", help="Simulated Annealing")
@@ -87,6 +88,21 @@ elif args.algorithm == "cem":
         sigma_start=0.3,
         sigma_min=0.05,
         explore_fraction=0.5,
+        plan_horizon=0.25,
+        spline_type="zero",
+        num_knots=11,
+    )
+
+elif args.algorithm == "er_cma":
+    print("Running ER-CMA")
+    ctrl = ErCma(
+        task,
+        num_samples=16,
+        initial_noise_level=0.3,
+        minimum_noise_level=0.05,
+        maximum_noise_level=0.5,
+        covariance_adaptation_rate=0.1,
+        temperature=0.01,
         plan_horizon=0.25,
         spline_type="zero",
         num_knots=11,

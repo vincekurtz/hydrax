@@ -2,7 +2,7 @@ import argparse
 
 import mujoco
 
-from hydrax.algs import CEM, MPPI, PredictiveSampling
+from hydrax.algs import CEM, ErCma, MPPI, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.cart_pole import CartPole
 
@@ -25,6 +25,7 @@ subparsers = parser.add_subparsers(
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
+subparsers.add_parser("er_cma", help="Entropy-Regularized CMA")
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
@@ -60,6 +61,22 @@ elif args.algorithm == "cem":
         num_elites=3,
         sigma_start=0.5,
         sigma_min=0.1,
+        spline_type="cubic",
+        plan_horizon=1.0,
+        num_knots=4,
+    )
+elif args.algorithm == "er_cma":
+    print("Running ER-CMA")
+    ctrl = ErCma(
+        task,
+        num_samples=128,
+        initial_noise_level=0.3,
+        minimum_noise_level=1e-3,
+        maximum_noise_level=1e3,
+        initial_entropy_bonus=0.5,
+        final_entropy_bonus=0.5,
+        covariance_adaptation_rate=0.1,
+        temperature=0.1,
         spline_type="cubic",
         plan_horizon=1.0,
         num_knots=4,

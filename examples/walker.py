@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import mujoco
 
-from hydrax.algs import MPPI, PredictiveSampling
+from hydrax.algs import ErCma, MPPI, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.walker import Walker
 
@@ -26,6 +26,7 @@ subparsers = parser.add_subparsers(
 )
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
+subparsers.add_parser("er_cma", help="Entropy-Regularized CMA")
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
@@ -48,6 +49,20 @@ elif args.algorithm == "mppi":
         task,
         num_samples=128,
         noise_level=0.5,
+        temperature=0.1,
+        plan_horizon=0.6,
+        spline_type="zero",
+        num_knots=5,
+    )
+elif args.algorithm == "er_cma":
+    print("Running ER-CMA")
+    ctrl = ErCma(
+        task,
+        num_samples=128,
+        initial_noise_level=0.5,
+        minimum_noise_level=0.1,
+        maximum_noise_level=0.8,
+        covariance_adaptation_rate=0.1,
         temperature=0.1,
         plan_horizon=0.6,
         spline_type="zero",

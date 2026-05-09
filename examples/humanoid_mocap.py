@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import mujoco
 
-from hydrax.algs import CEM
+from hydrax.algs import CEM, ErCma
 from hydrax.risk import AverageCost
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid_mocap import HumanoidMocap, HumanoidMocapOptions
@@ -39,6 +39,11 @@ parser.add_argument(
     default=1,
     help="Number of CEM iterations.",
 )
+subparsers = parser.add_subparsers(
+    dest="algorithm", help="Sampling algorithm (choose one)"
+)
+subparsers.add_parser("cem", help="Cross-Entropy Method")
+subparsers.add_parser("er_cma", help="Entropy-Regularized CMA")
 
 args = parser.parse_args()
 
@@ -50,20 +55,41 @@ task = HumanoidMocap(
 )
 
 # Set up the controller
-ctrl = CEM(
-    task,
-    num_samples=1024,
-    num_elites=10,
-    sigma_start=0.2,
-    sigma_min=0.05,
-    explore_fraction=0.5,
-    plan_horizon=0.8,
-    num_randomizations=1,
-    risk_strategy=AverageCost(),
-    spline_type="zero",
-    num_knots=4,
-    iterations=args.iterations,
-)
+if args.algorithm == "cem" or args.algorithm is None:
+    print("Running CEM")
+    ctrl = CEM(
+        task,
+        num_samples=1024,
+        num_elites=10,
+        sigma_start=0.2,
+        sigma_min=0.05,
+        explore_fraction=0.5,
+        plan_horizon=0.8,
+        num_randomizations=1,
+        risk_strategy=AverageCost(),
+        spline_type="zero",
+        num_knots=4,
+        iterations=args.iterations,
+    )
+elif args.algorithm == "er_cma":
+    print("Running ER-CMA")
+    ctrl = ErCma(
+        task,
+        num_samples=1024,
+        initial_noise_level=0.2,
+        minimum_noise_level=0.05,
+        maximum_noise_level=0.3,
+        covariance_adaptation_rate=0.1,
+        temperature=0.1,
+        plan_horizon=0.8,
+        num_randomizations=1,
+        risk_strategy=AverageCost(),
+        spline_type="zero",
+        num_knots=4,
+        iterations=args.iterations,
+    )
+else:
+    parser.error("Invalid algorithm")
 
 # Define the model used for simulation
 mj_model = deepcopy(task.mj_model)

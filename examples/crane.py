@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import mujoco
 
-from hydrax.algs import PredictiveSampling
+from hydrax.algs import ErCma, PredictiveSampling
 from hydrax.risk import ConditionalValueAtRisk
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.crane import Crane
@@ -20,22 +20,47 @@ parser.add_argument(
     action="store_true",
     help="Whether to use the (experimental) MjWarp backend. (default: False)",
 )
+subparsers = parser.add_subparsers(
+    dest="algorithm", help="Sampling algorithm (choose one)"
+)
+subparsers.add_parser("ps", help="Predictive Sampling")
+subparsers.add_parser("er_cma", help="Entropy-Regularized CMA")
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
 task = Crane(impl="warp" if args.warp else "jax")
 
 # Set up the controller
-ctrl = PredictiveSampling(
-    task,
-    num_samples=8,
-    noise_level=0.05,
-    num_randomizations=32,
-    risk_strategy=ConditionalValueAtRisk(0.1),
-    plan_horizon=0.8,
-    spline_type="zero",
-    num_knots=3,
-)
+if args.algorithm == "ps" or args.algorithm is None:
+    print("Running predictive sampling")
+    ctrl = PredictiveSampling(
+        task,
+        num_samples=8,
+        noise_level=0.05,
+        num_randomizations=32,
+        risk_strategy=ConditionalValueAtRisk(0.1),
+        plan_horizon=0.8,
+        spline_type="zero",
+        num_knots=3,
+    )
+elif args.algorithm == "er_cma":
+    print("Running ER-CMA")
+    ctrl = ErCma(
+        task,
+        num_samples=128,
+        initial_noise_level=0.05,
+        minimum_noise_level=0.01,
+        maximum_noise_level=0.1,
+        initial_entropy_bonus=0.1,
+        final_entropy_bonus=0.5,
+        covariance_adaptation_rate=0.1,
+        temperature=0.1,
+        plan_horizon=0.8,
+        spline_type="zero",
+        num_knots=3,
+    )
+else:
+    parser.error("Invalid algorithm")
 
 # Define the model used for simulation
 mj_model = deepcopy(task.mj_model)

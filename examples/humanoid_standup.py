@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import mujoco
 
-from hydrax.algs import MppiCma
+from hydrax.algs import ErCma, MppiCma
 from hydrax.simulation.asynchronous import run_interactive as run_async
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid_standup import HumanoidStandup
@@ -31,23 +31,47 @@ if __name__ == "__main__":
         help="Whether to use the (experimental) MjWarp backend.",
         required=False,
     )
+    subparsers = parser.add_subparsers(
+        dest="algorithm", help="Sampling algorithm (choose one)"
+    )
+    subparsers.add_parser("mppi_cma", help="MPPI with Covariance Matrix Adaptation")
+    subparsers.add_parser("er_cma", help="Entropy-Regularized CMA")
     args = parser.parse_args()
 
     # Define the task (cost and dynamics)
     task = HumanoidStandup(impl="warp" if args.warp else "jax")
 
     # Set up the controller
-    ctrl = MppiCma(
-        task,
-        num_samples=128,
-        initial_noise_level=0.3,
-        temperature=0.1,
-        minimum_noise_level=0.3,
-        num_randomizations=4,
-        plan_horizon=0.6,
-        spline_type="zero",
-        num_knots=4,
-    )
+    if args.algorithm == "mppi_cma" or args.algorithm is None:
+        print("Running MPPI-CMA")
+        ctrl = MppiCma(
+            task,
+            num_samples=128,
+            initial_noise_level=0.3,
+            temperature=0.1,
+            minimum_noise_level=0.3,
+            num_randomizations=4,
+            plan_horizon=0.6,
+            spline_type="zero",
+            num_knots=4,
+        )
+    elif args.algorithm == "er_cma":
+        print("Running ER-CMA")
+        ctrl = ErCma(
+            task,
+            num_samples=128,
+            initial_noise_level=0.3,
+            minimum_noise_level=0.3,
+            maximum_noise_level=0.6,
+            covariance_adaptation_rate=0.1,
+            temperature=0.1,
+            num_randomizations=4,
+            plan_horizon=0.6,
+            spline_type="zero",
+            num_knots=4,
+        )
+    else:
+        parser.error("Invalid algorithm")
 
     # Define the model used for simulation (stiffer contact parameters)
     mj_model = deepcopy(task.mj_model)
