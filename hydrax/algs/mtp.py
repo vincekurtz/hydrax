@@ -1,6 +1,6 @@
 """Model Tensor Planning (MTP) controller.
 
-Implements the sampling-based MPC framework of Le et al. 2026
+Implements the sampling-based MPC framework of Le et al. 2025
 (arxiv 2505.01059), which generates globally-diverse trajectory
 candidates via structured tensor sampling over a randomised M-partite
 graph and mixes them with a local CEM-style distribution.
@@ -11,6 +11,7 @@ from typing import Literal, Optional, Tuple
 import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
+from mujoco import mjx
 
 from hydrax.alg_base import SamplingBasedController, SamplingParams, Trajectory
 from hydrax.risk import RiskStrategy
@@ -202,6 +203,21 @@ class MTP(SamplingBasedController):
             cov=cov,
             best_knots=best_knots,
         )
+
+    def optimize(
+        self, state: mjx.Data, params: MTPParams
+    ) -> Tuple[MTPParams, Trajectory]:
+        """Optimise, warm-starting both ``mean`` and ``best_knots``."""
+        tk = params.tk
+        new_tk = (
+            jnp.linspace(0.0, self.plan_horizon, self.num_knots) + state.time
+        )
+        clamped_tk = jnp.clip(new_tk, tk[0], tk[-1])
+        new_best = self.interp_func(
+            clamped_tk, tk, params.best_knots[None, ...]
+        )[0]
+        params = params.replace(best_knots=new_best)
+        return super().optimize(state, params)
 
     def _interp_paths(self, paths: jax.Array) -> jax.Array:
         """Smooth tensor paths into ``(B, num_knots, nu)`` knot tensors."""

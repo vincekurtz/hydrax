@@ -56,11 +56,12 @@ class Navigation(Task):
         # Box-SDF distance to each inner wall (signed, axis-aligned).
         pos = state.site_xpos[self.pointmass_id][None, :2]
         wall_dist = jnp.abs(pos - self._wall_pos) - self._wall_size
-        outside_dist = jnp.maximum(wall_dist, 1e-12)
+        outside_dist = jnp.maximum(wall_dist, 0.0)
         inside_dist = jnp.minimum(jnp.max(wall_dist, axis=-1), 0.0)
-        dist = (jnp.linalg.norm(outside_dist, axis=-1) + inside_dist).min(
-            axis=-1
-        )
+        dist = (
+            jnp.sqrt(jnp.sum(jnp.square(outside_dist), axis=-1) + 1e-12)
+            + inside_dist
+        ).min(axis=-1)
         wall_cost = 5.0 * jnp.exp(-50.0 * dist)
         control_cost = jnp.sum(jnp.square(control))
         return wall_cost + self.terminal_cost(state) + 0.1 * control_cost
