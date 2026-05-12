@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from interpax import Akima1DInterpolator, interp1d
 from jax import vmap
 
-InterpMethodType = Literal["zero", "linear", "cubic"]
+InterpMethodType = Literal["zero", "linear", "cubic", "akima"]
 InterpFuncType = Callable[[jax.Array, jax.Array, jax.Array], jax.Array]
 
 
@@ -51,8 +51,8 @@ def get_interp_func(method: InterpMethodType) -> InterpFuncType:
     in seconds.
 
     Args:
-        method: The interpolation method to use. Can be "zero", "linear", or
-            "cubic".
+        method: The interpolation method to use. Can be "zero", "linear",
+            "cubic", or "akima".
 
     Returns:
         interp_func: The interpolation function.
@@ -63,10 +63,12 @@ def get_interp_func(method: InterpMethodType) -> InterpFuncType:
         interp_func = interp_linear
     elif method == "cubic":
         interp_func = interp_cubic
+    elif method == "akima":
+        interp_func = interp_akima
     else:
         raise ValueError(
             f"Unknown interpolation method: {method}. "
-            "Expected one of ['zero', 'linear', 'cubic']."
+            "Expected one of ['zero', 'linear', 'cubic', 'akima']."
         )
     return interp_func
 
