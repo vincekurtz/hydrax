@@ -33,7 +33,7 @@ class MTPParams(SamplingParams):
         tk: The knot times of the control spline.
         mean: Mean of the local CEM knot distribution, μ = [u₀, ...].
         rng: The pseudo-random number generator key.
-        cov: Diagonal standard deviation of the local CEM distribution.
+        cov: Diagonal variance (σ²) of the local CEM distribution.
         best_knots: Best spline knots from the previous optimisation step.
     """
 
@@ -180,7 +180,7 @@ class MTP(SamplingBasedController):
     ) -> MTPParams:
         """Initialise the policy parameters."""
         _params = super().init_params(initial_knots, seed)
-        cov = jnp.full_like(_params.mean, self.sigma_start)
+        cov = jnp.full_like(_params.mean, self.sigma_start**2)
         best_knots = jnp.zeros_like(_params.mean)
         return MTPParams(
             tk=_params.tk,
@@ -264,7 +264,7 @@ class MTP(SamplingBasedController):
             noise = jax.random.normal(
                 sample_rng, (self.cem_samples, self.num_knots, nu)
             )
-            cem_knots = params.mean + params.cov * noise
+            cem_knots = params.mean + jnp.sqrt(params.cov) * noise
             all_knots = jnp.concatenate([all_knots, cem_knots], axis=0)
 
         return all_knots, params.replace(rng=rng)
@@ -280,26 +280,22 @@ class MTP(SamplingBasedController):
         elite_knots = rollouts.knots[elite_idx]
         elite_costs = costs[elite_idx]
 
-        # Softmax weighting with baseline subtraction for numerical stability.
-        baseline = jnp.min(elite_costs)
         weights = jax.nn.softmax(
-            -(elite_costs - baseline) / self.temperature, axis=0
+            -elite_costs / self.temperature, axis=0
         )
 
-        # Weighted mean and Bessel-corrected standard deviation.
+        # Weighted mean and Bessel-corrected variance.
         mean = jnp.sum(weights[:, None, None] * elite_knots, axis=0)
         var = jnp.sum(
             weights[:, None, None] * (elite_knots - mean) ** 2, axis=0
         )
         bessel = 1.0 / jnp.maximum(1.0 - jnp.sum(weights**2), 1e-6)
-        cov = jnp.sqrt(var * bessel)
-        cov = jnp.clip(cov, self.sigma_min, self.sigma_max)
+        cov = var * bessel
 
         # Momentum smoothing: convex blend of old and new variance.
         mean = mean + self.alpha * (params.mean - mean)
-        new_var = cov**2
-        old_var = params.cov**2
-        cov = jnp.sqrt(self.alpha * old_var + (1.0 - self.alpha) * new_var)
+        cov = self.alpha * params.cov + (1.0 - self.alpha) * cov
+        cov = jnp.clip(cov, self.sigma_min**2, self.sigma_max**2)
 
         best_knots = rollouts.knots[elite_idx[0]]
         return params.replace(mean=mean, cov=cov, best_knots=best_knots)

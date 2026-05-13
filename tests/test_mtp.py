@@ -44,8 +44,8 @@ def test_open_loop() -> None:
 
     total_cost = jnp.sum(final_rollout.costs[0])
     assert total_cost <= 9.0
-    assert jnp.all(params.cov >= opt.sigma_min)
-    assert jnp.all(params.cov <= opt.sigma_max)
+    assert jnp.all(params.cov >= opt.sigma_min**2)
+    assert jnp.all(params.cov <= opt.sigma_max**2)
 
 
 @pytest.mark.parametrize("mtp_interpolation", ["akima", "bspline", "linear"])
