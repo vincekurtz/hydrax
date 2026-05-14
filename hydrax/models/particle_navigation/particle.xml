@@ -1,0 +1,52 @@
+<mujoco model="particle">
+  <!-- Adopted from the MJPC particle task:
+    https://github.com/google-deepmind/mujoco_mpc/tree/main/mjpc/tasks/particle
+  -->
+  <!-- Contacts enabled (unlike MJPC particle.xml) so the inner walls
+       physically block the pointmass. Bitmasks cull wall-wall pairs:
+         pointmass: contype=1 conaffinity=2
+         walls:     contype=2 conaffinity=1 -->
+  <option timestep="0.01" iterations="2" ls_iterations="6">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <default>
+    <joint type="hinge" axis="0 0 1" limited="true" range="-.29 .29" damping="1" />
+    <motor gear=".1" ctrlrange="-1 1" ctrllimited="true" />
+    <default class="wall">
+      <geom type="box" contype="2" conaffinity="1" rgba="0.6 0.6 0.6 1"
+            friction="0.1 0.005 0.0001" solref="0.005 1" solimp="0.95 0.99 0.001"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <body name="goal" mocap="true" pos="0.25 0 0.01" quat="1 0 0 0">
+      <geom type="sphere" size=".01" contype="0" conaffinity="0" rgba="0 1 0 .5" />
+    </body>
+
+    <camera name="top_view" pos="0 -0.635 0.635" xyaxes="1 0 0 0 0.7 0.7" />
+    <geom name="wall_x"     class="wall" pos="-.31  0   .02" size=".02 .3  .02" />
+    <geom name="wall_neg_x" class="wall" pos=" .31  0   .02" size=".02 .3  .02" />
+    <geom name="wall_y"     class="wall" pos=" 0  -.31  .02" size=".3  .02 .02" />
+    <geom name="wall_neg_y" class="wall" pos=" 0   .31  .02" size=".3  .02 .02" />
+
+    <geom name="wall_ix"     class="wall" pos=" .1  0   .02" size=".01 .11 .02" />
+    <geom name="wall_iy"     class="wall" pos=" 0  -.1  .02" size=".11 .01 .02" />
+    <geom name="wall_neg_iy" class="wall" pos=" 0   .1  .02" size=".11 .01 .02" />
+
+    <body name="pointmass" pos="0 0 .01">
+      <camera name="cam0" pos="0 -0.635 0.635" xyaxes="1 0 0 0 0.7 0.7" />
+      <joint name="root_x" type="slide" pos="0 0 0" axis="1 0 0" />
+      <joint name="root_y" type="slide" pos="0 0 0" axis="0 1 0" />
+      <geom name="pointmass" type="sphere" size=".01" mass=".3"
+            contype="1" conaffinity="2"
+            friction="0.1 0.005 0.0001" solref="0.005 1" solimp="0.95 0.99 0.001"/>
+      <site name="pointmass" pos="0 0 0" size="0.01" />
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="x_motor" joint="root_x" gear="1" ctrllimited="true" ctrlrange="-1 1" />
+    <motor name="y_motor" joint="root_y" gear="1" ctrllimited="true" ctrlrange="-1 1" />
+  </actuator>
+</mujoco>
