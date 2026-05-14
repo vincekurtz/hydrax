@@ -35,17 +35,18 @@ args = parser.parse_args()
 
 task = Navigation(impl="warp" if args.warp else "jax")
 
-# All baselines share the same sample budget (64 rollouts), planning
+# All baselines share the same sample budget (32 rollouts), planning
 # horizon (0.5 s), and spline resolution (11 knots) so the comparison
-# is fair.  Local samplers (PS, MPPI, CEM) are tuned with aggressive
-# noise / exploration but still cannot route around the U-wall.
+# is fair and representative short horizon to show MTP exploration capabilities.
+# Local samplers (PS, MPPI, CEM) are tuned with aggressive noise
+# but still cannot route around the U-wall.
 
 if args.algorithm == "ps" or args.algorithm is None:
     print("Running predictive sampling")
     ctrl = PredictiveSampling(
         task,
-        num_samples=64,
-        noise_level=0.5,
+        num_samples=32,
+        noise_level=1.0,
         plan_horizon=0.5,
         spline_type="zero",
         num_knots=11,
@@ -55,8 +56,8 @@ elif args.algorithm == "mppi":
     print("Running MPPI")
     ctrl = MPPI(
         task,
-        num_samples=64,
-        noise_level=0.5,
+        num_samples=32,
+        noise_level=1.0,
         temperature=0.01,
         plan_horizon=0.5,
         spline_type="zero",
@@ -67,11 +68,11 @@ elif args.algorithm == "cem":
     print("Running CEM")
     ctrl = CEM(
         task,
-        num_samples=64,
-        num_elites=8,
+        num_samples=32,
+        num_elites=2,
         sigma_start=1.0,
-        sigma_min=0.05,
-        explore_fraction=0.3,
+        sigma_min=0.5,
+        explore_fraction=0.5,
         plan_horizon=0.5,
         spline_type="zero",
         num_knots=11,
@@ -81,15 +82,16 @@ elif args.algorithm == "mtp":
     print("Running MTP")
     ctrl = MTP(
         task,
-        num_samples=64,
-        m_pts=4,
-        num_elites=8,
-        sigma_start=0.5,
-        sigma_min=0.05,
+        num_samples=32,
+        m_pts=5,
+        n_per_layer=50,
+        num_elites=2,
+        sigma_start=0.7,
+        sigma_min=0.5,
         sigma_max=1.0,
-        beta=0.5,
-        alpha=0.5,
-        mtp_interpolation="akima",
+        beta=1.0,
+        alpha=0.1,
+        mtp_interpolation="bspline",
         plan_horizon=0.5,
         spline_type="zero",
         num_knots=11,
