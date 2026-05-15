@@ -16,11 +16,29 @@ from hydrax import ROOT
 from hydrax.task_base import Task
 
 
-class Navigation(Task):
+class BugTrap(Task):
     """A planar point mass that must navigate around U-shaped inner walls."""
 
-    def __init__(self, impl: str = "jax") -> None:
-        """Load the MuJoCo model and set task parameters."""
+    def __init__(
+        self,
+        impl: str = "jax",
+        wall_weight: float = 5.0,
+        wall_sharpness: float = 50.0,
+        position_weight: float = 5.0,
+        velocity_weight: float = 0.1,
+        control_weight: float = 0.1,
+    ) -> None:
+        """Load the MuJoCo model and set task parameters.
+
+        Args:
+            impl: Which backend implementation to use.
+            wall_weight: Multiplier on the exponential wall proximity cost.
+            wall_sharpness: Decay rate in the ``exp(-sharpness * dist)``
+                wall cost.
+            position_weight: Weight on the squared position tracking error.
+            velocity_weight: Weight on the squared velocity penalty.
+            control_weight: Weight on the squared control penalty.
+        """
         mj_model = mujoco.MjModel.from_xml_path(
             ROOT + "/models/particle_navigation/scene.xml"
         )
@@ -28,9 +46,11 @@ class Navigation(Task):
 
         self.pointmass_id = mj_model.site("pointmass").id
 
-        # Start the particle behind the U-opening so the straight-line path
-        # to the goal goes through a wall.
-        self._initial_qpos = jnp.array([-0.2, 0.0])
+        self.wall_weight = wall_weight
+        self.wall_sharpness = wall_sharpness
+        self.position_weight = position_weight
+        self.velocity_weight = velocity_weight
+        self.control_weight = control_weight
 
         # Cache the planar geometry of the three inner walls (wall_ix,
         # wall_iy, wall_neg_iy) for the SDF-style cost term.
@@ -60,9 +80,9 @@ class Navigation(Task):
             jnp.sqrt(jnp.sum(jnp.square(outside_dist), axis=-1) + 1e-12)
             + inside_dist
         ).min(axis=-1)
-        wall_cost = 5.0 * jnp.exp(-50.0 * dist)
+        wall_cost = self.wall_weight * jnp.exp(-self.wall_sharpness * dist)
         control_cost = jnp.sum(jnp.square(control))
-        return wall_cost + self.terminal_cost(state) + 0.1 * control_cost
+        return wall_cost + self.terminal_cost(state) + self.control_weight * control_cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T): position tracking + velocity reg."""
@@ -70,7 +90,7 @@ class Navigation(Task):
             jnp.square(state.site_xpos[self.pointmass_id] - state.mocap_pos[0])
         )
         velocity_cost = jnp.sum(jnp.square(state.qvel))
-        return 5.0 * position_cost + 0.1 * velocity_cost
+        return self.position_weight * position_cost + self.velocity_weight * velocity_cost
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomly perturb the actuator gains by ±10%."""
@@ -90,3 +110,7 @@ class Navigation(Task):
         """Randomly shift the measured particle position."""
         shift = jax.random.uniform(rng, (2,), minval=-0.01, maxval=0.01)
         return {"qpos": data.qpos + shift}
+
+    def make_data(self) -> mjx.Data:
+        """Create a new state with enough contact slots for MjWarp."""
+        return super().make_data(nconmax=10, naconmax=100)

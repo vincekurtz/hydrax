@@ -2,13 +2,13 @@ import jax.numpy as jnp
 import pytest
 from mujoco import mjx
 
-from hydrax.tasks.navigation import Navigation
+from hydrax.tasks.bugtrap import BugTrap
 
 
 @pytest.mark.parametrize("impl", ["jax", "warp"])
-def test_navigation(impl: str) -> None:
-    """Smoke-test the U-maze navigation task."""
-    task = Navigation(impl=impl)
+def test_bugtrap(impl: str) -> None:
+    """Smoke-test the bug-trap navigation task."""
+    task = BugTrap(impl=impl)
     assert task.pointmass_id >= 0
     assert task._wall_pos.shape == (3, 2)
     assert task._wall_size.shape == (3, 2)
@@ -28,5 +28,5 @@ def test_navigation(impl: str) -> None:
 
 
 if __name__ == "__main__":
-    test_navigation("jax")
-    test_navigation("warp")
+    test_bugtrap("jax")
+    test_bugtrap("warp")
