@@ -49,52 +49,55 @@ def run_closed_loop(
     mjx_data = _make_initial_mjx_data(task, qpos, qvel, mocap_pos)
     policy_params = controller.init_params(seed=seed)
 
-    jit_optimize = jax.jit(controller.optimize)
     interp_func = controller.interp_func
 
     @jax.jit
-    def step_segment(
-        state: mjx.Data, controls: jax.Array
-    ) -> Tuple[mjx.Data, jax.Array]:
-        """Apply controls one at a time; return updated state + cost sum."""
+    def mpc_step(
+        state: mjx.Data, params: Any
+    ) -> Tuple[mjx.Data, Any, jax.Array]:
+        """Plan, interpolate, and simulate one control segment in one JIT.
 
+        Merging all three operations avoids two extra kernel-dispatch round-
+        trips per control step and lets XLA optimize across the boundaries.
+        Rollouts from optimize() are not returned, so XLA need not allocate
+        or copy those output buffers to the host.
+        """
+        # Plan: update policy params (rollouts discarded as XLA sees no
+        # downstream use for their output buffers).
+        params, _ = controller.optimize(state, params)
+
+        # Interpolate the spline at this segment's sim-step times.
+        tq = jnp.arange(sim_per_ctrl) * dt + state.time
+        controls = interp_func(tq, params.tk, params.mean[None, ...])[0]
+
+        # Simulate and accumulate running cost.
         def body(carry: mjx.Data, u: jax.Array) -> Tuple[mjx.Data, jax.Array]:
             carry = carry.replace(ctrl=u)
             carry = mjx.step(task.model, carry)
             return carry, task.running_cost(carry, u) * dt
 
         state, costs = jax.lax.scan(body, state, controls)
-        return state, jnp.sum(costs)
+        return state, params, jnp.sum(costs)
 
-    @jax.jit
-    def interp_controls(
-        tk: jax.Array, mean: jax.Array, t_curr: jax.Array
-    ) -> jax.Array:
-        """Sample the control spline at this segment's sim times."""
-        tq = jnp.arange(sim_per_ctrl) * dt + t_curr
-        return interp_func(tq, tk, mean[None, ...])[0]
+    # Warmup: compile and fully execute mpc_step before the timed region.
+    # block_until_ready prevents async-dispatch compilation from bleeding
+    # into the timing region (JAX dispatches compilation asynchronously, so
+    # without this the first timed call would still be waiting for it).
+    _, _, warmup_cost = mpc_step(mjx_data, policy_params)
+    jax.block_until_ready(warmup_cost)
 
-    # Warmup JIT (results discarded; state reset below)
-    policy_params, _ = jit_optimize(mjx_data, policy_params)
-    controls = interp_controls(
-        policy_params.tk, policy_params.mean, mjx_data.time
-    )
-    _, _ = step_segment(mjx_data, controls)
-
-    # Real run from a fresh initial state
+    # Real run from a fresh initial state.
     mjx_data = _make_initial_mjx_data(task, qpos, qvel, mocap_pos)
     policy_params = controller.init_params(seed=seed)
 
     total_cost = jnp.float32(0.0)
     start = time.time()
     for _ in range(num_ctrl_steps):
-        policy_params, _ = jit_optimize(mjx_data, policy_params)
-        controls = interp_controls(
-            policy_params.tk, policy_params.mean, mjx_data.time
+        mjx_data, policy_params, segment_cost = mpc_step(
+            mjx_data, policy_params
         )
-        mjx_data, segment_cost = step_segment(mjx_data, controls)
         total_cost = total_cost + segment_cost
-    # Block on result to get accurate wall time
+    # Block on device to get accurate wall time.
     total_cost_f = float(np.asarray(total_cost))
     wall_time = time.time() - start
     return total_cost_f, wall_time
@@ -119,7 +122,16 @@ def run_open_loop(
     mjx_data = _make_initial_mjx_data(task, qpos, qvel, mocap_pos)
     policy_params = controller.init_params(seed=seed)
 
-    jit_optimize = jax.jit(controller.optimize)
+    @jax.jit
+    def optimize_params(state: mjx.Data, params: Any) -> Any:
+        """Run one optimize step; return only the updated params.
+
+        Discarding rollouts from the return value lets XLA skip allocating
+        and copying the trajectory output buffers (num_samples × H × nu)
+        to the host on every call.
+        """
+        params, _ = controller.optimize(state, params)
+        return params
 
     @jax.jit
     def evaluate_mean(state: mjx.Data, params: Any) -> jax.Array:
@@ -132,15 +144,16 @@ def run_open_loop(
         )
         return jnp.sum(traj.costs[0])
 
-    # Warmup
-    warm_params, _ = jit_optimize(mjx_data, policy_params)
-    _ = evaluate_mean(mjx_data, warm_params)
+    # Warmup both compiled functions; block to drain async compilation.
+    warm_params = optimize_params(mjx_data, policy_params)
+    warmup_cost = evaluate_mean(mjx_data, warm_params)
+    jax.block_until_ready(warmup_cost)
 
-    # Real run
+    # Real run.
     policy_params = controller.init_params(seed=seed)
     start = time.time()
     for _ in range(num_iterations):
-        policy_params, _ = jit_optimize(mjx_data, policy_params)
+        policy_params = optimize_params(mjx_data, policy_params)
     final_cost = float(np.asarray(evaluate_mean(mjx_data, policy_params)))
     wall_time = time.time() - start
     return final_cost, wall_time
