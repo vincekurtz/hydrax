@@ -147,7 +147,7 @@ def _make_mppi_cma(
         task,
         num_samples=num_samples,
         initial_noise_level=0.3,
-        minimum_noise_level=0.05,
+        minimum_noise_level=1e-3,
         covariance_adaptation_rate=0.1,
         temperature=0.1,
         plan_horizon=plan_horizon,

@@ -46,10 +46,15 @@ class TaskSpec:
 
 
 def _pendulum_ic(rng: jax.Array) -> InitialState:
-    """Random initial angle in [-pi, pi], small initial velocity."""
+    """Near the downward equilibrium (hard swing-up case).
+
+    qpos=0 is hanging straight down; the goal is qpos=pi (upright).
+    Small uniform perturbations keep seeds distinct while keeping all
+    trials in the hard region.
+    """
     rng_q, rng_v = jax.random.split(rng)
-    qpos = jax.random.uniform(rng_q, (1,), minval=-jnp.pi, maxval=jnp.pi)
-    qvel = jax.random.uniform(rng_v, (1,), minval=-0.5, maxval=0.5)
+    qpos = jax.random.uniform(rng_q, (1,), minval=-0.1, maxval=0.1)
+    qvel = jax.random.uniform(rng_v, (1,), minval=-0.1, maxval=0.1)
     return np.array(qpos), np.array(qvel), None
 
 
