@@ -13,6 +13,7 @@ from typing import Callable, Dict, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
+import mujoco
 import numpy as np
 
 from hydrax.task_base import Task
@@ -27,6 +28,7 @@ from hydrax.tasks.walker import Walker
 
 InitialState = Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]
 ICSampler = Callable[[jax.Array], InitialState]
+FixedIC = Callable[[Task], InitialState]
 
 
 @dataclass
@@ -35,6 +37,7 @@ class TaskSpec:
 
     factory: Callable[[], Task]
     ic_sampler: ICSampler
+    fixed_ic: FixedIC
     plan_horizon: float
     num_knots: int
     spline_type: str
@@ -182,6 +185,36 @@ def _humanoid_standup_ic(rng: jax.Array) -> InitialState:
     return qpos, qvel, None
 
 
+# --- Fixed initial conditions (match the examples/ scripts) --------------
+
+
+def _model_default_ic(task: Task) -> InitialState:
+    """Return the model's default qpos/qvel; mocap left to defaults."""
+    mj_data = mujoco.MjData(task.mj_model)
+    return np.array(mj_data.qpos), np.array(mj_data.qvel), None
+
+
+def _pendulum_fixed_ic(task: Task) -> InitialState:
+    """Hanging-down equilibrium, matching examples/pendulum.py."""
+    return np.array([0.0]), np.array([0.0]), None
+
+
+def _pusht_fixed_ic(task: Task) -> InitialState:
+    """Matches examples/pusht.py."""
+    qpos = np.array([0.1, 0.1, 1.3, 0.0, 0.0])
+    qvel = np.zeros(5)
+    return qpos, qvel, None
+
+
+def _humanoid_standup_fixed_ic(task: Task) -> InitialState:
+    """Knocked-over stand keyframe, matching examples/humanoid_standup.py."""
+    mj_model = task.mj_model
+    qpos = np.array(mj_model.keyframe("stand").qpos)
+    qpos[3:7] = np.array([0.7, 0.0, -0.7, 0.0])
+    qvel = np.zeros(mj_model.nv)
+    return qpos, qvel, None
+
+
 # --- Registry ------------------------------------------------------------
 
 
@@ -189,6 +222,7 @@ TASKS: Dict[str, TaskSpec] = {
     "pendulum": TaskSpec(
         factory=Pendulum,
         ic_sampler=_pendulum_ic,
+        fixed_ic=_pendulum_fixed_ic,
         plan_horizon=1.0,
         num_knots=11,
         spline_type="zero",
@@ -198,6 +232,7 @@ TASKS: Dict[str, TaskSpec] = {
     "cart_pole": TaskSpec(
         factory=CartPole,
         ic_sampler=_cart_pole_ic,
+        fixed_ic=_model_default_ic,
         plan_horizon=1.0,
         num_knots=4,
         spline_type="cubic",
@@ -207,6 +242,7 @@ TASKS: Dict[str, TaskSpec] = {
     "double_cart_pole": TaskSpec(
         factory=DoubleCartPole,
         ic_sampler=_double_cart_pole_ic,
+        fixed_ic=_model_default_ic,
         plan_horizon=1.0,
         num_knots=4,
         spline_type="cubic",
@@ -216,6 +252,7 @@ TASKS: Dict[str, TaskSpec] = {
     "particle": TaskSpec(
         factory=Particle,
         ic_sampler=_particle_ic,
+        fixed_ic=_model_default_ic,
         plan_horizon=0.25,
         num_knots=11,
         spline_type="zero",
@@ -225,6 +262,7 @@ TASKS: Dict[str, TaskSpec] = {
     "pusht": TaskSpec(
         factory=PushT,
         ic_sampler=_pusht_ic,
+        fixed_ic=_pusht_fixed_ic,
         plan_horizon=0.5,
         num_knots=6,
         spline_type="zero",
@@ -234,6 +272,7 @@ TASKS: Dict[str, TaskSpec] = {
     "walker": TaskSpec(
         factory=Walker,
         ic_sampler=_walker_ic,
+        fixed_ic=_model_default_ic,
         plan_horizon=0.6,
         num_knots=5,
         spline_type="zero",
@@ -243,6 +282,7 @@ TASKS: Dict[str, TaskSpec] = {
     "cube": TaskSpec(
         factory=CubeRotation,
         ic_sampler=_cube_ic,
+        fixed_ic=_model_default_ic,
         plan_horizon=0.25,
         num_knots=4,
         spline_type="zero",
@@ -252,6 +292,7 @@ TASKS: Dict[str, TaskSpec] = {
     "humanoid_standup": TaskSpec(
         factory=HumanoidStandup,
         ic_sampler=_humanoid_standup_ic,
+        fixed_ic=_humanoid_standup_fixed_ic,
         plan_horizon=0.6,
         num_knots=4,
         spline_type="zero",
