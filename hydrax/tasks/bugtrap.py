@@ -82,7 +82,11 @@ class BugTrap(Task):
         ).min(axis=-1)
         wall_cost = self.wall_weight * jnp.exp(-self.wall_sharpness * dist)
         control_cost = jnp.sum(jnp.square(control))
-        return wall_cost + self.terminal_cost(state) + self.control_weight * control_cost
+        return (
+            wall_cost
+            + self.terminal_cost(state)
+            + self.control_weight * control_cost
+        )
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T): position tracking + velocity reg."""
@@ -90,7 +94,10 @@ class BugTrap(Task):
             jnp.square(state.site_xpos[self.pointmass_id] - state.mocap_pos[0])
         )
         velocity_cost = jnp.sum(jnp.square(state.qvel))
-        return self.position_weight * position_cost + self.velocity_weight * velocity_cost
+        return (
+            self.position_weight * position_cost
+            + self.velocity_weight * velocity_cost
+        )
 
     def domain_randomize_model(self, rng: jax.Array) -> Dict[str, jax.Array]:
         """Randomly perturb the actuator gains by ±10%."""
