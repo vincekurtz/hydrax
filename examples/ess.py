@@ -8,6 +8,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 
+from hydrax.algs.mppi import MPPI
 from hydrax.algs.predictive_sampling import PredictiveSampling
 from hydrax.benchmarking import benchmark
 from hydrax.tasks.pendulum import Pendulum
@@ -99,8 +100,8 @@ def sweep_pendulum_hyperparams(
     total_time: float = 5.0,
     output_dir: str = "data/pendulum_sweep",
     seed: int = 0,
-    num_samples_range: Tuple[int, int] = (2, 128),
-    noise_level_range: Tuple[float, float] = (0.1, 0.1),
+    num_samples_range: Tuple[int, int] = (16, 256),
+    noise_level_range: Tuple[float, float] = (0.2, 0.2),
     plan_horizon_range: Tuple[float, float] = (1.0, 1.0),
     num_knots_range: Tuple[int, int] = (2, 16),
 ) -> None:
@@ -153,15 +154,27 @@ def sweep_pendulum_hyperparams(
             rng.integers(num_knots_range[0], num_knots_range[1], endpoint=True)
         )
 
-        ctrl = PredictiveSampling(
+        # ctrl = PredictiveSampling(
+        #     task,
+        #     num_samples=num_samples,
+        #     noise_level=noise_level,
+        #     plan_horizon=plan_horizon,
+        #     spline_type="zero",
+        #     num_knots=num_knots,
+        #     seed=seed + i,
+        # )
+
+        ctrl = MPPI(
             task,
             num_samples=num_samples,
             noise_level=noise_level,
+            temperature=0.1,
             plan_horizon=plan_horizon,
             spline_type="zero",
             num_knots=num_knots,
             seed=seed + i,
         )
+
         # Use a per-run seed for the sampling RNG so each run is
         # individually reproducible but distinct from its neighbors.
         initial_params = ctrl.init_params(seed=seed + i)
@@ -270,5 +283,5 @@ def plot_sweep(
 
 
 if __name__ == "__main__":
-    # sweep_pendulum_hyperparams(num_runs=20, output_dir="data/pendulum_sweep")
-    plot_sweep("data/pendulum_sweep", temperature=1e-3, logscale=False)
+    # sweep_pendulum_hyperparams(num_runs=10, output_dir="data/pendulum_sweep")
+    plot_sweep("data/pendulum_sweep", temperature=1e-2, logscale=False)
