@@ -154,26 +154,29 @@ def sweep_pendulum_hyperparams(
             rng.integers(num_knots_range[0], num_knots_range[1], endpoint=True)
         )
 
-        # ctrl = PredictiveSampling(
-        #     task,
-        #     num_samples=num_samples,
-        #     noise_level=noise_level,
-        #     plan_horizon=plan_horizon,
-        #     spline_type="zero",
-        #     num_knots=num_knots,
-        #     seed=seed + i,
-        # )
+        use_predictive_sampling = rng.choice([True, False])
 
-        ctrl = MPPI(
-            task,
-            num_samples=num_samples,
-            noise_level=noise_level,
-            temperature=0.1,
-            plan_horizon=plan_horizon,
-            spline_type="zero",
-            num_knots=num_knots,
-            seed=seed + i,
-        )
+        if use_predictive_sampling:
+            ctrl = PredictiveSampling(
+                task,
+                num_samples=num_samples,
+                noise_level=noise_level,
+                plan_horizon=plan_horizon,
+                spline_type="zero",
+                num_knots=num_knots,
+                seed=seed + i,
+            )
+        else:
+            ctrl = MPPI(
+                task,
+                num_samples=num_samples,
+                noise_level=noise_level,
+                temperature=0.1,
+                plan_horizon=plan_horizon,
+                spline_type="zero",
+                num_knots=num_knots,
+                seed=seed + i,
+            )
 
         # Use a per-run seed for the sampling RNG so each run is
         # individually reproducible but distinct from its neighbors.
@@ -283,5 +286,5 @@ def plot_sweep(
 
 
 if __name__ == "__main__":
-    # sweep_pendulum_hyperparams(num_runs=10, output_dir="data/pendulum_sweep")
-    plot_sweep("data/pendulum_sweep", temperature=1e-2, logscale=False)
+    sweep_pendulum_hyperparams(num_runs=100, output_dir="data/pendulum_sweep")
+    plot_sweep("data/pendulum_sweep", temperature=1e-3, logscale=True)
