@@ -20,7 +20,7 @@ def benchmark(
     task: Task,
     controller: SamplingBasedController,
     initial_state: mjx.Data,
-    num_steps: int,
+    total_time: float,
     initial_params: Optional[Any] = None,
     save_path: Optional[str] = None,
 ) -> Tuple[jax.Array, jax.Array]:
@@ -36,7 +36,8 @@ def benchmark(
         controller: The sampling-based controller to benchmark. May plan with
                     a different (e.g. domain-randomized) model than `task`.
         initial_state: The MJX state to start the rollout from.
-        num_steps: Number of closed-loop simulation steps to run.
+        total_time: Total simulated time in seconds. The number of
+                    closed-loop steps is `round(total_time / task.dt)`.
         initial_params: Optional initial policy parameters. Defaults to
                         `controller.init_params()`.
         save_path: If provided, save the results to this path as an `.npz`
@@ -50,6 +51,16 @@ def benchmark(
                        controller's risk-strategy aggregation) of each
                        sampled rollout at each MPC step.
     """
+    if total_time <= 0:
+        raise ValueError(f"total_time must be positive, got {total_time}")
+
+    num_steps = int(round(total_time / task.dt))
+    if num_steps < 1:
+        raise ValueError(
+            f"total_time={total_time}s is shorter than one sim step "
+            f"(task.dt={task.dt}s)"
+        )
+
     if initial_params is None:
         initial_params = controller.init_params()
 
