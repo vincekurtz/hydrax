@@ -102,7 +102,7 @@ def sweep_pendulum_hyperparams(
     num_samples_range: Tuple[int, int] = (2, 128),
     noise_level_range: Tuple[float, float] = (0.1, 0.1),
     plan_horizon_range: Tuple[float, float] = (1.0, 1.0),
-    num_knots_range: Tuple[int, int] = (8, 8),
+    num_knots_range: Tuple[int, int] = (2, 16),
 ) -> None:
     """Sweep pendulum benchmark hyperparameters with random sampling.
 
@@ -270,5 +270,5 @@ def plot_sweep(
 
 
 if __name__ == "__main__":
-    # sweep_pendulum_hyperparams(num_runs=10, output_dir="data/pendulum_sweep")
-    plot_sweep("data/pendulum_sweep", temperature=1e-1, logscale=False)
+    # sweep_pendulum_hyperparams(num_runs=20, output_dir="data/pendulum_sweep")
+    plot_sweep("data/pendulum_sweep", temperature=1e-3, logscale=False)
