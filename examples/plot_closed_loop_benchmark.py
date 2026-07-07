@@ -85,6 +85,7 @@ def plot_bar_chart(
     spline_types: list[str],
     final_costs: dict,
     save: str | None,
+    controller: str = "Controller",
 ) -> None:
     """Draw a grouped bar chart of normalized cost per spline type."""
     spline_types = order_spline_types(spline_types)
@@ -116,7 +117,7 @@ def plot_bar_chart(
     ax.set_xticks(x)
     ax.set_xticklabels(envs, rotation=15, ha="right")
     ax.set_ylabel("Cumulative cost (normalized to zero-order hold)")
-    ax.set_title("CEM closed-loop performance by spline type")
+    ax.set_title(f"{controller} closed-loop performance by spline type")
     ax.legend(title="Spline type", framealpha=0.9)
     ax.grid(True, axis="y", alpha=0.3, zorder=0)
     ax.set_axisbelow(True)
@@ -150,7 +151,8 @@ def main() -> None:
             )
         print()
 
-    plot_bar_chart(envs, spline_types, final_costs, args.save)
+    controller = data["meta"].get("controller", "Controller")
+    plot_bar_chart(envs, spline_types, final_costs, args.save, controller)
 
 
 if __name__ == "__main__":
