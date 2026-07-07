@@ -31,11 +31,13 @@ SPLINE_LABELS = {
     "zero": "Zero-order hold",
     "linear": "Linear",
     "cubic": "Cubic",
+    "none": "No spline (per-step)",
 }
 SPLINE_COLORS = {
     "zero": "#2a78d6",
     "linear": "#1baf7a",
     "cubic": "#eda100",
+    "none": "#008300",
 }
 
 

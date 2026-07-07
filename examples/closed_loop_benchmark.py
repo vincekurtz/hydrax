@@ -1,11 +1,13 @@
 """Closed-loop MPC spline-type benchmark for Hydrax tasks (data generation).
 
 Runs the CEM controller in closed loop across one or more task environments,
-comparing three control-interpolation spline types:
+comparing four control-interpolation spline types:
 
-    * ``zero``   - zero-order hold (piecewise constant)
-    * ``linear`` - linear interpolation
-    * ``cubic``  - cubic spline
+    * ``zero``   - zero-order hold (piecewise constant, 8 knots)
+    * ``linear`` - linear interpolation (8 knots)
+    * ``cubic``  - cubic spline (8 knots)
+    * ``none``   - no spline: zero-order hold with one knot per simulation
+      step over the planning horizon, i.e. a full-resolution control tape
 
 For each (environment, spline type) pair the controller is run from the same
 initial state and random seed. The full cumulative-cost curve, the final
@@ -57,8 +59,12 @@ ENVIRONMENTS = {
 # Fast, low-dimensional environments used when --envs is not given.
 DEFAULT_ENVS = ["pendulum", "cart_pole", "double_cart_pole", "particle", "pusht"]
 
-# Spline types to compare, in fixed order.
-SPLINE_TYPES = ["zero", "linear", "cubic"]
+# Spline types to compare, in fixed order. "none" is not a real spline type:
+# it is a zero-order hold with one knot per simulation step (see make_cem).
+SPLINE_TYPES = ["zero", "linear", "cubic", "none"]
+
+PLAN_HORIZON = 1.0
+DEFAULT_NUM_KNOTS = 8
 
 DEFAULT_OUT = "closed_loop_benchmark_data.json"
 
@@ -115,16 +121,28 @@ def make_task(env_name: str, warp: bool) -> Task:
 
 
 def make_cem(task: Task, spline_type: str, num_samples: int) -> CEM:
-    """Construct a CEM controller for a given task and spline type."""
+    """Construct a CEM controller for a given task and spline type.
+
+    The pseudo-type ``"none"`` (no spline) is realized as a zero-order hold
+    with one knot per simulation step over the planning horizon, giving a
+    full-resolution control tape.
+    """
+    if spline_type == "none":
+        actual_spline_type = "zero"
+        num_knots = max(int(round(PLAN_HORIZON / float(task.dt))), 1)
+    else:
+        actual_spline_type = spline_type
+        num_knots = DEFAULT_NUM_KNOTS
+
     return CEM(
         task,
         num_samples=num_samples,
         num_elites=max(4, num_samples // 8),
         sigma_start=0.3,
         sigma_min=0.05,
-        plan_horizon=1.0,
-        spline_type=spline_type,
-        num_knots=8,
+        plan_horizon=PLAN_HORIZON,
+        spline_type=actual_spline_type,
+        num_knots=num_knots,
     )
 
 
