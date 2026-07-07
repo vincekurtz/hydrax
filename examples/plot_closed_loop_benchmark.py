@@ -24,21 +24,29 @@ import numpy as np
 
 DEFAULT_DATA = "closed_loop_benchmark_data.json"
 
-# Display order, labels, and colors for spline types (validated categorical
-# slots: blue / aqua / yellow). "zero" is the normalization baseline.
+# Left-to-right display order within each environment group. "zero" is the
+# normalization baseline. Any spline type not listed here is appended after.
+SPLINE_ORDER = ["none", "zero", "linear", "cubic"]
 BASELINE = "zero"
 SPLINE_LABELS = {
+    "none": "No spline",
     "zero": "Zero-order hold",
     "linear": "Linear",
     "cubic": "Cubic",
-    "none": "No spline (per-step)",
 }
 SPLINE_COLORS = {
+    "none": "#e34948",
     "zero": "#2a78d6",
     "linear": "#1baf7a",
     "cubic": "#eda100",
-    "none": "#008300",
 }
+
+
+def order_spline_types(spline_types: list[str]) -> list[str]:
+    """Return spline types in the fixed display order, unknowns appended."""
+    known = [s for s in SPLINE_ORDER if s in spline_types]
+    extra = [s for s in spline_types if s not in SPLINE_ORDER]
+    return known + extra
 
 
 def parse_args() -> argparse.Namespace:
@@ -79,6 +87,7 @@ def plot_bar_chart(
     save: str | None,
 ) -> None:
     """Draw a grouped bar chart of normalized cost per spline type."""
+    spline_types = order_spline_types(spline_types)
     x = np.arange(len(envs))
     n_splines = len(spline_types)
     bar_width = 0.8 / n_splines
@@ -92,7 +101,7 @@ def plot_bar_chart(
             final_costs[env][spline_type] / final_costs[env][BASELINE]
             for env in envs
         ]
-        bars = ax.bar(
+        ax.bar(
             offsets,
             heights,
             bar_width * 0.92,
@@ -100,18 +109,6 @@ def plot_bar_chart(
             color=SPLINE_COLORS.get(spline_type),
             zorder=3,
         )
-        # Direct value labels (relief rule: aqua/yellow are low-contrast).
-        for rect in bars:
-            ax.annotate(
-                f"{rect.get_height():.2f}",
-                xy=(rect.get_x() + rect.get_width() / 2, rect.get_height()),
-                xytext=(0, 2),
-                textcoords="offset points",
-                ha="center",
-                va="bottom",
-                fontsize=7,
-                color="#3a3a38",
-            )
 
     # Zero-order-hold baseline reference at 1.0.
     ax.axhline(1.0, color="#9a9a95", linewidth=1.0, linestyle="--", zorder=2)
@@ -120,7 +117,7 @@ def plot_bar_chart(
     ax.set_xticklabels(envs, rotation=15, ha="right")
     ax.set_ylabel("Cumulative cost (normalized to zero-order hold)")
     ax.set_title("CEM closed-loop performance by spline type")
-    ax.legend(title="Spline type", frameon=False)
+    ax.legend(title="Spline type", framealpha=0.9)
     ax.grid(True, axis="y", alpha=0.3, zorder=0)
     ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
