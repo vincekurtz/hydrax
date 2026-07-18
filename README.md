@@ -27,6 +27,7 @@ Available methods:
 | [Evosax](https://github.com/RobertTLange/evosax/) | Any of the 30+ evolution strategies implemented in `evosax`. Includes CMA-ES, differential evolution, and many more. | [`hydrax.algs.Evosax`](hydrax/algs.evosax.py) |
 | [MPPI-CMA](https://arxiv.org/pdf/2506.22087) | MPPI with an adaptive sampling distribution. | [`hydrax.algs.MppiCma`](hydrax/algs/mppi_cma.py) |
 | [MTP](https://arxiv.org/abs/2505.01059) | Mix structured tensor-sampled trajectories with a local CEM update for global exploration. | [`hydrax.algs.MTP`](hydrax/algs/mtp.py) |
+| [CBO](https://arxiv.org/abs/2602.06868) | Simulate an SDE that pulls samples toward a consensus point. | [`hydrax.algs.MTP`](hydrax/algs/cbo.py)
 
 ## News
 

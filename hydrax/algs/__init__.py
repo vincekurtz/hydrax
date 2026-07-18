@@ -1,3 +1,4 @@
+from .cbo import CBO
 from .cem import CEM
 from .dial import DIAL
 from .evosax import Evosax
@@ -7,6 +8,7 @@ from .mtp import MTP
 from .predictive_sampling import PredictiveSampling
 
 __all__ = [
+    "CBO",
     "CEM",
     "MPPI",
     "MTP",

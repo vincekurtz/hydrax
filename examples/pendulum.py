@@ -3,7 +3,7 @@ import argparse
 import mujoco
 import numpy as np
 
-from hydrax.algs import MPPI, MppiCma, PredictiveSampling
+from hydrax.algs import CBO, MPPI, MppiCma, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.pendulum import Pendulum
 
@@ -27,6 +27,7 @@ subparsers = parser.add_subparsers(
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("mppi_cma", help="MPPI with Covariance Matrix Adaptation")
+subparsers.add_parser("cbo", help="Consensus-Based Optimization")
 args = parser.parse_args()
 
 # Define the task (cost and dynamics)
@@ -63,6 +64,20 @@ elif args.algorithm == "mppi_cma":
         temperature=0.1,
         minimum_noise_level=0.1,
         covariance_adaptation_rate=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
+elif args.algorithm == "cbo":
+    print("Running CBO")
+    ctrl = CBO(
+        task,
+        num_samples=32,
+        initial_noise_level=1.0,
+        temperature=0.01,
+        consensus_weight=1.0,
+        noise_weight=5.0,
+        step_size=0.1,
         plan_horizon=1.0,
         spline_type="zero",
         num_knots=11,

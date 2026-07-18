@@ -2,7 +2,7 @@ import argparse
 
 import mujoco
 
-from hydrax.algs import CEM, MPPI, MTP, PredictiveSampling
+from hydrax.algs import CBO, CEM, MPPI, MTP, PredictiveSampling
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.bugtrap import BugTrap
 
@@ -30,6 +30,7 @@ subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
 subparsers.add_parser("mtp", help="Model Tensor Planning")
+subparsers.add_parser("cbo", help="Consensus-Based Optimization")
 args = parser.parse_args()
 
 task = BugTrap(impl="warp" if args.warp else "jax")
@@ -88,6 +89,20 @@ elif args.algorithm == "mtp":
         spline_type="zero",
         num_knots=11,
     )
+elif args.algorithm == "cbo":
+    print("Running CBO")
+    ctrl = CBO(
+        task,
+        num_samples=32,
+        initial_noise_level=1.0,
+        temperature=0.01,
+        consensus_weight=1.0,
+        noise_weight=10.0,
+        step_size=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
 else:
     parser.error("Invalid algorithm")
 
@@ -101,4 +116,5 @@ run_interactive(
     mj_model,
     mj_data,
     frequency=50,
+    show_traces=False,
 )
