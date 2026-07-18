@@ -51,7 +51,7 @@ def test_open_loop() -> None:
 @pytest.mark.parametrize("mtp_interpolation", ["akima", "bspline", "linear"])
 @pytest.mark.parametrize("m_pts", [2, 3, 5])
 def test_sample_knots_shape(mtp_interpolation: str, m_pts: int) -> None:
-    """Knot sampler returns the right shape across interpolation/m_pts combos."""
+    """Knot sampler returns the right shape."""
     if mtp_interpolation == "bspline" and m_pts < 3:
         pytest.skip("bspline requires m_pts >= degree + 1")
 
