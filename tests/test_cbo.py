@@ -1,0 +1,114 @@
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+from mujoco import mjx
+
+from hydrax.alg_base import Trajectory
+from hydrax.algs.cbo import CBO
+from hydrax.tasks.pendulum import Pendulum
+
+
+def test_open_loop() -> None:
+    """Use CBO for open-loop pendulum swingup."""
+    # Task and optimizer setup
+    task = Pendulum()
+    opt = CBO(
+        task,
+        num_samples=32,
+        initial_noise_level=1.0,
+        temperature=0.1,
+        consensus_weight=1.0,
+        noise_weight=1.0,
+        step_size=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
+    jit_opt = jax.jit(opt.optimize)
+
+    # Initialize the system state and policy parameters
+    state = mjx.make_data(task.model)
+    params = opt.init_params()
+
+    for _ in range(100):
+        # Do an optimization step
+        params, _ = jit_opt(state, params)
+
+    knots = params.mean[None]
+    tk = jnp.linspace(0.0, opt.plan_horizon, opt.num_knots)
+    tq = jnp.linspace(0.0, opt.plan_horizon - opt.dt, opt.ctrl_steps)
+    controls = opt.interp_func(tq, tk, knots)
+
+    # Roll out the solution, check that it's good enough
+    states, final_rollout = jax.jit(opt.eval_rollouts)(
+        task.model, state, controls, knots
+    )
+    total_cost = jnp.sum(final_rollout.costs[0])
+    assert total_cost <= 9.0
+
+    if __name__ == "__main__":
+        # Plot the solution
+        _, ax = plt.subplots(3, 1, sharex=True)
+        times = jnp.arange(opt.ctrl_steps) * task.dt
+
+        ax[0].plot(times, states.qpos[0, :, 0])
+        ax[0].set_ylabel(r"$\theta$")
+
+        ax[1].plot(times, states.qvel[0, :, 0])
+        ax[1].set_ylabel(r"$\dot{\theta}$")
+
+        ax[2].step(times, final_rollout.controls[0], where="post")
+        ax[2].axhline(-1.0, color="black", linestyle="--")
+        ax[2].axhline(1.0, color="black", linestyle="--")
+        ax[2].set_ylabel("u")
+        ax[2].set_xlabel("Time (s)")
+
+        time_samples = jnp.linspace(0, times[-1], 100)
+        controls = jax.vmap(opt.get_action, in_axes=(None, 0))(
+            params, time_samples
+        )
+        ax[2].plot(time_samples, controls, color="gray", alpha=0.5)
+
+        plt.show()
+
+
+def test_update_params() -> None:
+    """Unit test for the CBO particle update."""
+    task = Pendulum()
+    opt = CBO(
+        task,
+        num_samples=8,
+        initial_noise_level=1.0,
+        temperature=0.1,
+        consensus_weight=1.0,
+        noise_weight=0.0,  # No noise, so the update is deterministic
+        step_size=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
+    params = opt.init_params(seed=42)
+    assert params.samples.shape == (8, opt.num_knots, task.model.nu)
+
+    knots, _ = opt.sample_knots(params)
+    assert knots.shape == (8, opt.num_knots, task.model.nu)
+
+    # With equal costs the consensus is the average of the particles
+    rollouts = Trajectory(
+        controls=None,
+        knots=knots,
+        costs=jnp.zeros((8, 2)),
+        trace_sites=None,
+    )
+    new_params = opt.update_params(params, rollouts)
+    assert jnp.allclose(new_params.mean, jnp.mean(knots, axis=0))
+
+    # With σ = 0, each particle moves toward the consensus by a factor of λ Δt
+    old_deviation = knots - new_params.mean
+    new_deviation = new_params.samples - new_params.mean
+    assert jnp.allclose(new_deviation, 0.9 * old_deviation)
+
+
+if __name__ == "__main__":
+    test_open_loop()
+    test_update_params()
