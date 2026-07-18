@@ -69,7 +69,7 @@ class CBO(SamplingBasedController):
             noise_weight: The weight σ on the noise term in the SDE.
             step_size: The step size for Euler-Maruyama integration of the SDE.
             num_randomizations: The number of domain randomizations to use.
-            risk_strategy: How to combining costs from different randomizations.
+            risk_strategy: How to combine costs from different randomizations.
                            Defaults to average cost.
             seed: The random seed for domain randomization.
             plan_horizon: The time horizon for the rollout in seconds.
@@ -138,7 +138,7 @@ class CBO(SamplingBasedController):
             rollouts.knots
             - self.consensus_weight * deviation * self.step_size
             + self.noise_weight
-            * jnp.abs(deviation)  # Ansiotropic CBO, regular norm also possible
+            * jnp.abs(deviation)  # Anisotropic CBO, regular norm also possible
             * jnp.sqrt(self.step_size)
             * noise
         )
